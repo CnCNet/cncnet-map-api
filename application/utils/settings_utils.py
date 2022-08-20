@@ -12,9 +12,9 @@ MINIMUM_SECRET_KEY_LENGTH = 32
 
 
 def get_env_var(
-        key: str,
-        default: Optional[Any] = None,
-        validation_callback: Optional[SettingsValidationCallback] = None,
+    key: str,
+    default: Optional[Any] = None,
+    validation_callback: Optional[SettingsValidationCallback] = None,
 ) -> Any:
     """Get an env var and validate it.
 
@@ -72,5 +72,6 @@ def secret_key_validator(key: str, value: str) -> NoReturn:
     """
     if len(value) < MINIMUM_SECRET_KEY_LENGTH:
         raise exceptions.ConfigurationException(
-            key, f"EnvVar failed validation, length less than {MINIMUM_SECRET_KEY_LENGTH}"
+            key,
+            f"EnvVar failed validation, length less than {MINIMUM_SECRET_KEY_LENGTH}",
         )

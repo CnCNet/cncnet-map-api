@@ -14,9 +14,9 @@ class ConfigurationException(Exception):
     message: Optional[str]
 
     def __init__(
-            self,
-            key: str,
-            message: Optional[str] = None,
+        self,
+        key: str,
+        message: Optional[str] = None,
     ):
         super().__init__(message)
 
