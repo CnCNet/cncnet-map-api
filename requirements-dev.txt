@@ -1,0 +1,5 @@
+pytest==7.*
+black==22.*
+pre-commit==2.*
+pytest-django==4.5.2
+deptree==0.0.10
