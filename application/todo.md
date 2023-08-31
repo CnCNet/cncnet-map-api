@@ -1,0 +1,4 @@
+- Figure out if we can put a `[cncnetmap_id]` in `.map` files and have it persist through final alert.
+- Figure out cncnet ladder public key
+- figure out file testing that works on linux and windows. Need to modify `MEDIA_ROOT`
+-
