@@ -1,6 +1,7 @@
 """
 All exceptions for our app belong in this package.
 """
+from django.core.exceptions import *  # Import django exceptions for use elsewhere.
 from typing import Optional
 
 
