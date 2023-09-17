@@ -1,5 +1,5 @@
-- Figure out if we can put a `[cncnetmap_id]` in `.map` files and have it persist through final alert.
-- Figure out cncnet ladder public key
-- figure out file testing that works on linux and windows. Need to modify `MEDIA_ROOT`
-- Research which map categories to include. So far I can think of Singleplayer, skirmish, co-op.
-- Gamemodes?
+- [x] Figure out if we can put a `[cncnetmap_id]` in `.map` files and have it persist through final alert. **Yes we ar able to**
+- [ ] Figure out cncnet ladder public key
+- [ ] figure out file testing that works on linux and windows. Need to modify `MEDIA_ROOT`
+- [ ] Research which map categories to include. So far I can think of Singleplayer, skirmish, co-op.
+- [ ]Gamemodes?
