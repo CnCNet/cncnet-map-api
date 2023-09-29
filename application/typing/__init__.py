@@ -12,3 +12,5 @@ SettingsValidationCallback = Callable[[str, Any], NoReturn]
 
 
 FileExtension = str
+
+DictStrAny = Dict[str, Any]

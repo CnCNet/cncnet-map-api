@@ -2,4 +2,4 @@
 - [ ] Figure out cncnet ladder public key
 - [ ] figure out file testing that works on linux and windows. Need to modify `MEDIA_ROOT`
 - [ ] Research which map categories to include. So far I can think of Singleplayer, skirmish, co-op.
-- [ ]Gamemodes?
+- [ ] Gamemodes?
