@@ -1,13 +1,16 @@
-FROM python:3.10 as base
+FROM python:3.12-bookworm as base
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-WORKDIR /python-map-api
+WORKDIR /cncnet-map-api
 
 # This is just here to crash the build if you don't make a .env file.
-COPY .env /python-map-api/
+COPY .env /cncnet-map-api/
 
-# No need to copy other files, they're mounted with docker compose.
+# Copy files needed for build
+COPY requirements.txt /cncnet-map-api
+COPY requirements-dev.txt /cncnet-map-api
+
 RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
-RUN pip install -r requirements-dev.txt
+RUN pip install -r ./requirements.txt
+RUN pip install -r ./requirements-dev.txt

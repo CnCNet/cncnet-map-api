@@ -8,7 +8,7 @@ from typing import Optional
 class ConfigurationException(Exception):
     """Exception to raise when an env var isn't correct.
 
-    Raise from :func:`~application.utils.settings_utils.get_env_var` or your callback.
+    Raise from :func:`~kirovy.utils.settings_utils.get_env_var` or your callback.
     """
 
     key: str

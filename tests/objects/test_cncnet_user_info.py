@@ -1,7 +1,7 @@
 import dataclasses
 import datetime
 
-from application.objects import CncnetUserInfo
+from kirovy.objects import CncnetUserInfo
 
 
 def test_user_info_create_from_dict():

@@ -1,8 +1,8 @@
 from django.core import validators
 from django.db import models
 
-from application import typing
-from application.utils import file_utils
+from kirovy import typing
+from kirovy.utils import file_utils
 
 
 class CncNetFileBaseModel(models.Model):

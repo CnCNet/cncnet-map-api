@@ -1,7 +1,7 @@
 from django.db import models
 from django.conf import settings
 
-from application import constants, exceptions
+from kirovy import constants, exceptions
 
 from django.utils.translation import gettext as _
 

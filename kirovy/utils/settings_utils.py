@@ -5,8 +5,8 @@ in any function in this module.
 import os
 from typing import Any, Optional, Callable, NoReturn
 
-from application import exceptions
-from application.typing import SettingsValidationCallback
+from kirovy import exceptions
+from kirovy.typing import SettingsValidationCallback
 
 MINIMUM_SECRET_KEY_LENGTH = 32
 

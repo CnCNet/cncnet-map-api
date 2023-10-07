@@ -8,7 +8,8 @@ from django.core.handlers.wsgi import WSGIRequest
 from rest_framework import status
 from rest_framework.response import Response
 
-from application import typing as t, constants, objects
+from kirovy import typing as t, constants, objects
+from kirovy.models.cnc_user import CncUser
 
 
 class JwtMiddleware:
@@ -24,12 +25,14 @@ class JwtMiddleware:
             return Response(status=cncnet_response.status_code)
 
         data = json.loads(cncnet_response.content)
-        user = objects.CncnetUserInfo(**data)
+        user_dto = objects.CncnetUserInfo(**data)
 
-        if not user.id:
+        if not user_dto.id:
             return Response(
                 data={"reason": "user-not-found"}, status=status.HTTP_401_UNAUTHORIZED
             )
+
+        map_user = CncUser.create_or_update_from_cnc_net(user_dto)
 
         response = self.get_response(request)
 

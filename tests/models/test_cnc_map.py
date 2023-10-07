@@ -1,7 +1,7 @@
 import pytest
 from django.core import validators
 
-from application.models.cnc_map import CncMapFile
+from kirovy.models.cnc_map import CncMapFile
 
 
 @pytest.mark.parametrize("extension", ["pdf", "mix", "ini", "exe"])

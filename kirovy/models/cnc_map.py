@@ -3,9 +3,9 @@ import os.path
 from django.conf import settings
 from django.db import models
 
-from application import constants
-from application.models import file_base
-from application.models import cnc_game
+from kirovy import constants
+from kirovy.models import file_base
+from kirovy.models import cnc_game
 
 
 def get_map_upload_path(instance: "CncMapFile", filename: str) -> str:
