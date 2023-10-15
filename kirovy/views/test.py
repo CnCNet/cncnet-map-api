@@ -1,14 +1,21 @@
+from django.conf import settings
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from kirovy.request import KirovyRequest
+
 
 class TestJwt(APIView):
     """
-    List all snippets, or create a new snippet.
+    Test JWT tokens. Only for use in tests.
     """
 
-    def get(self, request: Request, format=None):
+    permission_classes = [IsAuthenticated]
 
-        return Response("hello", status.HTTP_200_OK)
+    def get(self, request: KirovyRequest, format=None):
+        if not settings.DEBUG:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        return Response(request.auth.email, status.HTTP_200_OK)

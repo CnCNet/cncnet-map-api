@@ -49,7 +49,6 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "kirovy.middleware.jwt.JwtMiddleware",
 ]
 
 ROOT_URLCONF = "kirovy.urls"
@@ -72,6 +71,11 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "kirovy.wsgi.application"
 
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "kirovy.authentication.CncNetAuthentication",
+    ]
+}
 
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases

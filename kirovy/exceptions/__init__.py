@@ -4,6 +4,8 @@ All exceptions for our app belong in this package.
 from django.core.exceptions import *  # Import django exceptions for use elsewhere.
 from typing import Optional
 
+from .auth_exceptions import *
+
 
 class ConfigurationException(Exception):
     """Exception to raise when an env var isn't correct.

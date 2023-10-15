@@ -14,3 +14,6 @@ SettingsValidationCallback = Callable[[str, Any], NoReturn]
 FileExtension = str
 
 DictStrAny = Dict[str, Any]
+
+TokenStr = str
+""":attr: a string that we get from the ``BEARER`` http header."""
