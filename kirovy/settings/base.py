@@ -14,7 +14,7 @@ from pathlib import Path
 from kirovy.utils.settings_utils import get_env_var, secret_key_validator
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.1/howto/deployment/checklist/
@@ -127,8 +127,15 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
 STATIC_URL = "static/"
+CNC_GAME_IMAGE_DIRECTORY = "game_images/"
+
 
 MEDIA_ROOT = get_env_var("MEDIA_ROOT")
+CNC_MAP_DIRECTORY = MEDIA_ROOT + "maps/"
+
+STATICFILES_DIRS = (Path(BASE_DIR, STATIC_URL),)
+
+STATIC_ROOT = get_env_var("STATIC_ROOT")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field

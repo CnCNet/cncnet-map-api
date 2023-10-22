@@ -2,18 +2,18 @@ from django.core import validators
 from django.db import models
 
 from kirovy import typing
+from kirovy.models.cnc_base_model import CncNetBaseModel
 from kirovy.utils import file_utils
 
 
-class CncNetFileBaseModel(models.Model):
+class CncNetFileBaseModel(CncNetBaseModel):
     class Meta:
         abstract = True
 
-    UPLOAD_TO = "generic/"
     ALLOWED_EXTENSIONS = []
 
     name = models.CharField(max_length=255, null=False)
-    file = models.FileField(upload_to=UPLOAD_TO, null=False)
+    file = models.FileField(null=False)
     file_extension = models.CharField(
         max_length=64,
         null=False,

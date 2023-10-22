@@ -1,3 +1,5 @@
+import uuid
+
 from django.contrib.auth.models import AbstractBaseUser
 from django.db import models
 from django.utils.translation import gettext as _
@@ -9,6 +11,7 @@ __all__ = ["CncUser"]
 
 
 class CncUser(AbstractBaseUser):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     cnc_net_id = models.IntegerField(
         unique=True,
         editable=False,

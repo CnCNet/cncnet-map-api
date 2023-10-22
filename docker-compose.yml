@@ -16,10 +16,10 @@ services:
     command: -p ${POSTGRES_PORT}
   web:
     build: .
-    command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - .:/cncnet-map-api
-      - ${MEDIA_ROOT}:/cncnet-map-api/data/cnc_net_files
+      - ${MEDIA_ROOT}:/data/cnc_net_files
+      - ${STATIC_ROOT}:/data/cnc_net_static
     ports:
       - "8000:8000"
     env_file:
