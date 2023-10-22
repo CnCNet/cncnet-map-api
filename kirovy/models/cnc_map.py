@@ -3,8 +3,9 @@ import pathlib
 from django.conf import settings
 from django.db import models
 
+from kirovy import exceptions
 from kirovy.models import file_base
-from kirovy.models import cnc_game
+from kirovy.models import cnc_game as game_models, cnc_user
 from kirovy.models.cnc_base_model import CncNetBaseModel
 
 
@@ -24,8 +25,11 @@ class CncMap(CncNetBaseModel):
 
     map_name = models.CharField(max_length=128)
     description = models.CharField(max_length=4096)
-    cnc_game = models.ForeignKey(cnc_game.CncGame, models.PROTECT, null=False)
+    cnc_game = models.ForeignKey(game_models.CncGame, models.PROTECT, null=False)
     category = models.ForeignKey(MapCategory, models.PROTECT, null=False)
+    cnc_net_user = models.ForeignKey(
+        cnc_user.CncUser, on_delete=models.CASCADE, null=True
+    )
 
     def get_map_directory_path(self) -> pathlib.Path:
         """Returns the path to the directory where all files related to the map will be store.
@@ -44,12 +48,12 @@ class CncMap(CncNetBaseModel):
 class CncMapFile(file_base.CncNetFileBaseModel):
     """Represents the actual map file that a Command & Conquer game reads."""
 
-    ALLOWED_EXTENSIONS = ["map", "yrm", "mpr", "mmx"]
-
     width = models.IntegerField()
     height = models.IntegerField()
 
     cnc_map = models.OneToOneField(CncMap, on_delete=models.CASCADE, null=False)
+
+    ALLOWED_EXTENSION_TYPES = {game_models.CncFileExtension.ExtensionTypes.MAP.value}
 
     def get_map_upload_path(self, filename: str) -> pathlib.Path:
         """Generate the upload path for the map file.

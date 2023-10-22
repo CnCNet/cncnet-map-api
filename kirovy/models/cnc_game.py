@@ -3,9 +3,66 @@ from functools import cached_property
 from django.conf import settings
 from django.db import models
 
-from kirovy import exceptions
+from kirovy import exceptions, typing as t
 
 from kirovy.models.cnc_base_model import CncNetBaseModel
+
+__all__ = ["CncFileExtension", "CncGame"]
+
+
+def is_valid_extension(extension: str) -> None:
+    """Validate file extension string.
+
+    :raise exceptions.InvalidFileExtension:
+        Raised for invalid file extension strings.
+    """
+    if not extension.isalnum():
+        raise exceptions.InvalidFileExtension(
+            f'"{extension}" is not a valid file extension. Must be alpha only.'
+        )
+
+
+class CncFileExtension(CncNetBaseModel):
+    """File extension types for Command & Conquer games and what they do.
+
+    Useful page: https://modenc.renegadeprojects.com/File_Types
+    """
+
+    class ExtensionTypes(models.TextChoices):
+        """Enum of what kind of file this is to allow for filtering allowed extensions."""
+
+        MAP = "map", "map"
+        """This file extensions represents some kind of map file and should be in the map database."""
+
+        ASSETS = "assets", "assets"
+        """This file extension represents some kind of game asset to support a map, e.g. a ``.mix`` file."""
+
+    extension = models.CharField(
+        max_length=32, unique=True, validators=[is_valid_extension]
+    )
+    """The actual file extension. Case insensitive but ``.lower()`` will be called all over."""
+
+    about = models.CharField(max_length=2048, null=True)
+    """An explanation about what this extension does."""
+
+    extension_type = models.CharField(
+        max_length=32, choices=ExtensionTypes.choices, null=False
+    )
+
+    def save(self, *args, **kwargs):
+        is_valid_extension(
+            self.extension
+        )  # force validator on save instead from a view.
+        super().save(*args, **kwargs)
+
+    @property
+    def extension_for_path(self) -> str:
+        """Too lazy to format a string with a period? We've got you covered.
+
+        :return:
+            Extensions with a ``.`` prefix.
+        """
+        return f".{self.extension}"
 
 
 class CncGame(CncNetBaseModel):
@@ -32,6 +89,9 @@ class CncGame(CncNetBaseModel):
     is_mod = models.BooleanField(default=False)
     """If true then this game is an unofficial mod. e.g. Mental Omega."""
 
+    allowed_extensions = models.ManyToManyField(CncFileExtension)
+    """File extensions that this game supports."""
+
     def save(self, *args, **kwargs):
         self._validate_is_mod()
         super().save(*args, **kwargs)
@@ -43,6 +103,16 @@ class CncGame(CncNetBaseModel):
         )  # Django allows just setting the ID, so we need to make sure one of the fields is set.
         if self.is_mod and missing_parent_game:
             raise exceptions.ValidationError("Must specify a parent game for mods.")
+
+    @property
+    def allowed_extensions_set(self) -> t.Set[str]:
+        """Convenience method to get the extensions as lowercase strings.
+
+        :return:
+            The lowercase extensions as a set.
+        """
+        extensions = self.allowed_extensions.select_related().only("extension").all()
+        return {ext.extension.lower() for ext in extensions}
 
     @cached_property
     def images_relative_url(self) -> str:

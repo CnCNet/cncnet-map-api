@@ -31,3 +31,9 @@ class ConfigurationException(Exception):
         message = f"{message}: key={self.key}"
 
         return message
+
+
+class InvalidFileExtension(ValidationError):
+    """Raised when trying to create an invalid file extension in the database."""
+
+    pass
