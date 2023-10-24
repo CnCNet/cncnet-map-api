@@ -37,3 +37,15 @@ class InvalidFileExtension(ValidationError):
     """Raised when trying to create an invalid file extension in the database."""
 
     pass
+
+
+class InvalidMimeType(ValidationError):
+    """Raised when we e.g. expect text, but get a binary file."""
+
+    pass
+
+
+class InvalidMapFile(ValidationError):
+    """Raised when a map can't be parsed or if it's missing a header."""
+
+    pass
