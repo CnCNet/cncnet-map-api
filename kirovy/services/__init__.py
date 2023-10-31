@@ -1,24 +1,39 @@
+import base64
 import configparser
 import enum
+import lzo
 
+from django.conf import settings
 from django.core.files import File
 from kirovy import typing as t, exceptions
 
 from django.utils.translation import gettext as _
 
 
+class MapSections(enum.StrEnum):
+    PREVIEW_PACK = "PreviewPack"
+    PREVIEW = "Preview"
+    HEADER = "Header"
+    BASIC = "Basic"
+    MAP = "Map"
+    OVERLAY_DATA = "OverlayDataPack"
+    OVERLAY_PACK = "OverlayPack"
+    SPECIAL_FLAGS = "SpecialFlags"
+    DIGEST = "Digest"
+
+
 class MapParserService:
     file: File
     parser: configparser.ConfigParser
 
-    required_sections = {
-        "Header",
-        "Basic",
-        "Map",
-        "OverlayDataPack",
-        "OverlayPack",
-        "SpecialFlags",
-        "Digest",
+    required_sections: t.Set[str] = {
+        MapSections.HEADER,
+        MapSections.BASIC,
+        MapSections.MAP,
+        MapSections.OVERLAY_PACK,
+        MapSections.OVERLAY_DATA,
+        MapSections.SPECIAL_FLAGS,
+        MapSections.DIGEST,
     }
 
     class ErrorMsg(enum.StrEnum):
@@ -51,11 +66,12 @@ class MapParserService:
             )
 
         sections: t.Set[str] = set(self.parser.sections())
-        if self.required_sections not in sections:
+        missing_sections = self.required_sections - sections
+        if missing_sections:
             raise exceptions.InvalidMapFile(
                 self.ErrorMsg.MISSING_INI,
                 code=self.ErrorMsg.MISSING_INI.name,
-                params={"missing": self.required_sections - sections},
+                params={"missing": missing_sections},
             )
 
     @property
@@ -104,3 +120,41 @@ class MapParserService:
                 return True
         except UnicodeDecodeError:
             return False
+
+    def extract_preview(self):
+        if not self.parser.has_section(MapSections.PREVIEW_PACK):
+            return b""
+
+        size = [
+            int(x)
+            for x in self.parser.get(MapSections.PREVIEW, "Size", fallback="").split(
+                ","
+            )
+        ]
+        if len(size) != 4:
+            return b""
+
+        width, height = size[2], size[3]
+        decompress = width * height * 3
+
+        preview_b64 = "".join(self.parser[MapSections.PREVIEW_PACK].values())
+        preview_bytes = base64.b64decode(preview_b64)
+        # Each pixel block is a header, and the block data.
+        # byte[0] and [1] specify the compressed block size
+        # byte[2] and [3] specify the size of the block when uncompressed.
+        # The uncompressed block is Blue, green, red 8, 8, 8 bit (24bits). Each bit defines the color from 0-255.
+        shifted = preview_bytes[0] << 2
+        test_compressed = int.from_bytes(
+            bytearray(preview_bytes)[0:1] + bytearray(preview_bytes)[1:2], "big"
+        )
+        test_uncompressed = int.from_bytes(
+            bytearray(preview_bytes)[2:3] + bytearray(preview_bytes)[3:4], "big"
+        )
+        # lzo.decompress()
+        for p_byte in preview_bytes:
+            pass
+        filename = (
+            settings.STATICFILES_DIRS[0] / "test.bmp"
+        )  # I assume you have a way of picking unique filenames
+        # with open(filename, 'wb') as f:
+        #     f.write(preview_b)

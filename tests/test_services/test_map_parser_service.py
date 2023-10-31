@@ -41,3 +41,8 @@ def test_map_parser_service__fails_missing_sections(file_map_missing_sections):
     assert "Basic" not in exc_info.value.params["missing"]
     # Make sure unrelated sections from the map file don't show up.
     assert "Alliance" not in exc_info.value.params["missing"]
+
+
+def test_map_service_valid_map(file_map_valid):
+    map_service = MapParserService(file_map_valid)
+    assert map_service.extract_preview()
