@@ -12,7 +12,7 @@ __all__ = ["CncUser"]
 
 class CncUser(AbstractBaseUser):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    cnc_net_id = models.IntegerField(
+    cncnet_id = models.IntegerField(
         unique=True,
         editable=False,
         help_text=_("The user ID from the CNCNet ladder API."),
@@ -32,7 +32,7 @@ class CncUser(AbstractBaseUser):
         null=False, help_text=_("The user group from the CNCNet ladder API.")
     )
 
-    USERNAME_FIELD = "cnc_net_id"
+    USERNAME_FIELD = "cncnet_id"
 
     def save(self, *args, **kwargs):
         self.set_unusable_password()
@@ -43,13 +43,13 @@ class CncUser(AbstractBaseUser):
         return self.verified_map_uploader or self.verified_email
 
     @staticmethod
-    def create_or_update_from_cnc_net(user_dto: CncnetUserInfo) -> "CncUser":
+    def create_or_update_from_cncnet(user_dto: CncnetUserInfo) -> "CncUser":
         map_user: t.Optional[CncUser] = CncUser.objects.filter(
-            cnc_net_id=user_dto.id
+            cncnet_id=user_dto.id
         ).first()
         if not map_user:
             map_user = CncUser.objects.create(
-                cnc_net_id=user_dto.id,
+                cncnet_id=user_dto.id,
                 username=user_dto.name,
                 verified_email=user_dto.email_verified,
                 verified_map_uploader=False,

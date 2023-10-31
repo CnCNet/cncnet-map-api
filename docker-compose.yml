@@ -18,8 +18,8 @@ services:
     build: .
     volumes:
       - .:/cncnet-map-api
-      - ${MEDIA_ROOT}:/data/cnc_net_files
-      - ${STATIC_ROOT}:/data/cnc_net_static
+      - ${MEDIA_ROOT}:/data/cncnet_files
+      - ${STATIC_ROOT}:/data/cncnet_static
     ports:
       - "8000:8000"
     env_file:

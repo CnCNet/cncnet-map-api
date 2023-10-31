@@ -143,17 +143,6 @@ def _forward(apps: StateApps, schema_editor: DatabaseSchemaEditor):
     mental_omega.save()
     mental_omega.allowed_extensions.add(*yr_extensions)
 
-    twisted_insurrection = CncGame.objects.create(
-        slug="ti",
-        full_name="Twisted Insurrection",
-        is_visible=True,
-        allow_public_uploads=False,
-        parent_game=tib_sun,
-        is_mod=True,
-    )
-    twisted_insurrection.save()
-    twisted_insurrection.allowed_extensions.add(mix, map_ext)
-
     red_resurrection = CncGame.objects.create(
         slug="rr",
         full_name="YR Red-Resurrection",

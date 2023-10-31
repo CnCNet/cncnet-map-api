@@ -41,6 +41,6 @@ class CncNetAuthentication(BaseAuthentication):
                 "could-not-parse-user-info-from-cncnet", status.HTTP_401_UNAUTHORIZED
             )
 
-        map_user = CncUser.create_or_update_from_cnc_net(user_dto)
+        map_user = CncUser.create_or_update_from_cncnet(user_dto)
 
         return map_user, user_dto

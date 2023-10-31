@@ -27,7 +27,7 @@ class CncMap(CncNetBaseModel):
     description = models.CharField(max_length=4096)
     cnc_game = models.ForeignKey(game_models.CncGame, models.PROTECT, null=False)
     category = models.ForeignKey(MapCategory, models.PROTECT, null=False)
-    cnc_net_user = models.ForeignKey(
+    cncnet_user = models.ForeignKey(
         cnc_user.CncUser, on_delete=models.CASCADE, null=True
     )
 
@@ -50,10 +50,18 @@ class CncMapFile(file_base.CncNetFileBaseModel):
 
     width = models.IntegerField()
     height = models.IntegerField()
+    version = models.IntegerField()
 
-    cnc_map = models.OneToOneField(CncMap, on_delete=models.CASCADE, null=False)
+    cnc_map = models.ForeignKey(CncMap, on_delete=models.CASCADE, null=False)
 
     ALLOWED_EXTENSION_TYPES = {game_models.CncFileExtension.ExtensionTypes.MAP.value}
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["cnc_map_id", "version"], name="unique_map_version"
+            ),
+        ]
 
     def get_map_upload_path(self, filename: str) -> pathlib.Path:
         """Generate the upload path for the map file.
@@ -66,3 +74,14 @@ class CncMapFile(file_base.CncNetFileBaseModel):
         """
         directory = self.cnc_map.get_map_directory_path()
         return pathlib.Path(directory, filename)
+
+    def generate_version_number(self) -> int:
+        previous_version: CncMapFile = (
+            self.objects.filter(cnc_map_id=self.cnc_map_id)
+            .order_by("-version")
+            .only("version")
+            .first()
+        )
+        if not previous_version:
+            return 1
+        return previous_version.version + 1
