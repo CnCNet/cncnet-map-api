@@ -1,7 +1,7 @@
 """
-WSGI config for application project.
+WSGI config for kirovy project.
 
-It exposes the WSGI callable as a module-level variable named ``application``.
+It exposes the WSGI callable as a module-level variable named ``kirovy``.
 
 For more information on this file, see
 https://docs.djangoproject.com/en/4.1/howto/deployment/wsgi/
@@ -11,6 +11,6 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "application.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "kirovy.settings")
 
 application = get_wsgi_application()

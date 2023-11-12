@@ -1,13 +1,16 @@
 """
 All exceptions for our app belong in this package.
 """
+from django.core.exceptions import *  # Import django exceptions for use elsewhere.
 from typing import Optional
+
+from .auth_exceptions import *
 
 
 class ConfigurationException(Exception):
     """Exception to raise when an env var isn't correct.
 
-    Raise from :func:`~application.utils.settings_utils.get_env_var` or your callback.
+    Raise from :func:`~kirovy.utils.settings_utils.get_env_var` or your callback.
     """
 
     key: str
@@ -28,3 +31,9 @@ class ConfigurationException(Exception):
         message = f"{message}: key={self.key}"
 
         return message
+
+
+class InvalidFileExtension(ValidationError):
+    """Raised when trying to create an invalid file extension in the database."""
+
+    pass
