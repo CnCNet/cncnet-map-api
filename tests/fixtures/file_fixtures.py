@@ -1,4 +1,5 @@
 import pathlib
+
 from kirovy import typing as t
 
 import pytest
@@ -24,8 +25,8 @@ def load_test_file(test_data_path):
             A django file object.
         """
         full_path = test_data_path / relative_path
-        with open(full_path, "r") as opened:
-            return File(opened)
+
+        return File(open(full_path, "r"))
 
     return _inner
 

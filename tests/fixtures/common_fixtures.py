@@ -29,3 +29,9 @@ def jwt_header():
     data = json.loads(response.content)
     token = data.get("token")
     return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture(autouse=True)
+def tmp_media_root(tmp_path, settings):
+    """Makes all file uploads go to tmp paths to not fill up developer drives."""
+    settings.MEDIA_ROOT = tmp_path / settings.MEDIA_ROOT

@@ -13,3 +13,5 @@ DATABASES = {
         "PORT": get_env_var("POSTGRES_PORT"),
     }
 }
+
+# MEDIA_ROOT gets modified in common_fixtures.py in the tmp_media_root fixture.

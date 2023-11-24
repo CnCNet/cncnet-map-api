@@ -7,6 +7,7 @@ from kirovy import exceptions
 from kirovy.models import file_base
 from kirovy.models import cnc_game as game_models, cnc_user
 from kirovy.models.cnc_base_model import CncNetBaseModel
+from kirovy import typing as t
 
 
 class MapCategory(CncNetBaseModel):
@@ -31,6 +32,22 @@ class CncMap(CncNetBaseModel):
         cnc_user.CncUser, on_delete=models.CASCADE, null=True
     )
 
+    def next_version_number(self) -> int:
+        """Generate the next version to use for a map file.
+
+        :return:
+            The current latest version, plus one.
+        """
+        previous_version: CncMapFile = (
+            CncMapFile.objects.filter(cnc_map_id=self.id)
+            .order_by("-version")
+            .only("version")
+            .first()
+        )
+        if not previous_version:
+            return 1
+        return previous_version.version + 1
+
     def get_map_directory_path(self) -> pathlib.Path:
         """Returns the path to the directory where all files related to the map will be store.
 
@@ -38,8 +55,8 @@ class CncMap(CncNetBaseModel):
             Directory path to put maps and image previews in.
         """
         return pathlib.Path(
-            settings.CNC_MAP_DIRECTORY,
             self.cnc_game.slug,
+            settings.CNC_MAP_DIRECTORY,
             self.category.slug,
             str(self.id),
         )
@@ -56,12 +73,18 @@ class CncMapFile(file_base.CncNetFileBaseModel):
 
     ALLOWED_EXTENSION_TYPES = {game_models.CncFileExtension.ExtensionTypes.MAP.value}
 
+    UPLOAD_TYPE = settings.CNC_MAP_DIRECTORY
+
     class Meta:
         constraints = [
             models.UniqueConstraint(
                 fields=["cnc_map_id", "version"], name="unique_map_version"
             ),
         ]
+
+    def save(self, *args, **kwargs):
+        self.version = self.cnc_map.next_version_number()
+        super().save(*args, **kwargs)
 
     def get_map_upload_path(self, filename: str) -> pathlib.Path:
         """Generate the upload path for the map file.
@@ -75,13 +98,10 @@ class CncMapFile(file_base.CncNetFileBaseModel):
         directory = self.cnc_map.get_map_directory_path()
         return pathlib.Path(directory, filename)
 
-    def generate_version_number(self) -> int:
-        previous_version: CncMapFile = (
-            self.objects.filter(cnc_map_id=self.cnc_map_id)
-            .order_by("-version")
-            .only("version")
-            .first()
-        )
-        if not previous_version:
-            return 1
-        return previous_version.version + 1
+    @staticmethod
+    def generate_upload_to(instance: "CncMapFile", filename: str) -> pathlib.Path:
+        filename = pathlib.Path(filename)
+        final_file_name = f"{filename.stem}_v{instance.version}{filename.suffix}"
+
+        # e.g. "yr/maps/battle/CNC_NET_MAP_ID/streets_of_gold_v1.map
+        return pathlib.Path(instance.cnc_map.get_map_directory_path(), final_file_name)
