@@ -1,6 +1,9 @@
 import base64
+from PIL import BmpImagePlugin, Image
 import configparser
 import enum
+import io
+
 import lzo
 
 from django.conf import settings
@@ -26,14 +29,14 @@ class MapParserService:
     file: File
     parser: configparser.ConfigParser
 
-    required_sections: t.Set[str] = {
-        MapSections.HEADER,
-        MapSections.BASIC,
-        MapSections.MAP,
-        MapSections.OVERLAY_PACK,
-        MapSections.OVERLAY_DATA,
-        MapSections.SPECIAL_FLAGS,
-        MapSections.DIGEST,
+    required_sections: t.Set[MapSections] = {
+        MapSections.HEADER.value,
+        MapSections.BASIC.value,
+        MapSections.MAP.value,
+        MapSections.OVERLAY_PACK.value,
+        MapSections.OVERLAY_DATA.value,
+        MapSections.SPECIAL_FLAGS.value,
+        MapSections.DIGEST.value,
     }
 
     class ErrorMsg(enum.StrEnum):
@@ -143,18 +146,51 @@ class MapParserService:
         # byte[0] and [1] specify the compressed block size
         # byte[2] and [3] specify the size of the block when uncompressed.
         # The uncompressed block is Blue, green, red 8, 8, 8 bit (24bits). Each bit defines the color from 0-255.
-        shifted = preview_bytes[0] << 2
-        test_compressed = int.from_bytes(
-            bytearray(preview_bytes)[0:1] + bytearray(preview_bytes)[1:2], "big"
-        )
-        test_uncompressed = int.from_bytes(
-            bytearray(preview_bytes)[2:3] + bytearray(preview_bytes)[3:4], "big"
-        )
-        # lzo.decompress()
-        for p_byte in preview_bytes:
-            pass
-        filename = (
-            settings.STATICFILES_DIRS[0] / "test.bmp"
-        )  # I assume you have a way of picking unique filenames
+
+        byte_destination = io.BytesIO()
+        read_bytes = written_bytes = 0
+        while True:
+            if read_bytes >= decompress:
+                break
+            size_compressed = int.from_bytes(
+                preview_bytes[read_bytes : read_bytes + 2],
+                byteorder="little",
+                signed=False,
+            )
+            read_bytes += 2
+            size_uncompressed = int.from_bytes(
+                preview_bytes[read_bytes : read_bytes + 2],
+                byteorder="little",
+                signed=False,
+            )
+            read_bytes += 2
+
+            if size_compressed == 0 or size_uncompressed == 0:
+                break
+
+            compressed_size_exceeds_source = read_bytes + size_compressed > len(
+                preview_bytes
+            )
+            uncompressed_size_exceeds_destination = (
+                written_bytes + size_uncompressed > decompress
+            )
+            if compressed_size_exceeds_source or uncompressed_size_exceeds_destination:
+                raise Exception(
+                    "Preview data does not match preview size or the data is corrupted, unable to extract preview."
+                )
+
+            block = preview_bytes[read_bytes : read_bytes + size_compressed]
+            uncompressed_block = lzo.decompress(block, False, size_uncompressed)
+            byte_destination.write(uncompressed_block)
+
+            read_bytes += size_compressed
+            written_bytes += size_uncompressed
+
+        byte_destination.seek(0)
+        # test = byte_destination.read()
+        # filename = (
+        #     settings.STATICFILES_DIRS[0] / "test.bmp"
+        # )  # I assume you have a way of picking unique filenames
+        # img = Image.open(byte_destination, "r", formats=["BMP"])
         # with open(filename, 'wb') as f:
-        #     f.write(preview_b)
+        #     f.write(byte_destination.read())
