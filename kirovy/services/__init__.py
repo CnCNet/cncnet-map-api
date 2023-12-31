@@ -1,16 +1,22 @@
 import base64
-from PIL import BmpImagePlugin, Image
+import logging
+
+from PIL import Image
 import configparser
 import enum
 import io
 
 import lzo
 
-from django.conf import settings
 from django.core.files import File
+from rest_framework import status
+
 from kirovy import typing as t, exceptions
 
 from django.utils.translation import gettext as _
+
+
+LOGGER = logging.getLogger("MapParserService")
 
 
 class MapSections(enum.StrEnum):
@@ -38,6 +44,7 @@ class MapParserService:
         MapSections.SPECIAL_FLAGS.value,
         MapSections.DIGEST.value,
     }
+    map_sections = MapSections  # Make it so we don't always need to import MapSections with the parser.
 
     class ErrorMsg(enum.StrEnum):
         NO_BINARY = _("Binary files not allowed.")
@@ -52,6 +59,10 @@ class MapParserService:
 
     def _parse_file(self) -> None:
         """Parse ``self.file`` with ``self.parser``.
+
+        2d C&C game maps are just INI files. This function parses the INI into data structure.
+
+        Raises exceptions for the map not being parsable, or the map missing necessary sections.
 
         :return:
             Nothing, but :attr:`~kirovy.services.MapParserService.parser` will be modified.
@@ -124,73 +135,188 @@ class MapParserService:
         except UnicodeDecodeError:
             return False
 
-    def extract_preview(self):
-        if not self.parser.has_section(MapSections.PREVIEW_PACK):
-            return b""
+    def extract_preview(self) -> t.Optional[Image.Image]:
+        """Extract the map preview if it exists.
 
-        size = [
+        Map previews are bytes that have been LZO compressed, base64 encoded, then split
+        amongst all the keys in the ``PreviewPack`` section of a map.
+
+        Each pixel in the preview is stored as 3 bytes in the order: Blue, Green, Red.
+        aka, ``BGR888``.
+
+        The width and height of the bitmap is stored in ``Preview.Size``.
+
+        The byte size of the decompressed preview is the ``width * height * 3``
+        (3 bytes per pixel for the three colors.)
+
+        To extract a preview:
+            - Get the size from ``Preview.Size``
+            - Join all the values in the INI section, ``PreviewPack``.
+            - Base64 decode the joined string
+            - LZO decompress the decoded bytes
+            - Convert the bytes from ``BGR`` to ``RGB``
+            - Shove the bytes into a bitmap image.
+
+        :return:
+            The preview image if we were able to extract it.
+            Will be ``None`` if there was no preview.
+        :raises exceptions.MapPreviewCorrupted:
+            Raised by :func:`~kirovy.services.MapParserService._decompress_preview_from_base64`
+            and should be bubbled up to the user.
+        """
+        if not self.parser.has_section(MapSections.PREVIEW_PACK):
+            LOGGER.debug("No preview pack")
+            return None
+
+        # The map preview image size will be ``0,0,width,height``.
+        # We cannot extract the preview if this section is missing, or the Size key value is invalid.
+        preview_size = [
             int(x)
             for x in self.parser.get(MapSections.PREVIEW, "Size", fallback="").split(
                 ","
             )
         ]
-        if len(size) != 4:
-            return b""
+        if len(preview_size) != 4:
+            LOGGER.debug("No preview size")
+            return None
 
-        width, height = size[2], size[3]
-        decompress = width * height * 3
+        # width and height are needed to lzo decompress the preview data.
+        width, height = preview_size[2], preview_size[3]
+        decompressed_preview = self._decompress_preview_from_base64(width, height)
+        return self._create_preview_bitmap(width, height, decompressed_preview)
 
-        preview_b64 = "".join(self.parser[MapSections.PREVIEW_PACK].values())
-        preview_bytes = base64.b64decode(preview_b64)
+    def _decompress_preview_from_base64(self, width: int, height: int) -> io.BytesIO:
+        """Decode the preview bytes from Base64, then lzo decompress the bytes.
+
+        :param width:
+            The pixel width of the preview image.
+        :param height:
+            The pixel height of the preview image.
+        :return:
+            The decoded and decompressed bytes for the preview.
+        :raises exceptions.MapPreviewCorrupted:
+            Raised when the preview is corrupted in some way:
+                - Preview data decompresses to be larger than we expected from the ``Preview.Size``
+                - One of the LZO blocks causes us to read more bytes than exist in the compressed data.
+                - LZO decompression fails.
+        """
+        # Each pixel in the bitmap should be 3 bytes: blue, green, red 0-255 color values.
+        # The file size of the bitmap will be the width, times the height, times 3 bytes for each pixel.
+        decompressed_expected_size = width * height * 3
+
+        # The preview base64 is split across the keys in the preview pack section.
+        preview_b64: str = "".join(self.parser[MapSections.PREVIEW_PACK].values())
+        compressed_preview: bytes = base64.b64decode(preview_b64)
+
         # Each pixel block is a header, and the block data.
-        # byte[0] and [1] specify the compressed block size
+        # byte[0] and [1] specify the compressed block size.
         # byte[2] and [3] specify the size of the block when uncompressed.
-        # The uncompressed block is Blue, green, red 8, 8, 8 bit (24bits). Each bit defines the color from 0-255.
-
-        byte_destination = io.BytesIO()
+        # The header bytes are all little endian.
+        # The uncompressed block is a group of pixels.
+        decompressed_preview = io.BytesIO()
         read_bytes = written_bytes = 0
         while True:
-            if read_bytes >= decompress:
-                break
-            size_compressed = int.from_bytes(
-                preview_bytes[read_bytes : read_bytes + 2],
-                byteorder="little",
-                signed=False,
-            )
-            read_bytes += 2
-            size_uncompressed = int.from_bytes(
-                preview_bytes[read_bytes : read_bytes + 2],
-                byteorder="little",
-                signed=False,
-            )
-            read_bytes += 2
-
-            if size_compressed == 0 or size_uncompressed == 0:
+            # We're done reading if we have read all the bytes as defined by ``Preview.Size``.
+            if read_bytes >= decompressed_expected_size:
                 break
 
-            compressed_size_exceeds_source = read_bytes + size_compressed > len(
-                preview_bytes
+            # Read the compressed size of the block. The size is stored as a two byte integer
+            block_size_compressed, read_bytes = self._read_16bit_int_le(
+                compressed_preview, read_bytes, 2
             )
+
+            # Read the uncompressed size of the block. The size is stored as a two byte integer
+            block_size_uncompressed, read_bytes = self._read_16bit_int_le(
+                compressed_preview, read_bytes, 2
+            )
+
+            # If the block sizes are 0 then we reached the end of the actual pixel data.
+            if block_size_compressed == 0 or block_size_uncompressed == 0:
+                break
+
+            # Reading the expected compressed bytes will exceed the size of the compressed data.
+            # This means the ``Preview.Size`` was wrong, or the preview data is corrupt.
+            projected_read_byte_count = read_bytes + block_size_compressed
+            compressed_size_exceeds_source = projected_read_byte_count > len(
+                compressed_preview
+            )
+
+            # The size of the written bytes will exceed the expected uncompressed image size.
+            # This means the ``Preview.Size`` was wrong, or the preview data is corrupt.
+            projected_written_byte_count = written_bytes + block_size_uncompressed
             uncompressed_size_exceeds_destination = (
-                written_bytes + size_uncompressed > decompress
+                projected_written_byte_count > decompressed_expected_size
             )
+            error_params = {
+                "decompressed_expected_size": decompressed_expected_size,
+                "projected_decompressed_size": projected_written_byte_count,
+                "projected_read_byte_count": projected_read_byte_count,
+                "preview_pack_size": len(compressed_preview),
+            }
             if compressed_size_exceeds_source or uncompressed_size_exceeds_destination:
-                raise Exception(
-                    "Preview data does not match preview size or the data is corrupted, unable to extract preview."
+                # Raise an error instead of returning None, because we need to inform the user that their map
+                # is corrupted in some way.
+                raise exceptions.MapPreviewCorrupted(
+                    "Preview data does not match preview size or the data is corrupted, unable to extract preview.",
+                    code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    params=error_params,
                 )
 
-            block = preview_bytes[read_bytes : read_bytes + size_compressed]
-            uncompressed_block = lzo.decompress(block, False, size_uncompressed)
-            byte_destination.write(uncompressed_block)
+            # Slice off the compressed block of bytes, according to the block header.
+            compressed_block = compressed_preview[
+                read_bytes : read_bytes + block_size_compressed
+            ]
 
-            read_bytes += size_compressed
-            written_bytes += size_uncompressed
+            # Decompress the block.
+            try:
+                # decompress without the header because we manually grabbed the necessary bytes.
+                uncompressed_block = lzo.decompress(
+                    compressed_block, False, block_size_uncompressed
+                )
+            except lzo.error as e:
+                raise exceptions.MapPreviewCorrupted(
+                    "Could not decompress the preview. Preview data is corrupted in some way.",
+                    code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    params=error_params,
+                ) from e
+            else:
+                # Write the decompressed bytes to the returned io stream.
+                decompressed_preview.write(uncompressed_block)
 
-        byte_destination.seek(0)
-        # test = byte_destination.read()
-        # filename = (
-        #     settings.STATICFILES_DIRS[0] / "test.bmp"
-        # )  # I assume you have a way of picking unique filenames
-        # img = Image.open(byte_destination, "r", formats=["BMP"])
-        # with open(filename, 'wb') as f:
-        #     f.write(byte_destination.read())
+            # Notate how many blocks we've read and written for error checking in the next iteration.
+            read_bytes += block_size_compressed
+            written_bytes += block_size_uncompressed
+
+        decompressed_preview.seek(0)
+        return decompressed_preview
+
+    @staticmethod
+    def _read_16bit_int_le(
+        compressed_preview: bytes, start: int, bytes_to_read: int
+    ) -> t.Tuple[int, int]:
+        """Read a little-endian 16bit integer from bytes.
+
+        :param compressed_preview:
+            The byte stream.
+        :param start:
+            Which byte to start reading from.
+        :return:
+            - [0] The integer that was read
+            - [1] The next byte position in the byte stream. The byte index after the int we just read.
+        """
+        stop = start + bytes_to_read
+        read = int.from_bytes(
+            compressed_preview[start:stop],
+            byteorder="little",
+            signed=False,
+        )
+        return read, stop
+
+    def _create_preview_bitmap(
+        self, width: int, height: int, decompressed_preview: io.BytesIO
+    ) -> t.Optional[Image.Image]:
+        decompressed_preview.seek(0)
+        img = Image.frombytes(
+            "RGB", (width, height), decompressed_preview.read(), "raw", "RGB", 0, -1
+        )
+        return img

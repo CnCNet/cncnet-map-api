@@ -43,6 +43,18 @@ def test_map_parser_service__fails_missing_sections(file_map_missing_sections):
     assert "Alliance" not in exc_info.value.params["missing"]
 
 
-def test_map_service_valid_map(file_map_valid):
+def test_map_service_can_extract_preview(file_map_valid, tmp_media_root):
+    # These come from the fixture file.
+    width = 160
+    height = 80
     map_service = MapParserService(file_map_valid)
-    assert map_service.extract_preview()
+    img = map_service.extract_preview()
+
+    assert img is not None
+    assert img.width == width
+    assert img.height == height
+
+    assert (
+        map_service.parser.get(map_service.map_sections.PREVIEW, "Size")
+        == f"0,0,{width},{height}"
+    )

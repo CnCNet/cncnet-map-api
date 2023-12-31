@@ -49,3 +49,9 @@ class InvalidMapFile(ValidationError):
     """Raised when a map can't be parsed or if it's missing a header."""
 
     pass
+
+
+class MapPreviewCorrupted(ValidationError):
+    """Raised when a map's ``Preview.Size`` doesn't match the ``PreviewPack`` data size."""
+
+    pass
