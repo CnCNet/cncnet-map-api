@@ -78,7 +78,10 @@ class CncGame(CncNetBaseModel):
     """If true then then this game will appear in the map database website."""
 
     allow_public_uploads = models.BooleanField(default=False)
-    """If true then users with :func:`~kirovy.models.cnc_user.CncUser.can_upload` can upload files for this game."""
+    """If true then users with :func:`~kirovy.models.cnc_user.CncUser.can_upload` can upload files for this game.
+
+    Does not affect temporary uploads via the multiplayer lobby.
+    """
 
     compatible_with_parent_maps = models.BooleanField(default=False, null=False)
     """If true then the maps from the parent game work in this game. e.g. RA2 maps work in YR."""

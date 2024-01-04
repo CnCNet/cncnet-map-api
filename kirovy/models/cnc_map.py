@@ -15,21 +15,52 @@ class MapCategory(CncNetBaseModel):
     slug = models.CharField(max_length=16)
 
 
-class CncMap(CncNetBaseModel):
+class CncMap(CncNetBaseModel, cnc_user.CncNetUserOwnedModel):
     """The Logical representation of a map for a Command & Conquer game.
 
     We have this as a separate model from the file model because later C&C's allow for various files
     like map previews, INI files, and string files, so this model will serve as a way to relate them all on the backend.
 
     :attr:`~kirovy.models.cnc_map.CncMap.id` will be assigned to ``[CncNetId]`` in the map file.
+
+    Gets ``cnc_user`` from :class:`~kirovy.models.cnc_user.CncNetUserOwnedModel`.
     """
 
     map_name = models.CharField(max_length=128)
     description = models.CharField(max_length=4096)
     cnc_game = models.ForeignKey(game_models.CncGame, models.PROTECT, null=False)
     category = models.ForeignKey(MapCategory, models.PROTECT, null=False)
-    cncnet_user = models.ForeignKey(
-        cnc_user.CncUser, on_delete=models.CASCADE, null=True
+    is_legacy = models.BooleanField(
+        default=False,
+        help_text="If true, this is an upload from the old cncnet database.",
+    )
+    """:attr:
+        This will be set for all maps that we bulk upload from the legacy cncnet map database.
+        It will never be set via the UI by regular users. Exceptions can be made if we find pld maps from the '00s.
+    """
+
+    is_published = models.BooleanField(
+        default=False,
+        help_text="If true, this map will show up in normal searches and feeds.",
+    )
+    """:attr:
+        Did the map maker set this map to be published? Published maps show up in normal search and feeds.
+        Maps will always be available via direct link, and users will be able to request non-published maps in searches.
+    """
+
+    is_temporary = models.BooleanField(
+        default=False,
+        help_text="If true, this will be deleted eventually. "
+        "This flag is to support sharing in multiplayer lobbies.",
+    )
+    """:attr:
+        Whether this map is temporary. We don't want to keep storing every map that is shared in a multiplayer lobby,
+        so this flag will be set when a map is uploaded via the multiplayer lobby. It will not show up in feeds
+        or searches. Won't have an owner until the client supports logging in.
+    """
+
+    is_reviewed = models.BooleanField(
+        default=False, help_text="If true, this map was reviewed by a staff member."
     )
 
     def next_version_number(self) -> int:

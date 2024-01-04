@@ -48,6 +48,20 @@ def file_map_valid(load_test_file) -> File:
 
 
 @pytest.fixture
+def file_map_snow(load_test_file) -> File:
+    file = load_test_file("non_divisible_by_four.yrm")
+    yield file
+    file.close()
+
+
+@pytest.fixture
+def file_map_desert(load_test_file) -> File:
+    file = load_test_file("desert.map")
+    yield file
+    file.close()
+
+
+@pytest.fixture
 def file_map_cant_parse(load_test_file) -> File:
     """Return a text file that is not valid INI."""
     file = load_test_file("map_file_cant_parse_as_ini.map")

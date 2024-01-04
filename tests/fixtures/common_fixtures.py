@@ -34,4 +34,8 @@ def jwt_header():
 @pytest.fixture(autouse=True)
 def tmp_media_root(tmp_path, settings):
     """Makes all file uploads go to tmp paths to not fill up developer drives."""
-    settings.MEDIA_ROOT = tmp_path / settings.MEDIA_ROOT
+    tmp_media = tmp_path / settings.MEDIA_ROOT
+    if not tmp_media.exists():
+        tmp_media.mkdir(parents=True)
+    settings.MEDIA_ROOT = tmp_media
+    return settings.MEDIA_ROOT
