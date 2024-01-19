@@ -3,6 +3,10 @@ All exceptions for our app belong in this package.
 """
 from django.core.exceptions import *  # Import django exceptions for use elsewhere.
 from typing import Optional
+from django.utils.translation import gettext_lazy as _
+
+
+from rest_framework.exceptions import UnsupportedMediaType
 
 from .auth_exceptions import *
 
@@ -55,3 +59,18 @@ class MapPreviewCorrupted(ValidationError):
     """Raised when a map's ``Preview.Size`` doesn't match the ``PreviewPack`` data size."""
 
     pass
+
+
+class GameNotSupportedError(UnsupportedMediaType):
+    """Raised when a game is not yet supported."""
+
+    default_detail = _('Game is not yet supported "{media_type}"')
+    default_code = "unsupported_game"
+
+    def __init__(
+        self,
+        game_name_or_slug: str,
+        detail: Optional[str] = None,
+        code: Optional[int] = None,
+    ):
+        super().__init__(game_name_or_slug, detail, code)

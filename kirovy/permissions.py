@@ -53,9 +53,28 @@ class CanEdit(CanUpload):
 
 
 class CanDelete(permissions.IsAdminUser):
-    """For now, only staff can delete things."""
+    """Check if a user can delete an object."""
 
     def has_object_permission(
         self, request: KirovyRequest, view: View, obj: models.Model
     ) -> bool:
+        # for now, only staff can delete.
         return request.user.is_staff
+
+
+class IsStaff(permissions.IsAuthenticated):
+    """Moderators, admins, and gods.
+
+    Use this instead of the DRF ``IsAdminUser``.
+    """
+
+    def has_permission(self, request: KirovyRequest, view: View) -> bool:
+        return super().has_permission(request, view) and request.user.is_staff
+
+
+class IsAdmin(permissions.IsAuthenticated):
+    """Admins and gods."""
+
+    def has_permission(self, request: KirovyRequest, view: View) -> bool:
+
+        return super().has_permission(request, view) and request.user.is_admin

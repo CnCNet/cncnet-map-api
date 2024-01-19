@@ -5,3 +5,4 @@ djangorestframework>=3.14.*, <4.0
 pyjwt[crypto]>=2.8.0
 pillow==10.*
 python-lzo==1.15
+ujson==5.*

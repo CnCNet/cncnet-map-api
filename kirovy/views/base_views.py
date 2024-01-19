@@ -6,11 +6,13 @@ from rest_framework import (
     generics as _g,
     permissions as _p,
     pagination as _pagination,
+    status,
 )
 from rest_framework.response import Response
 
 from kirovy import permissions
 from kirovy.request import KirovyRequest
+from kirovy.serializers import KirovySerializer
 
 
 class KirovyDefaultPagination(_pagination.PageNumberPagination):
@@ -29,6 +31,21 @@ class KirovyListCreateView(_g.ListCreateAPIView):
 
     permission_classes = [permissions.CanUpload | permissions.ReadOnly]
     pagination_class = KirovyDefaultPagination
+    request: KirovyRequest  # Added for type hinting. Populated by DRF ``.setup()``
+
+    def create(self, request: KirovyRequest, *args, **kwargs) -> Response:
+        data = request.data
+        if isinstance(data, dict) and issubclass(
+            self.get_serializer_class(), KirovySerializer
+        ):
+            data["last_modified_by_id"] = request.user.id
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(
+            serializer.data, status=status.HTTP_201_CREATED, headers=headers
+        )
 
 
 class KirovyRetrieveUpdateView(_g.RetrieveUpdateAPIView):
@@ -40,6 +57,7 @@ class KirovyRetrieveUpdateView(_g.RetrieveUpdateAPIView):
     the object. Bob's data doesn't have Alice's updates, so his stale data overwrites Alice's.
     """
 
+    request: KirovyRequest  # Added for type hinting. Populated by DRF ``.setup()``
     permission_classes = [permissions.CanEdit | permissions.ReadOnly]
 
     def put(self, request: KirovyRequest, *args, **kwargs) -> Response:
@@ -67,4 +85,5 @@ class KirovyDestroyView(_g.DestroyAPIView):
     For now, only admins can delete stuff.
     """
 
+    request: KirovyRequest  # Added for type hinting. Populated by DRF ``.setup()``
     permission_classes = [permissions.CanDelete | _p.IsAdminUser]

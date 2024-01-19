@@ -13,5 +13,13 @@ class CncNetBaseModel(models.Model):
     created = models.DateTimeField(auto_now_add=True, null=True)
     modified = models.DateTimeField(auto_now=True, null=True)
 
+    last_modified_by = models.ForeignKey(
+        "CncUser",
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="modified_%(class)s_set",
+    )
+    """:attr: The last user to modify this entry, if applicable."""
+
     class Meta:
         abstract = True

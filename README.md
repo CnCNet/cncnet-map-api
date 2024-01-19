@@ -35,7 +35,7 @@ Just set up your environment file and run the full docker compose
    - If the app doesn't run due to a missing required variable, add said variable to `example.env` because the person
    who made the variable forgot to do so.
 9. Run the `db` service in `docker-compose`
-10. Load your `.env` file into your shell, then migrate the database `./manage.py migrate`
+10. Load your `.env` file into your shell, (you can use `./load_env.sh`) then migrate the database `./manage.py migrate`
 11. `./manage.py runserver`
 
 I **strongly** recommend using PyCharm and the `.env` plugin for running the PyTests.

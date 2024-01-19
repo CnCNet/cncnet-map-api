@@ -40,14 +40,14 @@ def test_jwt():
     assert response.status_code == 200
 
 
-def test_jwt_endpoint(cnc_client, jwt_header, settings):
+def test_jwt_endpoint(raw_client, jwt_header, settings):
     """Test that the JWT test endpoint works when debug is enabled."""
     settings.DEBUG = True
-    response = cnc_client.get("/test/jwt", headers=jwt_header)
+    response = raw_client.get("/test/jwt", headers=jwt_header)
     assert response.status_code == status.HTTP_200_OK
     assert response.data == test_settings.TESTING_API_USERNAME
 
 
-def test_jwt_endpoint__debug_disabled(cnc_client, jwt_header):
-    response = cnc_client.get("/test/jwt", headers=jwt_header)
+def test_jwt_endpoint__debug_disabled(raw_client, jwt_header):
+    response = raw_client.get("/test/jwt", headers=jwt_header)
     assert response.status_code == status.HTTP_403_FORBIDDEN

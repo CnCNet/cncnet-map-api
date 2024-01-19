@@ -15,7 +15,7 @@ class MapCategory(CncNetBaseModel):
     slug = models.CharField(max_length=16)
 
 
-class CncMap(CncNetBaseModel, cnc_user.CncNetUserOwnedModel):
+class CncMap(cnc_user.CncNetUserOwnedModel):
     """The Logical representation of a map for a Command & Conquer game.
 
     We have this as a separate model from the file model because later C&C's allow for various files
@@ -26,8 +26,8 @@ class CncMap(CncNetBaseModel, cnc_user.CncNetUserOwnedModel):
     Gets ``cnc_user`` from :class:`~kirovy.models.cnc_user.CncNetUserOwnedModel`.
     """
 
-    map_name = models.CharField(max_length=128)
-    description = models.CharField(max_length=4096)
+    map_name = models.CharField(max_length=128, null=False)
+    description = models.CharField(max_length=4096, null=False)
     cnc_game = models.ForeignKey(game_models.CncGame, models.PROTECT, null=False)
     category = models.ForeignKey(MapCategory, models.PROTECT, null=False)
     is_legacy = models.BooleanField(
@@ -38,6 +38,13 @@ class CncMap(CncNetBaseModel, cnc_user.CncNetUserOwnedModel):
         This will be set for all maps that we bulk upload from the legacy cncnet map database.
         It will never be set via the UI by regular users. Exceptions can be made if we find pld maps from the '00s.
     """
+
+    legacy_upload_date = models.DateTimeField(
+        default=None,
+        null=True,
+        help_text="The original upload date for entries imported from the legacy map database.",
+    )
+    """:attr: Tracks the original upload dates for legacy maps, for historical reasons."""
 
     is_published = models.BooleanField(
         default=False,
@@ -62,6 +69,12 @@ class CncMap(CncNetBaseModel, cnc_user.CncNetUserOwnedModel):
     is_reviewed = models.BooleanField(
         default=False, help_text="If true, this map was reviewed by a staff member."
     )
+
+    is_banned = models.BooleanField(
+        default=False,
+        help_text="If true, this map will be hidden everywhere. Likely due to breaking a rule.",
+    )
+    """:attr: Keep banned maps around so we can keep track of rule-breakers."""
 
     def next_version_number(self) -> int:
         """Generate the next version to use for a map file.

@@ -1,4 +1,5 @@
 import enum
+from kirovy import typing as t
 
 from django.utils.translation import gettext as _
 
@@ -6,6 +7,82 @@ cnc_prefix = _("Command & Conquer:")
 
 cncnet_token_url = "https://ladder.cncnet.org/api/v1/auth/token"
 cncnet_user_url = "https://ladder.cncnet.org/api/v1/user/info"
+
+
+class CncnetUserGroup:
+    """A class with the user roles in the CnCNet Ladder API, and helpers for roles."""
+
+    USER: t.Literal["User"] = "User"
+    MOD: t.Literal["Moderator"] = "Moderator"
+    ADMIN: t.Literal["Admin"] = "Admin"
+    GOD: t.Literal["God"] = "God"
+    KANE: t.Literal["God"] = GOD
+
+    STAFF_ROLES: t.Set[t.LiteralString] = {MOD, ADMIN, GOD}
+    ADMIN_ROLES: t.Set[t.LiteralString] = {ADMIN, GOD}
+
+    RoleType = t.Union[
+        t.Type[USER],
+        t.Type[MOD],
+        t.Type[ADMIN],
+        t.Type[GOD],
+    ]
+
+    @staticmethod
+    def normalize_group_string_case(user_group: str) -> str:
+        """Normalize the case in a user group from the API.
+
+        This is here just in case a role without the correct capitalization sneaks
+        in. We want role checks to work regardless.
+
+        :param user_group:
+            A user group string from the ladder API.
+        :return:
+            The same string with the correct case, e.g. "user" becomes "User".
+        """
+        return user_group.lower().capitalize()
+
+    @classmethod
+    def is_staff(cls, user_group: str) -> bool:
+        """Check if a user group string is staff.
+
+        :param user_group:
+            The user group string from cncnet. This function
+            can handle inconsistent case, but roles from the Ladder API should be
+            capitalized, e.g. "User".
+        :return:
+            True if the user is staff or admin.
+        """
+        user_group = cls.normalize_group_string_case(user_group)
+        return user_group in cls.STAFF_ROLES or cls.is_admin(user_group)
+
+    @classmethod
+    def is_admin(cls, user_group: str) -> bool:
+        """Check if a user group string is admin.
+
+        :param user_group:
+            The user group string from cncnet. This function
+            can handle inconsistent case, but roles from the Ladder API should be
+            capitalized, e.g. "User".
+        :return:
+            True if the user is admin.
+        """
+        user_group = cls.normalize_group_string_case(user_group)
+        return user_group in cls.ADMIN_ROLES
+
+    @classmethod
+    def is_messiah(cls, user_group: str) -> bool:
+        """Check if a user group string is Kane, the Messiah.
+
+        :param user_group:
+            The user group string from cncnet. This function
+            can handle inconsistent case, but roles from the Ladder API should be
+            capitalized, e.g. "User".
+        :return:
+            True if the user is Kane, the Messiah.
+        """
+        user_group = cls.normalize_group_string_case(user_group)
+        return user_group == cls.KANE
 
 
 class GameSlugs(enum.StrEnum):

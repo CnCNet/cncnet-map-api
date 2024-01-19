@@ -3,15 +3,25 @@ import uuid
 from django.contrib.auth.models import AbstractBaseUser
 from django.db import models
 from django.utils.translation import gettext as _
-from kirovy import typing as t
+from kirovy import typing as t, constants
+from kirovy.models.cnc_base_model import CncNetBaseModel
 
 from kirovy.objects import CncnetUserInfo
 
 __all__ = ["CncUser"]
 
 
+class CncUserManager(models.Manager):
+    def get_by_cncnet_id(self, cncnet_id: int) -> t.Tuple["CncUser"]:
+        return self.filter(cncnet_id=cncnet_id).first()
+
+
 class CncUser(AbstractBaseUser):
-    STAFF_GROUPS: t.List[str] = []
+    CncnetUserGroup = constants.CncnetUserGroup
+    """:attr: The user group constants for convenience so you don't need ``import kirovy.constants`` everywhere."""
+
+    objects = CncUserManager()
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     cncnet_id = models.IntegerField(
         unique=True,
@@ -78,7 +88,12 @@ class CncUser(AbstractBaseUser):
     @property
     def is_staff(self) -> bool:
         self.refresh_from_db(fields=["group"])
-        return self.group in self.STAFF_GROUPS
+        return self.CncnetUserGroup.is_staff(self.group)
+
+    @property
+    def is_admin(self) -> bool:
+        self.refresh_from_db(fields=["group"])
+        return self.CncnetUserGroup.is_admin(self.group)
 
     @staticmethod
     def create_or_update_from_cncnet(user_dto: CncnetUserInfo) -> "CncUser":
@@ -114,19 +129,11 @@ class CncUser(AbstractBaseUser):
         return kirovy_user
 
 
-class CncNetUserOwnedModel(models.Model):
-    """A mixin model for any models that will be owned or modified by a user."""
+class CncNetUserOwnedModel(CncNetBaseModel):
+    """A mixin model for any models that will be owned by a user."""
 
     cnc_user = models.ForeignKey(CncUser, on_delete=models.PROTECT, null=True)
     """:attr: The user that owns this object, if it has an owner."""
-
-    last_modified_by = models.ForeignKey(
-        CncUser,
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name="modified_%(class)s_set",
-    )
-    """:attr: The last user to modify this entry, if applicable."""
 
     class Meta:
         abstract = True
