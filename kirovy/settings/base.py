@@ -131,9 +131,13 @@ CNC_GAME_IMAGE_DIRECTORY = "game_images/"
 
 
 MEDIA_ROOT = get_env_var("MEDIA_ROOT")
-CNC_MAP_DIRECTORY = MEDIA_ROOT + "maps/"
+""":attr: The directory where all user uploads will be stored."""
+
+CNC_MAP_DIRECTORY = "maps"
+""":attr: The directory, beneath the game slug, where map files will be stored."""
 
 STATICFILES_DIRS = (Path(BASE_DIR, STATIC_URL),)
+""":attr: Where uploaded files will be stored."""
 
 STATIC_ROOT = get_env_var("STATIC_ROOT")
 

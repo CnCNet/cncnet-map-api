@@ -1,6 +1,8 @@
 """
 Any types specific to our application should live in this package.
 """
+import uuid
+
 # import typing for re-export. This avoids having two different typing imports.
 from typing import *
 
@@ -17,3 +19,7 @@ DictStrAny = Dict[str, Any]
 
 TokenStr = str
 """:attr: a string that we get from the ``BEARER`` http header."""
+
+
+UuidStrOrUUID = Union[str, uuid.UUID]
+""":attr: A uuid or str representation of a UUID for saving to the database."""

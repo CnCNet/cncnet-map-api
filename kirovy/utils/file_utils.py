@@ -13,8 +13,11 @@ def hash_file_sha512(file: FieldFile, block_size=65536) -> str:
 
 
 def _hash_file(hasher: "_HASH", file: FieldFile, block_size: int) -> str:
-    with file.open("rb") as f:
-        for buf in iter(partial(f.read, block_size), b""):
-            hasher.update(buf)
+    file.seek(0)
+    file_contents = file.read()
+    if isinstance(file_contents, str):
+        file_contents = file_contents.encode()
+    hasher.update(file_contents)
+    file.seek(0)
 
     return hasher.hexdigest()
