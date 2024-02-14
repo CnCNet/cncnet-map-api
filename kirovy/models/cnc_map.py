@@ -2,8 +2,8 @@ import pathlib
 
 from django.conf import settings
 from django.db import models
+from django.utils import text as text_utils
 
-from kirovy import exceptions
 from kirovy.models import file_base
 from kirovy.models import cnc_game as game_models, cnc_user
 from kirovy.models.cnc_base_model import CncNetBaseModel
@@ -13,6 +13,37 @@ from kirovy import typing as t
 class MapCategory(CncNetBaseModel):
     name = models.CharField(max_length=120)
     slug = models.CharField(max_length=16)
+
+    def set_slug_from_name(
+        self, update_fields: t.Optional[t.List[str]] = None
+    ) -> t.Optional[t.List[str]]:
+        """Sets ``self.slug`` based on ``self.name``.
+
+        :param update_fields:
+            The ``update_fields`` from the ``.save`` call.
+        :return:
+            The ``update_fields`` for ``.save()``.
+        """
+        new_slug: str = text_utils.slugify(self.name, allow_unicode=False)[:16]
+        new_slug = new_slug.rstrip(
+            "-"
+        )  # Remove trailing hyphens if the 16th character was unlucky.
+        if new_slug != self.slug:
+            self.slug = new_slug
+            if update_fields and "slug" not in update_fields:
+                update_fields.append("slug")
+
+        return update_fields
+
+    def save(
+        self,
+        force_insert: bool = False,
+        force_update: bool = False,
+        using: t.Optional[str] = None,
+        update_fields: t.Optional[t.List[str]] = None,
+    ):
+        update_fields = self.set_slug_from_name(update_fields)
+        super().save(force_insert, force_update, using, update_fields)
 
 
 class CncMap(cnc_user.CncNetUserOwnedModel):

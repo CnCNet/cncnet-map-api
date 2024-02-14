@@ -1,16 +1,26 @@
 # CnCNet Map Browser API
 
+
 The backend for the CnCNet map browser.
 
 UI is here https://github.com/CnCNet/cncnet-map-ui
 
+
+# Kirovy
+
+
+The mascot for the backend API is Kirovy, by [Direct & Dominate](https://www.youtube.com/@DirectandDominate)
+
+![Kirovy enjoying his job](docs/images/kirovy_direct_and_dominate.png)
 
 # Development
 
 
 ## Frontend devs
 
-Just set up your environment file and run the full docker compose
+Just set up your environment file and run the full docker compose.
+
+[Example env file](example.env)
 
 ## Backend devs
 

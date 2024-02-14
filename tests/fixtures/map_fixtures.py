@@ -9,21 +9,19 @@ def create_cnc_map_category(db):
     """Return a function to create a map category."""
 
     def _inner(
-        name: str = "Battle",
-        slug: str = "battle",
+        name: str = "Halo Gen",
     ) -> MapCategory:
         """Create a map category.
 
         :param name:
             The category name, should match game modes, or be something like e.g. "Mission".
             Game modes are store in map file INI under ``Basic.GameMode``.
-        :param slug:
-            The slug of the category. Used for URL queries, file paths, etc.
+            The slug gets generated from this name
         :return:
             A category that can be used to create :class:`kirovy.models.cnc_map.CncMap` objects.
         """
-        category = MapCategory(name=name, slug=slug)
-        category.save(update_fields=["name", "slug"])
+        category = MapCategory(name=name)
+        category.save()
         category.refresh_from_db()
         return category
 

@@ -96,7 +96,7 @@ class KirovyClient(Client):
 
         if cncnet_user_info and not kirovy_user:
             # Don't let programmers attempt to emulate creating a user, via JWT, when the user already exists.
-            assert not CncUser.objects.get_by_cncnet_id(cncnet_user_info.id)
+            assert not CncUser.objects.find_by_cncnet_id(cncnet_user_info.id)
         self.kirovy_user = kirovy_user
         self.cncnet_user_info = cncnet_user_info
 

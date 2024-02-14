@@ -23,3 +23,14 @@ TokenStr = str
 
 UuidStrOrUUID = Union[str, uuid.UUID]
 """:attr: A uuid or str representation of a UUID for saving to the database."""
+
+
+class PaginationMetadata(TypedDict):
+    offset: int
+    limit: NotRequired[int]
+    remaining_count: NotRequired[int]
+
+
+class ListResponseData(TypedDict):
+    results: List[DictStrAny]
+    pagination_metadata: NotRequired[PaginationMetadata]
