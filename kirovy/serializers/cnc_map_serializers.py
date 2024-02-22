@@ -39,10 +39,13 @@ class CncMapBaseSerializer(CncNetUserOwnedModelSerializer):
         queryset=CncGame.objects.all(),
         pk_field=serializers.UUIDField(),
     )
-    category_id = serializers.PrimaryKeyRelatedField(
-        source="category",
+    category_ids = serializers.PrimaryKeyRelatedField(
+        source="categories",
         queryset=cnc_map.MapCategory.objects.all(),
         pk_field=serializers.UUIDField(),
+        many=True,
+        allow_null=False,
+        allow_empty=False,
     )
     is_published = serializers.BooleanField(
         default=False,
@@ -63,5 +66,5 @@ class CncMapBaseSerializer(CncNetUserOwnedModelSerializer):
 
     class Meta:
         model = cnc_map.CncMap
-        exclude = ["cnc_game", "category"]
+        exclude = ["cnc_game", "categories"]
         fields = "__all__"

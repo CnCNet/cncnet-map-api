@@ -289,10 +289,8 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name="cncmap",
-            name="category",
-            field=models.ForeignKey(
-                on_delete=django.db.models.deletion.PROTECT, to="kirovy.mapcategory"
-            ),
+            name="categories",
+            field=models.ManyToManyField(to="kirovy.mapcategory"),
         ),
         migrations.AddField(
             model_name="cncmap",

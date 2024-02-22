@@ -17,9 +17,34 @@ def test_cnc_map_invalid_file_extension(
     assert extension_mix.extension in str(exc_info.value)
 
 
-def test_cnc_map_version(
-    game_yuri, extension_map, extension_mix, file_map_valid, cnc_map
+def test_cnc_map_generate_upload_to(
+    game_yuri, extension_map, file_map_desert, cnc_map, settings
 ):
+    """Test that we generate the correct upload path for a map file.
+
+    This test will fail if you alter the initial migrations.
+    """
+    settings.CNC_MAP_DIRECTORY = (
+        "worlds"  # Change default to check that the settings control the upload path.
+    )
+    expected_path = pathlib.Path(
+        settings.MEDIA_ROOT, "yr", "worlds", str(cnc_map.id), "desert_v1.map"
+    )
+    saved_map = CncMapFile(
+        height=117,  # doesn't matter for this test.
+        width=117,  # doesn't matter for this test.
+        file=file_map_desert,
+        file_extension=extension_map,
+        cnc_map=cnc_map,
+        cnc_game=game_yuri,
+    )
+    saved_map.save()
+    saved_map.refresh_from_db()
+
+    assert saved_map.file.path == str(expected_path)
+
+
+def test_cnc_map_version(game_yuri, extension_map, file_map_valid, cnc_map):
     """Test saving two map files to one map will increment the version and place both files in the same directory."""
     map1 = CncMapFile(
         height=10,

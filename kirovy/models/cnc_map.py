@@ -60,7 +60,7 @@ class CncMap(cnc_user.CncNetUserOwnedModel):
     map_name = models.CharField(max_length=128, null=False)
     description = models.CharField(max_length=4096, null=False)
     cnc_game = models.ForeignKey(game_models.CncGame, models.PROTECT, null=False)
-    category = models.ForeignKey(MapCategory, models.PROTECT, null=False)
+    categories = models.ManyToManyField(MapCategory)
     is_legacy = models.BooleanField(
         default=False,
         help_text="If true, this is an upload from the old cncnet database.",
@@ -132,7 +132,6 @@ class CncMap(cnc_user.CncNetUserOwnedModel):
         return pathlib.Path(
             self.cnc_game.slug,
             settings.CNC_MAP_DIRECTORY,
-            self.category.slug,
             str(self.id),
         )
 
@@ -175,8 +174,16 @@ class CncMapFile(file_base.CncNetFileBaseModel):
 
     @staticmethod
     def generate_upload_to(instance: "CncMapFile", filename: str) -> pathlib.Path:
+        """Generate the path to upload map files to.
+
+        :param instance:
+        :param filename:
+            The filename of the uploaded file.
+        :return:
+            Path to upload map to relative to :attr:`~kirovy.settings.base.MEDIA_ROOT`.
+        """
         filename = pathlib.Path(filename)
         final_file_name = f"{filename.stem}_v{instance.version}{filename.suffix}"
 
-        # e.g. "yr/maps/battle/CNC_NET_MAP_ID/streets_of_gold_v1.map
+        # e.g. "yr/maps/CNC_NET_MAP_ID/streets_of_gold_v1.map
         return pathlib.Path(instance.cnc_map.get_map_directory_path(), final_file_name)
