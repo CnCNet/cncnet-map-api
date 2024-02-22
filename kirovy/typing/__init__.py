@@ -24,6 +24,10 @@ TokenStr = str
 UuidStrOrUUID = Union[str, uuid.UUID]
 """:attr: A uuid or str representation of a UUID for saving to the database."""
 
+UiPermissionName = str
+""":attr: A string passed to the UI to show/hide certain features. Does not control backend permissions, this is just
+for UX."""
+
 
 class PaginationMetadata(TypedDict):
     offset: int
