@@ -26,3 +26,17 @@ services:
       - .env
     depends_on:
       - db
+  test:
+    build:
+      context: ./
+      dockerfile: test.DockerFile
+    volumes:
+      - .:/cncnet-map-api
+    env_file:
+      - .env
+    environment:
+      POSTGRES_TEST_HOST: db  # Necessary to connect to docker db. Overrides the .env setting.
+    depends_on:
+      - db
+    command:
+      - pytest

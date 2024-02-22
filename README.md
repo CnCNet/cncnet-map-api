@@ -34,7 +34,7 @@ Just set up your environment file and run the full docker compose.
    - Setup the virtual environments `pyenv virtualenv 3.12 cncnet-map-api`
    - Set the virtual enviornment for the directory `pyenv local cncnet-map-api`
 6. Setup requirements `pip install -r requirements-dev.txt`
-   -  On Apple Silicon you'll need to run
+   -  On Apple Silicon you'll need to install lzo with `brew install lzo` then run
       `CFLAGS=-I$(brew --prefix)/include LDFLAGS=-L$(brew --prefix)/lib pip install -r requirements-dev.txt`
       to get `python-lzo` to install. You shouldn't need to include those flags again unless `python-lzo` updates.
 7. Install the pre-commit hooks `pre-commit install`

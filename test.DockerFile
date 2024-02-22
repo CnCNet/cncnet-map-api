@@ -14,7 +14,4 @@ COPY start.sh /cncnet-map-api
 
 RUN apt-get update && apt-get install -y liblzo2-dev
 RUN pip install --upgrade pip
-RUN CFLAGS=-I$(brew --prefix)/include LDFLAGS=-L$(brew --prefix)/lib pip install -r ./requirements-dev.txt
-
-RUN chmod +x /cncnet-map-api/start.sh
-ENTRYPOINT "/cncnet-map-api/start.sh"
+RUN CFLAGS=-I$(brew --prefix)/include LDFLAGS=-L$(brew --prefix)/lib pip install -r requirements-dev.txt
