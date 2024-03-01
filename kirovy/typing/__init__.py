@@ -35,6 +35,14 @@ class PaginationMetadata(TypedDict):
     remaining_count: NotRequired[int]
 
 
-class ListResponseData(TypedDict):
+class BaseResponseData(TypedDict):
+    message: NotRequired[str]
+
+
+class ListResponseData(BaseResponseData):
     results: List[DictStrAny]
     pagination_metadata: NotRequired[PaginationMetadata]
+
+
+class ResponseData(TypedDict):
+    result: DictStrAny

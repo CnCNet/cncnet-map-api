@@ -16,10 +16,11 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
-from kirovy.views import test, cnc_map_views
+from kirovy.views import test, cnc_map_views, permission_views
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("test/jwt", test.TestJwt.as_view()),
     path("map-categories/", cnc_map_views.MapCategoryListCreateView.as_view()),
+    path("ui-permissions/", permission_views.ListPermissionForAuthUser.as_view()),
 ]

@@ -7,12 +7,16 @@ from kirovy.models import cnc_user
 from kirovy.models.cnc_base_model import CncNetBaseModel
 from kirovy.request import KirovyRequest
 
+_C = t.TypeVar("_C", bound=t.Callable)
 
-class StaticPermission(t.Protocol):
+
+class StaticPermission(t.Protocol[_C]):
     """Static permissions are permissions that just have a ``has_permission`` method.
 
     Object permissions have ``has_object_permission`` and are specific to an object.
     """
+
+    __call__: _C  # Make callable so type checker doesn't whine about calling the classes.
 
     def has_permission(self, request: KirovyRequest, view: View) -> bool:
         ...
@@ -99,10 +103,14 @@ class UiPermissions:
     [DRF permission workflow](https://www.django-rest-framework.org/api-guide/permissions/).
     """
 
+    SHOW_STAFF_CONTROLS: t.Final[str] = "show_staff_controls"
+    SHOW_UPLOAD_BUTTON: t.Final[str] = "show_upload_button"
+    SHOW_ADMIN_CONTROLS: t.Final[str] = "show_admin_controls"
+
     static_permissions: t.Dict[t.UiPermissionName, StaticPermission] = {
-        "show_staff_controls": IsStaff,
-        "show_upload_button": CanUpload,
-        "show_admin_controls": IsAdmin,
+        SHOW_STAFF_CONTROLS: IsStaff,
+        SHOW_UPLOAD_BUTTON: CanUpload,
+        SHOW_ADMIN_CONTROLS: IsAdmin,
     }
 
     @classmethod
@@ -116,12 +124,14 @@ class UiPermissions:
         permission checks on the views.
 
         :param request:
+            The request for the API call.
         :param view:
+            The view instance itself.
         :return:
             The dictionary of permission names with a bool representing if the user has that permission.
         """
         ui_permissions: t.Dict[t.UiPermissionName, bool] = {}
         for ui_name, permission_cls in cls.static_permissions.items():
-            ui_permissions[ui_name] = permission_cls.has_permission(request, view)
+            ui_permissions[ui_name] = permission_cls().has_permission(request, view)
 
         return ui_permissions

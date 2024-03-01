@@ -75,3 +75,8 @@ def secret_key_validator(key: str, value: str) -> NoReturn:
             key,
             f"EnvVar failed validation, length less than {MINIMUM_SECRET_KEY_LENGTH}",
         )
+
+
+def not_allowed_on_prod(key: str, value: bool) -> None:
+    if value and "prod" in get_env_var("RUN_ENVIRONMENT", "dev").lower():
+        raise exceptions.ConfigurationException(key, "Cannot be enabled on prod.")

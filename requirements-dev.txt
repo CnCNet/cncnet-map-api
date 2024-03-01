@@ -1,5 +1,6 @@
 -r requirements.txt
 pytest==7.*
+pytest-mock==3.*
 black==22.*
 pre-commit==2.*
 pytest-django==4.5.2

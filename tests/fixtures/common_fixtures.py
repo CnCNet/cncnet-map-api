@@ -5,6 +5,7 @@ from unittest import mock
 import pytest
 import requests
 import ujson
+from django.contrib.auth.models import AnonymousUser
 from django.test import Client
 from django.conf import (
     settings as _settings,
@@ -77,7 +78,7 @@ class KirovyClient(Client):
 
     def set_active_user(
         self,
-        kirovy_user: t.Optional[CncUser] = None,
+        kirovy_user: t.Optional[t.Union[CncUser, AnonymousUser]] = None,
         cncnet_user_info: t.Optional[objects.CncnetUserInfo] = None,
     ) -> None:
         """Set the active user for requests.
@@ -184,7 +185,7 @@ def create_client(db):
     """
 
     def _inner(
-        active_user: t.Optional[CncUser] = None,
+        active_user: t.Optional[t.Union[CncUser, AnonymousUser]] = None,
         cnc_user_info: t.Optional[objects.CncnetUserInfo] = None,
     ) -> KirovyClient:
         skip_if_no_django()
@@ -243,9 +244,36 @@ def create_kirovy_user(db):
 
 
 @pytest.fixture
-def user(create_kirovy_user):
+def user(create_kirovy_user) -> CncUser:
     """Convenience method to create a user."""
     return create_kirovy_user()
+
+
+@pytest.fixture
+def banned_user(create_kirovy_user) -> CncUser:
+    """Returns a user that is verified, but is banned."""
+    return create_kirovy_user(
+        username="MendicantBias",
+        verified_email=True,
+        verified_map_uploader=True,
+        cncnet_id=49,
+        is_banned=True,
+        ban_count=2,
+        ban_date=datetime.datetime.min,
+        ban_expires=datetime.datetime(2552, 12, 11),
+        ban_reason="Siding with the shaping sickness",
+    )
+
+
+@pytest.fixture
+def non_verified_user(create_kirovy_user) -> CncUser:
+    """Returns a user that doesn't have a verified uploader badge, nor verified email."""
+    return create_kirovy_user(
+        cncnet_id=123123,
+        username="sockpuppet1@example.com",
+        verified_email=False,
+        verified_map_uploader=False,
+    )
 
 
 @pytest.fixture
@@ -273,9 +301,27 @@ def god(create_kirovy_user) -> CncUser:
 
 
 @pytest.fixture
+def client_anonymous(create_client) -> KirovyClient:
+    """Returns a client with a user that isn't signed in."""
+    return create_client(AnonymousUser())
+
+
+@pytest.fixture
 def client_user(user, create_client) -> KirovyClient:
     """Returns a client with an active admin user."""
     return create_client(user)
+
+
+@pytest.fixture
+def client_not_verified(non_verified_user, create_client) -> KirovyClient:
+    """Returns a client for a user that hasn't verified their email, and doesn't have a verified uploader badge."""
+    return create_client(non_verified_user)
+
+
+@pytest.fixture
+def client_banned(banned_user, create_client) -> KirovyClient:
+    """Returns a client for a banned user."""
+    return create_client(banned_user)
 
 
 @pytest.fixture
