@@ -11,7 +11,11 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
 from pathlib import Path
-from kirovy.utils.settings_utils import get_env_var, secret_key_validator
+from kirovy.utils.settings_utils import (
+    get_env_var,
+    secret_key_validator,
+    not_allowed_on_prod,
+)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -23,7 +27,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 SECRET_KEY = get_env_var("SECRET_KEY", validation_callback=secret_key_validator)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = get_env_var("DEBUG", False)
+DEBUG = get_env_var("DEBUG", False, validation_callback=not_allowed_on_prod)
 
 ALLOWED_HOSTS = []
 
@@ -147,3 +151,6 @@ STATIC_ROOT = get_env_var("STATIC_ROOT")
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "kirovy.CncUser"
+
+
+RUN_ENVIRONMENT = get_env_var("RUN_ENVIRONMENT", "dev")

@@ -1,7 +1,7 @@
 from kirovy.settings.base import *
 
-TESTING_API_USERNAME = get_env_var("TESTING_API_USERNAME")
-TESTING_API_PASSWORD = get_env_var("TESTING_API_PASSWORD")
+TESTING_API_USERNAME = get_env_var("TESTING_API_USERNAME", "seth@brotherhood.nod")
+TESTING_API_PASSWORD = get_env_var("TESTING_API_PASSWORD", "ripbozo1")
 
 DATABASES = {
     "default": {

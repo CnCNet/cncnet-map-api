@@ -85,6 +85,12 @@ class CncnetUserGroup:
         return user_group == cls.KANE
 
 
+class MigrationUser:
+    ID = -1
+    USERNAME = "MobileConstructionVehicle_Migrator"
+    GROUP = CncnetUserGroup.USER
+
+
 class GameSlugs(enum.StrEnum):
     """The slugs for each game / total conversion mod.
 

@@ -5,15 +5,15 @@ from kirovy.models import cnc_map, CncGame, CncUser, MapCategory
 
 class MapCategorySerializer(KirovySerializer):
     name = serializers.CharField(min_length=3)
-    slug = serializers.CharField(min_length=2)
+    slug = serializers.CharField(min_length=2, read_only=True)
 
     def create(self, validated_data: dict) -> MapCategory:
         return MapCategory.objects.create(**validated_data)
 
     def update(self, instance: MapCategory, validated_data: dict) -> MapCategory:
         instance.name = validated_data.get("name", instance.name)
-        instance.slug = validated_data.get("slug", instance.slug)
         instance.last_modified_by_id = validated_data.get("last_modified_by_id", None)
+        # slug is automatically set in ``.save``.
         instance.save(update_fields=["name", "slug", "last_modified_by_id"])
         instance.refresh_from_db()
         return instance
@@ -39,10 +39,13 @@ class CncMapBaseSerializer(CncNetUserOwnedModelSerializer):
         queryset=CncGame.objects.all(),
         pk_field=serializers.UUIDField(),
     )
-    category_id = serializers.PrimaryKeyRelatedField(
-        source="category",
+    category_ids = serializers.PrimaryKeyRelatedField(
+        source="categories",
         queryset=cnc_map.MapCategory.objects.all(),
         pk_field=serializers.UUIDField(),
+        many=True,
+        allow_null=False,
+        allow_empty=False,
     )
     is_published = serializers.BooleanField(
         default=False,
@@ -63,5 +66,5 @@ class CncMapBaseSerializer(CncNetUserOwnedModelSerializer):
 
     class Meta:
         model = cnc_map.CncMap
-        exclude = ["cnc_game", "category"]
+        exclude = ["cnc_game", "categories"]
         fields = "__all__"

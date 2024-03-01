@@ -1,0 +1,24 @@
+name: CI
+on:
+  pull_request:
+  push: { branches: main }
+
+jobs:
+  test:
+    name: Run PyTest
+    runs-on: ubuntu-latest
+    env:
+      COMPOSE_FILE: docker-compose.yml
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Make CI env file
+      run: cp ci.env .env
+
+    - name: Build docker images
+      run: docker-compose build
+
+    - name: Run PyTest
+      run: docker-compose run test

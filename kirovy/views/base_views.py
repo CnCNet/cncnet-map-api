@@ -10,17 +10,31 @@ from rest_framework import (
 )
 from rest_framework.response import Response
 
-from kirovy import permissions
+from kirovy import permissions, typing as t
 from kirovy.request import KirovyRequest
 from kirovy.serializers import KirovySerializer
 
 
-class KirovyDefaultPagination(_pagination.PageNumberPagination):
+class KirovyDefaultPagination(_pagination.LimitOffsetPagination):
     """Default pagination values."""
 
-    page_size = 30
-    page_size_query_param = "page_size"
-    max_page_size = 200
+    default_limit = 30
+    max_limit = 200
+
+    def get_paginated_response(self, results: t.List[t.DictStrAny]) -> Response:
+        data = t.ListResponseData(
+            results=results,
+            pagination_metadata=t.PaginationMetadata(
+                offset=self.offset,
+                limit=self.limit,
+                remaining_count=self.count,
+            ),
+        )
+
+        return Response(data, status=status.HTTP_200_OK)
+
+    def get_paginated_response_schema(self, schema):
+        raise NotImplementedError()
 
 
 class KirovyListCreateView(_g.ListCreateAPIView):
@@ -30,7 +44,8 @@ class KirovyListCreateView(_g.ListCreateAPIView):
     """
 
     permission_classes = [permissions.CanUpload | permissions.ReadOnly]
-    pagination_class = KirovyDefaultPagination
+    pagination_class: t.Type[KirovyDefaultPagination] = KirovyDefaultPagination
+    _paginator: t.Optional[KirovyDefaultPagination]
     request: KirovyRequest  # Added for type hinting. Populated by DRF ``.setup()``
 
     def create(self, request: KirovyRequest, *args, **kwargs) -> Response:
@@ -46,6 +61,30 @@ class KirovyListCreateView(_g.ListCreateAPIView):
         return Response(
             serializer.data, status=status.HTTP_201_CREATED, headers=headers
         )
+
+    def list(self, request, *args, **kwargs):
+
+        queryset = self.filter_queryset(self.get_queryset())
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        data = t.ListResponseData(results=serializer.data)
+        return Response(data, status=status.HTTP_200_OK)
+
+    def get_paginated_response(self, data: t.List[t.DictStrAny]) -> Response:
+        """
+        Return a paginated style `Response` object for the given output data.
+        """
+        return super().get_paginated_response(data)
+
+    @property
+    def paginator(self) -> t.Optional[KirovyDefaultPagination]:
+        """Just here for typing."""
+        return super().paginator
 
 
 class KirovyRetrieveUpdateView(_g.RetrieveUpdateAPIView):
