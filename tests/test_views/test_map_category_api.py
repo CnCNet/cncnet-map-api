@@ -3,7 +3,7 @@ from rest_framework import status
 from kirovy.models import MapCategory
 from kirovy import typing as t
 
-CATEGORY_URL = "/map-categories/"
+CATEGORY_URL = "/maps/categories/"
 
 
 def test_map_category_create(

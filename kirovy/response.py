@@ -5,7 +5,7 @@ from kirovy import typing as t
 class KirovyResponse(Response):
     def __init__(
         self,
-        data: t.Optional[t.Union[t.ListResponseData, t.ResponseData]] = None,
+        data: t.Optional[t.BaseResponseData] = None,
         status: t.Optional[int] = None,
         template_name: t.Optional[str] = None,
         headers: t.Optional[t.DictStrAny] = None,

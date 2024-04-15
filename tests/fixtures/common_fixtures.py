@@ -124,6 +124,16 @@ class KirovyClient(Client):
         """Wraps post to make it default to JSON."""
 
         data = self.__convert_data(data, content_type)
+
+        if content_type is None:
+            return super().post(
+                path,
+                data=data,
+                follow=follow,
+                secure=secure,
+                **extra,
+            )
+
         return super().post(
             path,
             data=data,

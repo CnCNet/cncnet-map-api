@@ -44,5 +44,9 @@ class ListResponseData(BaseResponseData):
     pagination_metadata: NotRequired[PaginationMetadata]
 
 
-class ResponseData(TypedDict):
+class ResponseData(BaseResponseData):
     result: DictStrAny
+
+
+class ErrorResponseData(BaseResponseData):
+    additional: NotRequired[DictStrAny]

@@ -107,6 +107,11 @@ class CncMap(cnc_user.CncNetUserOwnedModel):
     )
     """:attr: Keep banned maps around so we can keep track of rule-breakers."""
 
+    incomplete_upload = models.BooleanField(
+        default=False,
+        help_text="If true, then the map file has been uploaded, but the map info has not been set yet.",
+    )
+
     def next_version_number(self) -> int:
         """Generate the next version to use for a map file.
 

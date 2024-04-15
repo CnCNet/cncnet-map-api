@@ -16,7 +16,7 @@ def test_data_path() -> pathlib.Path:
 def load_test_file(test_data_path):
     """Return a function to load a file from test_data."""
 
-    def _inner(relative_path: t.Union[str, pathlib.Path]) -> File:
+    def _inner(relative_path: t.Union[str, pathlib.Path], read_mode: str = "r") -> File:
         """Load a file from test_data.
 
         :param relative_path:
@@ -26,7 +26,7 @@ def load_test_file(test_data_path):
         """
         full_path = test_data_path / relative_path
 
-        return File(open(full_path, "r"))
+        return File(open(full_path, read_mode))
 
     return _inner
 
@@ -34,7 +34,7 @@ def load_test_file(test_data_path):
 @pytest.fixture
 def file_binary(load_test_file) -> File:
     """Returns a random binary file."""
-    file = load_test_file("binary_file.mp3")
+    file = load_test_file("binary_file.mp3", "rb")
     yield file
     file.close()
 

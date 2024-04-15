@@ -1,6 +1,7 @@
 import base64
 import logging
 
+import magic
 from PIL import Image
 import configparser
 import enum
@@ -140,12 +141,10 @@ class CncGen2MapParser:
         :return:
             True if readable as text.
         """
-        try:
-            with uploaded_file.open("tr") as check_file:
-                check_file.read()
-                return True
-        except UnicodeDecodeError:
-            return False
+        magic_parser = magic.Magic(mime=True)
+        uploaded_file.seek(0)
+        mr_mime = magic_parser.from_buffer(uploaded_file.read())
+        return mr_mime == "text/plain"
 
     def extract_preview(self) -> t.Optional[Image.Image]:
         """Extract the map preview if it exists.
