@@ -36,7 +36,7 @@ def _get_url_patterns() -> t.List[path]:
 
 map_patterns = [
     path("categories/", cnc_map_views.MapCategoryListCreateView.as_view()),
-    path("upload/<filename>/", cnc_map_views.MapFileUploadView.as_view()),
+    path("upload/", cnc_map_views.MapFileUploadView.as_view()),
 ]
 
 

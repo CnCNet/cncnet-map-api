@@ -10,6 +10,7 @@ import io
 import lzo
 
 from django.core.files import File
+from django.core.files.uploadedfile import UploadedFile
 from rest_framework import status
 
 from kirovy import typing as t, exceptions
@@ -41,7 +42,7 @@ class CncGen2MapParser:
     Parses maps, validates them, and extracts previews if necessary.
     """
 
-    file: File
+    file: UploadedFile
     """:attr: The uploaded file that we're parsing."""
     parser: configparser.ConfigParser
     """:attr: The parser object where the ini will be parsed into."""
@@ -64,7 +65,7 @@ class CncGen2MapParser:
         CORRUPT_MAP = _("Could not parse map file.")
         MISSING_INI = _("Missing necessary INI sections.")
 
-    def __init__(self, uploaded_file: File):
+    def __init__(self, uploaded_file: UploadedFile):
         self.validate_file_type(uploaded_file)
         self.file = uploaded_file
         self.parser = configparser.ConfigParser()
@@ -84,7 +85,9 @@ class CncGen2MapParser:
             self.file.open("r")
 
         try:
-            self.parser.read_file(self.file)
+            # We can't use read_file because parser expects the file to be read as a string,
+            # but django uploaded files are read as bytes. So we need to convert to string first.
+            self.parser.read_string(self.file.read().decode())
         except configparser.ParsingError as e:
             raise exceptions.InvalidMapFile(
                 self.ErrorMsg.CORRUPT_MAP,
@@ -144,6 +147,7 @@ class CncGen2MapParser:
         magic_parser = magic.Magic(mime=True)
         uploaded_file.seek(0)
         mr_mime = magic_parser.from_buffer(uploaded_file.read())
+        uploaded_file.seek(0)
         return mr_mime == "text/plain"
 
     def extract_preview(self) -> t.Optional[Image.Image]:

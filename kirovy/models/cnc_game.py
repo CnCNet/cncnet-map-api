@@ -128,3 +128,6 @@ class CncGame(CncNetBaseModel):
     @cached_property
     def logo_url(self) -> str:
         return f"{self.images_relative_url}{self.slug}/logo.png"
+
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__} Object: ({self.slug}) '{self.full_name}' [{self.id}]>"
