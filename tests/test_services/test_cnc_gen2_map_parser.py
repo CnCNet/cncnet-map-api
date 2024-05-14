@@ -3,7 +3,7 @@ import pathlib
 import pytest
 
 from kirovy import exceptions
-from kirovy.services.cnc_gen_2_services import CncGen2MapParser
+from kirovy.services.cnc_gen_2_services import CncGen2MapParser, CncGen2MapSections
 
 
 def test_map_parser_service__is_binary(file_binary):
@@ -63,7 +63,7 @@ def test_map_service_can_extract_preview(
         assert img.height == height
 
         assert (
-            map_service.parser.get(map_service.map_sections.PREVIEW, "Size")
+            map_service.ini.get(CncGen2MapSections.PREVIEW, "Size")
             == f"0,0,{width},{height}"
         )
         filename = pathlib.Path(map_file.name).stem

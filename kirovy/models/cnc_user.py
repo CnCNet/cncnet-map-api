@@ -62,7 +62,7 @@ class CncUser(AbstractBaseUser):
     )
 
     username = models.CharField(
-        null=True, help_text=_("The name from the CNCNet ladder API.")
+        null=True, help_text=_("The name from the CNCNet ladder API."), blank=False
     )
     """:attr: The username for debugging purposes. Don't rely on this field for much else."""
 
@@ -72,7 +72,9 @@ class CncUser(AbstractBaseUser):
     verified_email = models.BooleanField(null=False, default=False)
 
     group = models.CharField(
-        null=False, help_text=_("The user group from the CNCNet ladder API.")
+        null=False,
+        help_text=_("The user group from the CNCNet ladder API."),
+        blank=False,
     )
 
     is_banned = models.BooleanField(

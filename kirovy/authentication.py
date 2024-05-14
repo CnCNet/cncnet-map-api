@@ -58,7 +58,7 @@ class _CncNetAuthenticator:
             Raised if we successfully authenticate with CnCNet, but can't parse the user info.
         """
         cncnet_response = requests.get(
-            constants.cncnet_user_url, headers=request.headers
+            constants.CNCNET_USER_URL, headers=request.headers
         )
         if cncnet_response.status_code != status.HTTP_200_OK:
             raise exceptions.CncNetAuthFailed(

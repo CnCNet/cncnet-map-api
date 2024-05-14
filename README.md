@@ -15,7 +15,6 @@ The mascot for the backend API is Kirovy, by [Direct & Dominate](https://www.you
 
 # Development
 
-
 ## Frontend devs
 
 Just set up your environment file and run the full docker compose.
@@ -50,10 +49,27 @@ to debuggers and hitting breakpoints, so here are the native OS instructions.
    - If the app doesn't run due to a missing required variable, add said variable to `example.env` because the person
    who made the variable forgot to do so.
 10. Run the `db` service in `docker-compose`
-11. Load your `.env` file into your shell, (you can use `./load_env.sh`) then migrate the database `./manage.py migrate`
+11. Load your `.env` file into your shell, (you can use `source load_env.sh && read_env`)
+then migrate the database `./manage.py migrate`
 12. `./manage.py runserver`
-
-I **strongly** recommend using PyCharm and the `.env` plugin for running the PyTests.
 
 You can technically use PyCharm to launch everything via `docker-compose`, but there is some
 weird issue with breakpoints not triggering.
+
+
+## Running tests
+
+I **strongly** recommend using PyCharm and the `.env` plugin for running the PyTests.
+All you need to do is run the database from `docker-compose`, then launch the tests via PyCharm.
+
+**If you want to run the tests via CLI:**
+
+- Make sure your database is running from the docker compose file. `docker-compose start db`
+- Make sure your environment variables are setup and loaded to your shell. See [backend dev setup](#backend-devs)
+- Run `DJANGO_SETTINGS_MODULE="kirovy.settings.testing" pytest tests`
+
+Django should automatically run migrations as part of the test startup.
+
+**Run tests with docker compose:**
+
+- `docker-compose up --build test`

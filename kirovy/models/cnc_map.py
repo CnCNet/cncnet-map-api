@@ -12,9 +12,11 @@ from kirovy import typing as t
 
 class MapCategory(CncNetBaseModel):
     name = models.CharField(max_length=120)
+    """The name of the map category. Should match the lowercase of strings from a map file's game modes section."""
     slug = models.CharField(max_length=16)
+    """Unique slug for URLs, auto-generated from the :attr:`~kirovy.models.cnc_map.MapCategory.name`."""
 
-    def set_slug_from_name(
+    def _set_slug_from_name(
         self, update_fields: t.Optional[t.List[str]] = None
     ) -> t.Optional[t.List[str]]:
         """Sets ``self.slug`` based on ``self.name``.
@@ -28,6 +30,7 @@ class MapCategory(CncNetBaseModel):
         new_slug = new_slug.rstrip(
             "-"
         )  # Remove trailing hyphens if the 16th character was unlucky.
+
         if new_slug != self.slug:
             self.slug = new_slug
             if update_fields and "slug" not in update_fields:
@@ -42,7 +45,7 @@ class MapCategory(CncNetBaseModel):
         using: t.Optional[str] = None,
         update_fields: t.Optional[t.List[str]] = None,
     ):
-        update_fields = self.set_slug_from_name(update_fields)
+        update_fields = self._set_slug_from_name(update_fields)
         super().save(force_insert, force_update, using, update_fields)
 
 
@@ -57,8 +60,8 @@ class CncMap(cnc_user.CncNetUserOwnedModel):
     Gets ``cnc_user`` from :class:`~kirovy.models.cnc_user.CncNetUserOwnedModel`.
     """
 
-    map_name = models.CharField(max_length=128, null=False)
-    description = models.CharField(max_length=4096, null=False)
+    map_name = models.CharField(max_length=128, null=False, blank=False)
+    description = models.CharField(max_length=4096, null=False, blank=False)
     cnc_game = models.ForeignKey(game_models.CncGame, models.PROTECT, null=False)
     categories = models.ManyToManyField(MapCategory)
     is_legacy = models.BooleanField(
@@ -112,6 +115,14 @@ class CncMap(cnc_user.CncNetUserOwnedModel):
         help_text="If true, then the map file has been uploaded, but the map info has not been set yet.",
     )
 
+    parent = models.ForeignKey(
+        "CncMap",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+    """If set, then this map is a child of ``parent``. Used to track edits of other peoples' maps."""
+
     def next_version_number(self) -> int:
         """Generate the next version to use for a map file.
 
@@ -128,6 +139,15 @@ class CncMap(cnc_user.CncNetUserOwnedModel):
             return 1
         return previous_version.version + 1
 
+    def generate_versioned_name_for_file(self) -> str:
+        """Generate a filename from the ID and the next version number.
+
+        :return:
+            The game slug, map ID hex, and expected next version number.
+            e.g. ``ra2_12345678abdc12dc_v01``.
+        """
+        return f"{self.cnc_game.slug}_{self.id.hex}_v{self.next_version_number():02}"
+
     def get_map_directory_path(self) -> pathlib.Path:
         """Returns the path to the directory where all files related to the map will be store.
 
@@ -137,7 +157,7 @@ class CncMap(cnc_user.CncNetUserOwnedModel):
         return pathlib.Path(
             self.cnc_game.slug,
             settings.CNC_MAP_DIRECTORY,
-            str(self.id),
+            self.id.hex,
         )
 
 
@@ -146,7 +166,7 @@ class CncMapFile(file_base.CncNetFileBaseModel):
 
     width = models.IntegerField()
     height = models.IntegerField()
-    version = models.IntegerField()
+    version = models.IntegerField(editable=False)
 
     cnc_map = models.ForeignKey(CncMap, on_delete=models.CASCADE, null=False)
 
@@ -162,7 +182,8 @@ class CncMapFile(file_base.CncNetFileBaseModel):
         ]
 
     def save(self, *args, **kwargs):
-        self.version = self.cnc_map.next_version_number()
+        if not self.version:
+            self.version = self.cnc_map.next_version_number()
         super().save(*args, **kwargs)
 
     def get_map_upload_path(self, filename: str) -> pathlib.Path:
@@ -181,14 +202,20 @@ class CncMapFile(file_base.CncNetFileBaseModel):
     def generate_upload_to(instance: "CncMapFile", filename: str) -> pathlib.Path:
         """Generate the path to upload map files to.
 
+        Gets called by :func:`kirovy.models.file_base._generate_upload_to` when ``CncMapFile.save`` is called.
+        See [the django docs for file fields](https://docs.djangoproject.com/en/5.0/ref/models/fields/#filefield).
+        ``upload_to`` is set in :attr:`kirovy.models.file_base.CncNetFileBaseModel.file`, which calls
+        ``_generate_upload_to``, which calls this function.
+
         :param instance:
+            Acts as ``self``. The map file object that we are creating an upload path for.
         :param filename:
             The filename of the uploaded file.
         :return:
             Path to upload map to relative to :attr:`~kirovy.settings.base.MEDIA_ROOT`.
         """
         filename = pathlib.Path(filename)
-        final_file_name = f"{filename.stem}_v{instance.version}{filename.suffix}"
+        final_file_name = f"{instance.name}{filename.suffix}"
 
-        # e.g. "yr/maps/CNC_NET_MAP_ID/streets_of_gold_v1.map
+        # e.g. "yr/maps/CNC_NET_MAP_ID_HEX/ra2_CNC_NET_MAP_ID_HEX_v1.map
         return pathlib.Path(instance.cnc_map.get_map_directory_path(), final_file_name)

@@ -1,5 +1,6 @@
 import base64
 import logging
+from functools import cached_property
 
 import magic
 from PIL import Image
@@ -33,6 +34,42 @@ class CncGen2MapSections(enum.StrEnum):
     DIGEST = "Digest"
 
 
+class MapConfigParser(configparser.ConfigParser):
+    """Config parser with some helpers."""
+
+    NAME_NOT_FOUND: str = "Map name not found in file"
+
+    def optionxform(self, optionstr: str) -> str:
+        """Overwrite the base class to prevent lower-casing keys."""
+        return optionstr
+
+    @cached_property
+    def categories(self) -> t.List[str]:
+        """Get the map categories from a map file.
+
+        :return:
+            A list of lower cased game mode strings in a map file.
+            Map game modes are stored in :class:`kirovy.models.cnc_map.MapCategory`.
+            These strings are not to be trusted, and are not guaranteed to exist in the map database.
+            They are simply here to help autopopulate game modes on initial upload.
+        """
+        categories = self.get(CncGen2MapSections.BASIC, "GameMode", fallback="")
+        return list(map(str.lower, categories.split(","))) if categories else []
+
+    @cached_property
+    def map_name(self) -> str:
+        """Get the map name from the map file.
+
+        The map name is set in Final Alert / World Altering Editor and is different from the filename.
+
+        :return:
+            The map name or a string saying that the map wasn't found.
+        """
+        return self.get(
+            CncGen2MapSections.BASIC, "Name", fallback=_(self.NAME_NOT_FOUND)
+        )
+
+
 class CncGen2MapParser:
     """Map parser for generation 2 Westwood C&C games.
 
@@ -44,10 +81,10 @@ class CncGen2MapParser:
 
     file: UploadedFile
     """:attr: The uploaded file that we're parsing."""
-    parser: configparser.ConfigParser
+    ini: MapConfigParser
     """:attr: The parser object where the ini will be parsed into."""
 
-    required_sections: t.Set[CncGen2MapSections] = {
+    required_sections: t.Set[str] = {
         CncGen2MapSections.HEADER.value,
         CncGen2MapSections.BASIC.value,
         CncGen2MapSections.MAP.value,
@@ -57,9 +94,6 @@ class CncGen2MapParser:
         CncGen2MapSections.DIGEST.value,
     }
 
-    # Make it so we don't always need to import CncGen2MapSections with the parser.
-    map_sections = CncGen2MapSections
-
     class ErrorMsg(enum.StrEnum):
         NO_BINARY = _("Binary files not allowed.")
         CORRUPT_MAP = _("Could not parse map file.")
@@ -68,7 +102,7 @@ class CncGen2MapParser:
     def __init__(self, uploaded_file: UploadedFile):
         self.validate_file_type(uploaded_file)
         self.file = uploaded_file
-        self.parser = configparser.ConfigParser()
+        self.ini = MapConfigParser()
         self._parse_file()
 
     def _parse_file(self) -> None:
@@ -87,7 +121,8 @@ class CncGen2MapParser:
         try:
             # We can't use read_file because parser expects the file to be read as a string,
             # but django uploaded files are read as bytes. So we need to convert to string first.
-            self.parser.read_string(self.file.read().decode())
+            # If `decode` is crashing in a test, make sure your test file is read in read-mode "rb".
+            self.ini.read_string(self.file.read().decode())
         except configparser.ParsingError as e:
             raise exceptions.InvalidMapFile(
                 self.ErrorMsg.CORRUPT_MAP,
@@ -95,7 +130,7 @@ class CncGen2MapParser:
                 params={"e": e},
             )
 
-        sections: t.Set[str] = set(self.parser.sections())
+        sections: t.Set[str] = set(self.ini.sections())
         missing_sections = self.required_sections - sections
         if missing_sections:
             raise exceptions.InvalidMapFile(
@@ -179,7 +214,7 @@ class CncGen2MapParser:
             Raised by :func:`~kirovy.services.MapParserService._decompress_preview_from_base64`
             and should be bubbled up to the user.
         """
-        if not self.parser.has_section(CncGen2MapSections.PREVIEW_PACK):
+        if not self.ini.has_section(CncGen2MapSections.PREVIEW_PACK):
             LOGGER.debug("No preview pack")
             return None
 
@@ -187,7 +222,7 @@ class CncGen2MapParser:
         # We cannot extract the preview if this section is missing, or the Size key value is invalid.
         preview_size = [
             int(x)
-            for x in self.parser.get(
+            for x in self.ini.get(
                 CncGen2MapSections.PREVIEW, "Size", fallback=""
             ).split(",")
         ]
@@ -220,9 +255,7 @@ class CncGen2MapParser:
         decompressed_expected_size = width * height * 3
 
         # The preview base64 is split across the keys in the preview pack section.
-        preview_b64: str = "".join(
-            self.parser[CncGen2MapSections.PREVIEW_PACK].values()
-        )
+        preview_b64: str = "".join(self.ini[CncGen2MapSections.PREVIEW_PACK].values())
         compressed_preview: bytes = base64.b64decode(preview_b64)
 
         # Each pixel block is a header, and the block data.

@@ -16,7 +16,9 @@ def test_data_path() -> pathlib.Path:
 def load_test_file(test_data_path):
     """Return a function to load a file from test_data."""
 
-    def _inner(relative_path: t.Union[str, pathlib.Path], read_mode: str = "r") -> File:
+    def _inner(
+        relative_path: t.Union[str, pathlib.Path], read_mode: str = "rb"
+    ) -> File:
         """Load a file from test_data.
 
         :param relative_path:

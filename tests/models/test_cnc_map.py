@@ -28,7 +28,11 @@ def test_cnc_map_generate_upload_to(
         "worlds"  # Change default to check that the settings control the upload path.
     )
     expected_path = pathlib.Path(
-        settings.MEDIA_ROOT, "yr", "worlds", str(cnc_map.id), "desert_v1.map"
+        settings.MEDIA_ROOT,
+        "yr",
+        "worlds",
+        cnc_map.id.hex,
+        f"yr_{cnc_map.id.hex}_v01.map",
     )
     saved_map = CncMapFile(
         height=117,  # doesn't matter for this test.
@@ -37,6 +41,7 @@ def test_cnc_map_generate_upload_to(
         file_extension=extension_map,
         cnc_map=cnc_map,
         cnc_game=game_yuri,
+        name=cnc_map.generate_versioned_name_for_file(),
     )
     saved_map.save()
     saved_map.refresh_from_db()
@@ -70,6 +75,11 @@ def test_cnc_map_version(game_yuri, extension_map, file_map_valid, cnc_map):
     map2.save()
     map2.refresh_from_db()
 
+    assert map2.version == 2
+    # Make sure subsequent saves don't blow away the version.
+    # map file models shouldn't be edited after upload, but check anyway.
+    map2.height = 117
+    map2.save()
     assert map2.version == 2
 
     assert pathlib.Path(map2.file.path).parent == pathlib.Path(map1.file.path).parent

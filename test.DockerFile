@@ -1,3 +1,4 @@
+# Dockerfile to use for running the tests via docker-compose run test
 FROM python:3.12-bookworm as base
 
 ENV PYTHONDONTWRITEBYTECODE=1

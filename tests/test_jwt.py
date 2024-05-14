@@ -46,7 +46,7 @@ def test_jwt():
     info_data = json.loads(response.content)
 
     assert response.status_code == 200
-    assert info_data["id"] == user_id
+    assert str(info_data["id"]) == user_id
     assert expires > datetime.datetime.now()
 
 

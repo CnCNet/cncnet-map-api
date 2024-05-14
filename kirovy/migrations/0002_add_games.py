@@ -71,7 +71,7 @@ def _forward(apps: StateApps, schema_editor: DatabaseSchemaEditor):
     # --------------------
     tib_dawn = CncGame.objects.create(
         slug=constants.GameSlugs.tiberian_dawn,
-        full_name=f"{constants.cnc_prefix} Tiberian Dawn",
+        full_name=f"{constants.CNC_PREFIX} Tiberian Dawn",
         is_visible=True,
         allow_public_uploads=False,
         parent_game=None,
@@ -83,7 +83,7 @@ def _forward(apps: StateApps, schema_editor: DatabaseSchemaEditor):
 
     red_alert = CncGame.objects.create(
         slug=constants.GameSlugs.red_alert,
-        full_name=f"{constants.cnc_prefix} Red Alert",
+        full_name=f"{constants.CNC_PREFIX} Red Alert",
         is_visible=True,
         allow_public_uploads=False,
         parent_game=None,
@@ -107,7 +107,7 @@ def _forward(apps: StateApps, schema_editor: DatabaseSchemaEditor):
 
     tib_sun = CncGame.objects.create(
         slug=constants.GameSlugs.tiberian_sun,
-        full_name=f"{constants.cnc_prefix} Tiberian Sun",
+        full_name=f"{constants.CNC_PREFIX} Tiberian Sun",
         is_visible=True,
         allow_public_uploads=False,
         parent_game=None,
@@ -119,7 +119,7 @@ def _forward(apps: StateApps, schema_editor: DatabaseSchemaEditor):
 
     red_alert_2 = CncGame.objects.create(
         slug=constants.GameSlugs.red_alert_2,
-        full_name=f"{constants.cnc_prefix} Red Alert 2",
+        full_name=f"{constants.CNC_PREFIX} Red Alert 2",
         is_visible=True,
         allow_public_uploads=False,
         parent_game=None,
@@ -131,7 +131,7 @@ def _forward(apps: StateApps, schema_editor: DatabaseSchemaEditor):
 
     yuri = CncGame.objects.create(
         slug=constants.GameSlugs.yuris_revenge,
-        full_name=f"{constants.cnc_prefix} Red Alert 2: Yuri's Revenge",
+        full_name=f"{constants.CNC_PREFIX} Red Alert 2: Yuri's Revenge",
         is_visible=True,
         allow_public_uploads=False,
         parent_game=red_alert_2,

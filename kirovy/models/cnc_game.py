@@ -38,15 +38,18 @@ class CncFileExtension(CncNetBaseModel):
         """This file extension represents some kind of game asset to support a map, e.g. a ``.mix`` file."""
 
     extension = models.CharField(
-        max_length=32, unique=True, validators=[is_valid_extension]
+        max_length=32, unique=True, validators=[is_valid_extension], blank=False
     )
     """The actual file extension. Case insensitive but ``.lower()`` will be called all over."""
 
-    about = models.CharField(max_length=2048, null=True)
+    about = models.CharField(max_length=2048, null=True, blank=False)
     """An explanation about what this extension does."""
 
     extension_type = models.CharField(
-        max_length=32, choices=ExtensionTypes.choices, null=False
+        max_length=32,
+        choices=ExtensionTypes.choices,
+        null=False,
+        blank=False,
     )
 
     def save(self, *args, **kwargs):
@@ -83,7 +86,9 @@ class CncGame(CncNetBaseModel):
     Does not affect temporary uploads via the multiplayer lobby.
     """
 
-    compatible_with_parent_maps = models.BooleanField(default=False, null=False)
+    compatible_with_parent_maps = models.BooleanField(
+        default=False, null=False, blank=False
+    )
     """If true then the maps from the parent game work in this game. e.g. RA2 maps work in YR."""
 
     parent_game = models.ForeignKey("self", models.PROTECT, null=True, default=None)
