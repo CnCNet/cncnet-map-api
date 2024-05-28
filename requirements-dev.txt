@@ -1,7 +1,7 @@
 -r requirements.txt
-pytest==7.*
-black==22.*
-pre-commit==2.*
-pytest-django==4.5.2
-deptree==0.0.10
+pytest==8.*
+pytest-mock==3.*
+black==24.*
+pre-commit==3.*
+pytest-django==4.*
 markdown>=3.4.4, <=4.0

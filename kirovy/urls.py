@@ -14,12 +14,37 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
+from django.urls import path, include
 
-from kirovy.views import test, cnc_map_views
+from kirovy.views import test, cnc_map_views, permission_views
+from kirovy import typing as t
 
-urlpatterns = [
-    path("admin/", admin.site.urls),
-    path("test/jwt", test.TestJwt.as_view()),
-    path("map-categories/", cnc_map_views.MapCategoryListCreateView.as_view()),
+
+def _get_url_patterns() -> t.List[path]:
+    """Return the root level url patterns.
+
+    I added this because I wanted to have the root URLs at the top of the file,
+    but I didn't want to have other url files.
+    """
+    return [
+        path("admin/", admin.site.urls),
+        path("test/jwt", test.TestJwt.as_view()),
+        path("ui-permissions/", permission_views.ListPermissionForAuthUser.as_view()),
+        path("maps/", include(map_patterns)),
+        # path("users/<uuid:cnc_user_id>/", ...),  # will show which files a user has uploaded.
+        # path("games/", ...),  # get games.
+    ]
+
+
+map_patterns = [
+    # path("categories/", ...),  # return all categories
+    # path("categories/game/<uuid:cnc_game_id>/", ...),
+    path("categories/", cnc_map_views.MapCategoryListCreateView.as_view()),
+    path("upload/", cnc_map_views.MapFileUploadView.as_view()),
+    # path("<uuid:map_id>/", ...),
+    # path("img/<uuid:map_id>/", ...),
+    # path("search/")
 ]
+
+
+urlpatterns = _get_url_patterns()

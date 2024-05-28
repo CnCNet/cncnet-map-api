@@ -5,9 +5,11 @@ from kirovy import typing as t, models as k_models
 
 @pytest.fixture
 def extension_map(db) -> k_models.CncFileExtension:
-    """Get the map file extension object.
+    """Get the ``.map`` file extension object.
 
     This fixture depends on the game data migration being run.
+
+    The actual file extension, e.g. ``.exe``, is stored in :attr:`kirovy.models.cnc_game.CncFileExtension.extension`.
 
     :return:
         The extension object for .map files.

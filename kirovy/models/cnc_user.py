@@ -12,8 +12,40 @@ __all__ = ["CncUser"]
 
 
 class CncUserManager(models.Manager):
-    def get_by_cncnet_id(self, cncnet_id: int) -> t.Tuple["CncUser"]:
-        return self.filter(cncnet_id=cncnet_id).first()
+    use_in_migrations = True
+
+    _SYSTEM_CNCNET_IDS = {
+        constants.MigrationUser.ID,
+    }
+
+    def find_by_cncnet_id(self, cncnet_id: int) -> t.Tuple["CncUser"]:
+        return super().get_queryset().filter(cncnet_id=cncnet_id).first()
+
+    def get_or_create_migration_user(self) -> "CncUser":
+        """Gets or creates the migration system-user.
+
+        :return:
+            The user for running migrations.
+        """
+        mcv = self.find_by_cncnet_id(constants.MigrationUser.ID)
+        if not mcv:
+            mcv = CncUser(
+                cncnet_id=constants.MigrationUser.ID,
+                username=constants.MigrationUser.USERNAME,
+                group=constants.MigrationUser.GROUP,
+            )
+            mcv.save()
+            mcv.refresh_from_db()
+
+        return mcv
+
+    def get_queryset(self) -> models.QuerySet:
+        """Makes ``CncUser.object.all()`` filter out the system users by default.
+
+        :return:
+            A queryset that only returns real users.
+        """
+        return super().get_queryset().exclude(cncnet_id__in=self._SYSTEM_CNCNET_IDS)
 
 
 class CncUser(AbstractBaseUser):
@@ -30,7 +62,7 @@ class CncUser(AbstractBaseUser):
     )
 
     username = models.CharField(
-        null=True, help_text=_("The name from the CNCNet ladder API.")
+        null=True, help_text=_("The name from the CNCNet ladder API."), blank=False
     )
     """:attr: The username for debugging purposes. Don't rely on this field for much else."""
 
@@ -40,7 +72,9 @@ class CncUser(AbstractBaseUser):
     verified_email = models.BooleanField(null=False, default=False)
 
     group = models.CharField(
-        null=False, help_text=_("The user group from the CNCNet ladder API.")
+        null=False,
+        help_text=_("The user group from the CNCNet ladder API."),
+        blank=False,
     )
 
     is_banned = models.BooleanField(

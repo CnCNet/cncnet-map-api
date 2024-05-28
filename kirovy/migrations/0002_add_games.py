@@ -6,7 +6,7 @@ from django.db.backends.postgresql.schema import DatabaseSchemaEditor
 from django.db.migrations.state import StateApps
 
 from kirovy import constants
-from kirovy.models import CncGame as _Game, CncFileExtension as _Ext
+from kirovy.models import CncGame as _Game, CncFileExtension as _Ext, CncUser as _User
 
 
 def _forward(apps: StateApps, schema_editor: DatabaseSchemaEditor):
@@ -16,41 +16,50 @@ def _forward(apps: StateApps, schema_editor: DatabaseSchemaEditor):
     # migrations are after this one.
     CncGame: typing.Type[_Game] = apps.get_model("kirovy", "CncGame")
     CncFileExtension: typing.Type[_Ext] = apps.get_model("kirovy", "CncFileExtension")
+    CncUser: typing.Type[_User] = apps.get_model("kirovy", "CncUser")
+
+    migration_user = CncUser.objects.get_or_create_migration_user()
 
     mix = CncFileExtension(
         extension="mix",
         extension_type=_Ext.ExtensionTypes.ASSETS.value,
         about="Mix files are uncompressed group files that store game assets.",
+        last_modified_by_id=migration_user.id,
     )
     mix.save()
     map_ext = CncFileExtension(
         extension="map",
         extension_type=_Ext.ExtensionTypes.MAP.value,
         about="Map files are ini files that store map data.",
+        last_modified_by_id=migration_user.id,
     )
     map_ext.save()
     yrm = CncFileExtension(
         extension="yrm",
         extension_type=_Ext.ExtensionTypes.MAP.value,
         about="Yuri's Revenge custom multiplayer map.",
+        last_modified_by_id=migration_user.id,
     )
     yrm.save()
     mpr = CncFileExtension(
         extension="mpr",
         extension_type=_Ext.ExtensionTypes.MAP.value,
         about="RA2 custom multiplayer map.",
+        last_modified_by_id=migration_user.id,
     )
     mpr.save()
     mmx = CncFileExtension(
         extension="mmx",
         extension_type=_Ext.ExtensionTypes.MAP.value,
         about="Mix file containing a .MAP file and a .PKT file.",
+        last_modified_by_id=migration_user.id,
     )
     mmx.save()
     yro = CncFileExtension(
         extension="yro",
         extension_type=_Ext.ExtensionTypes.MAP.value,
         about="Mix file containing a .MAP file and a .PKT file.",
+        last_modified_by_id=migration_user.id,
     )
     yro.save()
 
@@ -62,22 +71,24 @@ def _forward(apps: StateApps, schema_editor: DatabaseSchemaEditor):
     # --------------------
     tib_dawn = CncGame.objects.create(
         slug=constants.GameSlugs.tiberian_dawn,
-        full_name=f"{constants.cnc_prefix} Tiberian Dawn",
+        full_name=f"{constants.CNC_PREFIX} Tiberian Dawn",
         is_visible=True,
         allow_public_uploads=False,
         parent_game=None,
         is_mod=False,
+        last_modified_by_id=migration_user.id,
     )
     tib_dawn.save()
     tib_dawn.allowed_extensions.add(mix, map_ext)
 
     red_alert = CncGame.objects.create(
         slug=constants.GameSlugs.red_alert,
-        full_name=f"{constants.cnc_prefix} Red Alert",
+        full_name=f"{constants.CNC_PREFIX} Red Alert",
         is_visible=True,
         allow_public_uploads=False,
         parent_game=None,
         is_mod=False,
+        last_modified_by_id=migration_user.id,
     )
     red_alert.save()
     red_alert.allowed_extensions.add(mix, map_ext)
@@ -89,40 +100,44 @@ def _forward(apps: StateApps, schema_editor: DatabaseSchemaEditor):
         allow_public_uploads=False,
         parent_game=None,
         is_mod=False,
+        last_modified_by_id=migration_user.id,
     )
     dune_2k.save()
     dune_2k.allowed_extensions.add(mix, map_ext)
 
     tib_sun = CncGame.objects.create(
         slug=constants.GameSlugs.tiberian_sun,
-        full_name=f"{constants.cnc_prefix} Tiberian Sun",
+        full_name=f"{constants.CNC_PREFIX} Tiberian Sun",
         is_visible=True,
         allow_public_uploads=False,
         parent_game=None,
         is_mod=False,
+        last_modified_by_id=migration_user.id,
     )
     tib_sun.save()
     tib_sun.allowed_extensions.add(mix, map_ext)
 
     red_alert_2 = CncGame.objects.create(
         slug=constants.GameSlugs.red_alert_2,
-        full_name=f"{constants.cnc_prefix} Red Alert 2",
+        full_name=f"{constants.CNC_PREFIX} Red Alert 2",
         is_visible=True,
         allow_public_uploads=False,
         parent_game=None,
         is_mod=False,
+        last_modified_by_id=migration_user.id,
     )
     red_alert_2.save()
     red_alert_2.allowed_extensions.add(mix, map_ext, mpr, mmx)
 
     yuri = CncGame.objects.create(
         slug=constants.GameSlugs.yuris_revenge,
-        full_name=f"{constants.cnc_prefix} Red Alert 2: Yuri's Revenge",
+        full_name=f"{constants.CNC_PREFIX} Red Alert 2: Yuri's Revenge",
         is_visible=True,
         allow_public_uploads=False,
         parent_game=red_alert_2,
         is_mod=False,
         compatible_with_parent_maps=True,
+        last_modified_by_id=migration_user.id,
     )
     yuri.save()
     yuri.allowed_extensions.add(*yr_extensions)
@@ -134,6 +149,7 @@ def _forward(apps: StateApps, schema_editor: DatabaseSchemaEditor):
         allow_public_uploads=False,
         parent_game=tib_sun,
         is_mod=True,
+        last_modified_by_id=migration_user.id,
     )
     dta.save()
     dta.allowed_extensions.add(mix, map_ext)
@@ -145,6 +161,7 @@ def _forward(apps: StateApps, schema_editor: DatabaseSchemaEditor):
         allow_public_uploads=False,
         parent_game=yuri,
         is_mod=True,
+        last_modified_by_id=migration_user.id,
     )
     mental_omega.save()
     mental_omega.allowed_extensions.add(*yr_extensions)
@@ -156,6 +173,7 @@ def _forward(apps: StateApps, schema_editor: DatabaseSchemaEditor):
         allow_public_uploads=False,
         parent_game=yuri,
         is_mod=True,
+        last_modified_by_id=migration_user.id,
     )
     red_resurrection.save()
     red_resurrection.allowed_extensions.add(*yr_extensions)
@@ -167,6 +185,7 @@ def _forward(apps: StateApps, schema_editor: DatabaseSchemaEditor):
         allow_public_uploads=False,
         parent_game=yuri,
         is_mod=True,
+        last_modified_by_id=migration_user.id,
     )
     cnc_reloaded.save()
     cnc_reloaded.allowed_extensions.add(*yr_extensions)
@@ -178,6 +197,7 @@ def _forward(apps: StateApps, schema_editor: DatabaseSchemaEditor):
         allow_public_uploads=False,
         parent_game=yuri,
         is_mod=True,
+        last_modified_by_id=migration_user.id,
     )
     rise_of_the_east.save()
     rise_of_the_east.allowed_extensions.add(*yr_extensions)

@@ -12,7 +12,7 @@ from kirovy import typing as t, constants, objects
 from kirovy.models import CncUser
 
 
-class CncNetAuthenticator:
+class _CncNetAuthenticator:
     """The class for sending requests to the cncnet Ladder API.
 
     This exists to house logic related to authenticating with CnCNet,
@@ -20,13 +20,10 @@ class CncNetAuthenticator:
     """
 
     @classmethod
-    def authenticate(
+    def authenticate_with_cncnet(
         cls, request: HttpRequest
     ) -> t.Tuple[CncUser, t.Optional[objects.CncnetUserInfo]]:
         """Authenticate a request's JWT with CnCNet.
-
-        Monkeypatch this function in tests to return whichever value you need
-        for testing endpoint permissions.
 
         :param request:
             The request to Kirovy. We will send its header to CnCNet.
@@ -61,7 +58,7 @@ class CncNetAuthenticator:
             Raised if we successfully authenticate with CnCNet, but can't parse the user info.
         """
         cncnet_response = requests.get(
-            constants.cncnet_user_url, headers=request.headers
+            constants.CNCNET_USER_URL, headers=request.headers
         )
         if cncnet_response.status_code != status.HTTP_200_OK:
             raise exceptions.CncNetAuthFailed(
@@ -87,6 +84,10 @@ class CncNetAuthentication(BaseAuthentication):
         Extracts the JWT from ``request.headers`` then forwards that to CnCNet.
         If the JWT authenticates, then get, or create, the Kirovy user object for the CnCNet user.
 
+
+        If you don't want to deal with token headers in tests, then monkeypatch this function to return
+        whichever value you need for testing endpoint permissions.
+
         :param request:
             The raw request.
         :return:
@@ -101,4 +102,4 @@ class CncNetAuthentication(BaseAuthentication):
         if len(token) != 2 or token[0].lower() != "bearer":
             raise exceptions.MalformedTokenError()
 
-        return CncNetAuthenticator.authenticate(request)
+        return _CncNetAuthenticator.authenticate_with_cncnet(request)

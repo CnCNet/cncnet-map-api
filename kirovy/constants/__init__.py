@@ -3,10 +3,14 @@ from kirovy import typing as t
 
 from django.utils.translation import gettext as _
 
-cnc_prefix = _("Command & Conquer:")
+CNC_PREFIX = _("Command & Conquer:")
 
-cncnet_token_url = "https://ladder.cncnet.org/api/v1/auth/token"
-cncnet_user_url = "https://ladder.cncnet.org/api/v1/user/info"
+CNCNET_TOKEN_URL = "https://ladder.cncnet.org/api/v1/auth/token"
+CNCNET_USER_URL = "https://ladder.cncnet.org/api/v1/user/info"
+
+CNCNET_INI_SECTION = "CnCNet"
+CNCNET_INI_MAP_ID_KEY = "ID"
+CNCNET_INI_PARENT_ID_KEY = "ParentID"
 
 
 class CncnetUserGroup:
@@ -83,6 +87,12 @@ class CncnetUserGroup:
         """
         user_group = cls.normalize_group_string_case(user_group)
         return user_group == cls.KANE
+
+
+class MigrationUser:
+    ID = -1
+    USERNAME = "MobileConstructionVehicle_Migrator"
+    GROUP = CncnetUserGroup.USER
 
 
 class GameSlugs(enum.StrEnum):

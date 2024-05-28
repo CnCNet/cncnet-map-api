@@ -2,6 +2,7 @@ from rest_framework import serializers
 
 from kirovy.models import CncUser
 from kirovy import typing as t
+from kirovy.request import KirovyRequest
 
 
 class KirovySerializer(serializers.Serializer):
@@ -20,6 +21,18 @@ class KirovySerializer(serializers.Serializer):
     class Meta:
         exclude = ["last_modified_by"]
         fields = "__all__"
+
+    def get_fields(self):
+        """Get fields based on permission level.
+
+        Removes admin-only fields for non-admin requests. Will always remove the fields if the serializer doesn't
+        have context.
+        """
+        fields = super().get_fields()
+        request: t.Optional[KirovyRequest] = self.context.get("request")
+        if not all([request, request.user.is_authenticated, request.user.is_staff]):
+            fields.pop("last_modified_by_id", None)
+        return fields
 
 
 class CncNetUserOwnedModelSerializer(KirovySerializer):

@@ -33,14 +33,17 @@ class CncNetFileBaseModel(CncNetBaseModel):
     UPLOAD_TYPE = "uncategorized_uploads"
     """:attr: The directory, underneath the game slug, where all files for this class will be stored."""
 
-    name = models.CharField(max_length=255, null=False)
+    name = models.CharField(max_length=255, null=False, blank=False)
     """Filename no extension."""
 
     file = models.FileField(null=False, upload_to=_generate_upload_to)
     """The actual file this object represent."""
 
     file_extension = models.ForeignKey(
-        game_models.CncFileExtension, on_delete=models.PROTECT
+        game_models.CncFileExtension,
+        on_delete=models.PROTECT,
+        blank=False,
+        null=False,
     )
     """What type of file extension this object is."""
 
@@ -50,13 +53,15 @@ class CncNetFileBaseModel(CncNetBaseModel):
     These are checked against :attr:`kirovy.models.cnc_game.CncFileExtension.extension_type`.
     """
 
-    cnc_game = models.ForeignKey(game_models.CncGame, models.PROTECT, null=False)
+    cnc_game = models.ForeignKey(
+        game_models.CncGame, models.PROTECT, null=False, blank=False
+    )
     """Which game does this file belong to. Needed for file validation."""
 
-    hash_md5 = models.CharField(max_length=32, null=False)
+    hash_md5 = models.CharField(max_length=32, null=False, blank=False)
     """Used for checking exact file duplicates."""
 
-    hash_sha512 = models.CharField(max_length=512, null=False)
+    hash_sha512 = models.CharField(max_length=512, null=False, blank=False)
     """Used for checking exact file duplicates."""
 
     def validate_file_extension(

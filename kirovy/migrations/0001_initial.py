@@ -289,10 +289,8 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name="cncmap",
-            name="category",
-            field=models.ForeignKey(
-                on_delete=django.db.models.deletion.PROTECT, to="kirovy.mapcategory"
-            ),
+            name="categories",
+            field=models.ManyToManyField(to="kirovy.mapcategory"),
         ),
         migrations.AddField(
             model_name="cncmap",
@@ -324,6 +322,69 @@ class Migration(migrations.Migration):
             model_name="cncmapfile",
             constraint=models.UniqueConstraint(
                 fields=("cnc_map_id", "version"), name="unique_map_version"
+            ),
+        ),
+        migrations.AlterModelManagers(
+            name="cncuser",
+            managers=[
+                ("objects", kirovy.models.cnc_user.CncUserManager()),
+            ],
+        ),
+        migrations.AddField(
+            model_name="cncfileextension",
+            name="last_modified_by",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="modified_%(class)s_set",
+                to=settings.AUTH_USER_MODEL,
+            ),
+        ),
+        migrations.AddField(
+            model_name="cncgame",
+            name="last_modified_by",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="modified_%(class)s_set",
+                to=settings.AUTH_USER_MODEL,
+            ),
+        ),
+        migrations.AddField(
+            model_name="cncmap",
+            name="is_banned",
+            field=models.BooleanField(
+                default=False,
+                help_text="If true, this map will be hidden everywhere. Likely due to breaking a rule.",
+            ),
+        ),
+        migrations.AddField(
+            model_name="cncmap",
+            name="legacy_upload_date",
+            field=models.DateTimeField(
+                default=None,
+                help_text="The original upload date for entries imported from the legacy map database.",
+                null=True,
+            ),
+        ),
+        migrations.AddField(
+            model_name="cncmapfile",
+            name="last_modified_by",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="modified_%(class)s_set",
+                to=settings.AUTH_USER_MODEL,
+            ),
+        ),
+        migrations.AddField(
+            model_name="mapcategory",
+            name="last_modified_by",
+            field=models.ForeignKey(
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                related_name="modified_%(class)s_set",
+                to=settings.AUTH_USER_MODEL,
             ),
         ),
     ]
