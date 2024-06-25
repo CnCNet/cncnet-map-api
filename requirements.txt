@@ -1,7 +1,7 @@
-django>=4.2.11, <=4.3  # 4.2 is the Long-Term Service version until 2026.
+django>=4.2.11,<=4.3  # 4.2 is the Long-Term Service version until 2026.
 psycopg2==2.*
-requests>=2.31.*, <3.0
-djangorestframework>=3.14.*, <4.0
+requests>=2.31,<3.0
+djangorestframework>=3.14,<4.0
 pyjwt[crypto]>=2.8.0
 pillow==10.*
 python-lzo==1.15
