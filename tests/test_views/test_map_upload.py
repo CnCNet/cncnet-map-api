@@ -3,6 +3,7 @@ import pathlib
 from django.core.files.uploadedfile import UploadedFile
 from rest_framework import status
 
+from kirovy import settings
 from kirovy.services.cnc_gen_2_services import CncGen2MapParser
 
 _UPLOAD_URL = "/maps/upload/"
@@ -20,12 +21,16 @@ def test_map_file_upload_happy_path(
     )
 
     assert response.status_code == status.HTTP_201_CREATED
-    uploaded_file = pathlib.Path(tmp_media_root) / response.data["result"][
-        "cnc_map_file"
-    ].lstrip("/")
-    uploaded_image = pathlib.Path(tmp_media_root) / response.data["result"][
-        "extracted_preview_file"
-    ].lstrip("/")
+
+    uploaded_file_url: str = response.data["result"]["cnc_map_file"]
+    uploaded_image_url: str = response.data["result"]["extracted_preview_file"]
+    strip_media_url = f"/{settings.MEDIA_URL}"
+    uploaded_file = pathlib.Path(tmp_media_root) / uploaded_file_url.lstrip(
+        strip_media_url
+    )
+    uploaded_image = pathlib.Path(tmp_media_root) / uploaded_image_url.lstrip(
+        strip_media_url
+    )
     assert uploaded_file.exists()
     assert uploaded_image.exists()
 
