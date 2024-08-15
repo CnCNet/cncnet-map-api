@@ -1,4 +1,4 @@
-from kirovy.settings.base import *
+from kirovy.settings._base import *
 
 TESTING_API_USERNAME = get_env_var("TESTING_API_USERNAME", "seth@brotherhood.nod")
 TESTING_API_PASSWORD = get_env_var("TESTING_API_PASSWORD", "ripbozo1")

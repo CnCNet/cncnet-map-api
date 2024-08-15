@@ -20,10 +20,14 @@ def test_map_file_upload_happy_path(
     )
 
     assert response.status_code == status.HTTP_201_CREATED
-    uploaded_file = (
-        pathlib.Path(tmp_media_root) / response.data["result"]["cnc_map_file"]
-    )
+    uploaded_file = pathlib.Path(tmp_media_root) / response.data["result"][
+        "cnc_map_file"
+    ].lstrip("/")
+    uploaded_image = pathlib.Path(tmp_media_root) / response.data["result"][
+        "extracted_preview_file"
+    ].lstrip("/")
     assert uploaded_file.exists()
+    assert uploaded_image.exists()
 
     parser = CncGen2MapParser(UploadedFile(open(uploaded_file, "rb")))
     assert parser.ini.get("CnCNet", "ID") == str(response.data["result"]["cnc_map_id"])

@@ -26,6 +26,11 @@ class CncFileExtension(CncNetBaseModel):
     """File extension types for Command & Conquer games and what they do.
 
     Useful page: https://modenc.renegadeprojects.com/File_Types
+
+    .. note::
+
+        These extension objects are only necessary for user-uploaded files. Don't worry about all of this
+        overhead for any files committed to the repository.
     """
 
     class ExtensionTypes(models.TextChoices):
@@ -36,6 +41,9 @@ class CncFileExtension(CncNetBaseModel):
 
         ASSETS = "assets", "assets"
         """This file extension represents some kind of game asset to support a map, e.g. a ``.mix`` file."""
+
+        IMAGE = "image", "image"
+        """This file extension represents some kind of image uploaded by a user to display on the website."""
 
     extension = models.CharField(
         max_length=32, unique=True, validators=[is_valid_extension], blank=False
