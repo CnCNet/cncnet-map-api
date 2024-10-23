@@ -49,8 +49,8 @@ map_patterns = [
     # path("categories/game/<uuid:cnc_game_id>/", ...),
     path("categories/", cnc_map_views.MapCategoryListCreateView.as_view()),
     path("upload/", cnc_map_views.MapFileUploadView.as_view()),
-    # path("img/")
-    # path("<uuid:map_id>/", ...),
+    path("<uuid:pk>/", cnc_map_views.MapRetrieveUpdateView.as_view()),
+    # path("img/<uuid:map_id>/"),
     # path("img/<uuid:map_id>/", ...),
     # path("search/")
 ]

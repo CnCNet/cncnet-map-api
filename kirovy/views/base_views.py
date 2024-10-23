@@ -12,6 +12,7 @@ from rest_framework.response import Response
 
 from kirovy import permissions, typing as t
 from kirovy.request import KirovyRequest
+from kirovy.response import KirovyResponse
 from kirovy.serializers import KirovySerializer
 
 
@@ -63,7 +64,6 @@ class KirovyListCreateView(_g.ListCreateAPIView):
         )
 
     def list(self, request, *args, **kwargs):
-
         queryset = self.filter_queryset(self.get_queryset())
 
         page = self.paginate_queryset(queryset)
@@ -98,6 +98,16 @@ class KirovyRetrieveUpdateView(_g.RetrieveUpdateAPIView):
 
     request: KirovyRequest  # Added for type hinting. Populated by DRF ``.setup()``
     permission_classes = [permissions.CanEdit | permissions.ReadOnly]
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return KirovyResponse(
+            t.ResponseData(
+                result=serializer.data,
+            ),
+            status=status.HTTP_200_OK,
+        )
 
     def put(self, request: KirovyRequest, *args, **kwargs) -> Response:
         raise _e.MethodNotAllowed(

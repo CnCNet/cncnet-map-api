@@ -318,7 +318,7 @@ def client_anonymous(create_client) -> KirovyClient:
 
 @pytest.fixture
 def client_user(user, create_client) -> KirovyClient:
-    """Returns a client with an active admin user."""
+    """Returns a client with an active and verified user."""
     return create_client(user)
 
 

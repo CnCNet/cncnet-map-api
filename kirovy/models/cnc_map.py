@@ -62,8 +62,6 @@ class CncMap(cnc_user.CncNetUserOwnedModel):
 
     map_name = models.CharField(max_length=128, null=False, blank=False)
     description = models.CharField(max_length=4096, null=False, blank=False)
-    cnc_game = models.ForeignKey(game_models.CncGame, models.PROTECT, null=False)
-    categories = models.ManyToManyField(MapCategory)
     is_legacy = models.BooleanField(
         default=False,
         help_text="If true, this is an upload from the old cncnet database.",
@@ -115,6 +113,8 @@ class CncMap(cnc_user.CncNetUserOwnedModel):
         help_text="If true, then the map file has been uploaded, but the map info has not been set yet.",
     )
 
+    cnc_game = models.ForeignKey(game_models.CncGame, models.PROTECT, null=False)
+    categories = models.ManyToManyField(MapCategory)
     parent = models.ForeignKey(
         "CncMap",
         on_delete=models.SET_NULL,
