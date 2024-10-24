@@ -47,7 +47,9 @@ class CncNetFileBaseModel(CncNetBaseModel):
     )
     """What type of file extension this object is."""
 
-    ALLOWED_EXTENSION_TYPES = set(game_models.CncFileExtension.ExtensionTypes.values)
+    ALLOWED_EXTENSION_TYPES: t.Set[str] = set(
+        game_models.CncFileExtension.ExtensionTypes.values
+    )
     """Used to make sure e.g. a ``.mix`` doesn't get uploaded as a ``CncMapFile``.
 
     These are checked against :attr:`kirovy.models.cnc_game.CncFileExtension.extension_type`.
@@ -67,7 +69,15 @@ class CncNetFileBaseModel(CncNetBaseModel):
     def validate_file_extension(
         self, file_extension: game_models.CncFileExtension
     ) -> None:
-        if file_extension.extension.lower() not in self.cnc_game.allowed_extensions_set:
+        # Images are allowed for all games.
+        is_image = (
+            self.file_extension.extension_type
+            == self.file_extension.ExtensionTypes.IMAGE
+        )
+        is_allowed_for_game = (
+            file_extension.extension.lower() in self.cnc_game.allowed_extensions_set
+        )
+        if not is_allowed_for_game and not is_image:
             raise validators.ValidationError(
                 f'"{file_extension.extension}" is not a valid file extension for game "{self.cnc_game.full_name}".'
             )

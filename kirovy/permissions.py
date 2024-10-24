@@ -47,11 +47,19 @@ class ReadOnly(permissions.BasePermission):
 
 
 class CanEdit(CanUpload):
-    """
+    """Check editing permissions.
+
     Users can edit their own uploads.
-    Staff can edit user uploads.
+    Staff can edit all uploads.
 
     Users that have been banned cannot edit anymore. Just in case they feel like defacing content in retaliation.
+
+    Checking if the **user** is banned happens in :func:`kirovy.permissions.CanUpload.has_permission` which runs
+    *before* ``has_object_permissions``. Checking if the **object** is banned is done via checking for an `
+    `is_banned`` attribute.
+    [DRF permission docs](https://www.django-rest-framework.org/api-guide/permissions/#custom-permissions).
+
+    The edit check flow for users: ``Is the user banned -> Is the object banned -> Does the user own the object``
     """
 
     def has_object_permission(
@@ -62,7 +70,8 @@ class CanEdit(CanUpload):
 
         # Check if this model type is owned by users.
         if isinstance(obj, cnc_user.CncNetUserOwnedModel):
-            return request.user == obj.cnc_user
+            obj_is_banned = hasattr(obj, "is_banned") and obj.is_banned
+            return request.user == obj.cnc_user and not obj_is_banned
 
         return False
 

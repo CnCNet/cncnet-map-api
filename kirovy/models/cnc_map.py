@@ -62,8 +62,6 @@ class CncMap(cnc_user.CncNetUserOwnedModel):
 
     map_name = models.CharField(max_length=128, null=False, blank=False)
     description = models.CharField(max_length=4096, null=False, blank=False)
-    cnc_game = models.ForeignKey(game_models.CncGame, models.PROTECT, null=False)
-    categories = models.ManyToManyField(MapCategory)
     is_legacy = models.BooleanField(
         default=False,
         help_text="If true, this is an upload from the old cncnet database.",
@@ -115,6 +113,8 @@ class CncMap(cnc_user.CncNetUserOwnedModel):
         help_text="If true, then the map file has been uploaded, but the map info has not been set yet.",
     )
 
+    cnc_game = models.ForeignKey(game_models.CncGame, models.PROTECT, null=False)
+    categories = models.ManyToManyField(MapCategory)
     parent = models.ForeignKey(
         "CncMap",
         on_delete=models.SET_NULL,
@@ -184,19 +184,8 @@ class CncMapFile(file_base.CncNetFileBaseModel):
     def save(self, *args, **kwargs):
         if not self.version:
             self.version = self.cnc_map.next_version_number()
+        self.name = self.cnc_map.generate_versioned_name_for_file()
         super().save(*args, **kwargs)
-
-    def get_map_upload_path(self, filename: str) -> pathlib.Path:
-        """Generate the upload path for the map file.
-
-        :param filename:
-            The filename that the user uploaded.
-        :return:
-            Path to store the map file in.
-            This path is not guaranteed to exist because we use this function on first-save.
-        """
-        directory = self.cnc_map.get_map_directory_path()
-        return pathlib.Path(directory, filename)
 
     @staticmethod
     def generate_upload_to(instance: "CncMapFile", filename: str) -> pathlib.Path:

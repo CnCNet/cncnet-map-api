@@ -131,11 +131,20 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
 STATIC_URL = "static/"
+"""str: The static directory for serving web files. This is for assets for the website, **not** for uploads."""
+
 CNC_GAME_IMAGE_DIRECTORY = "game_images/"
+"""
+str: The directory inside of :attr:`~kirovy.settings._base.STATIC_URL` where we store game-specific and mod-specific
+logos and backgrounds.
+"""
 
 
 MEDIA_ROOT = get_env_var("MEDIA_ROOT")
 """:attr: The directory where all user uploads will be stored."""
+
+MEDIA_URL = get_env_var("MEDIA_URL", default="downloads/")
+"""str: The URL path that ``settings.MEDIA_ROOT`` files will be served from."""
 
 CNC_MAP_DIRECTORY = "maps"
 """:attr: The directory, beneath the game slug, where map files will be stored."""

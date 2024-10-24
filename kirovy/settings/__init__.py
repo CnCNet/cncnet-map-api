@@ -1,1 +1,1 @@
-from kirovy.settings.base import *
+from ._base import *
