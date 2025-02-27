@@ -44,12 +44,14 @@ def _get_url_patterns() -> t.List[path]:
     )
 
 
+# /maps/
 map_patterns = [
     # path("categories/", ...),  # return all categories
     # path("categories/game/<uuid:cnc_game_id>/", ...),
     path("categories/", cnc_map_views.MapCategoryListCreateView.as_view()),
     path("upload/", cnc_map_views.MapFileUploadView.as_view()),
     path("<uuid:pk>/", cnc_map_views.MapRetrieveUpdateView.as_view()),
+    path("delete/<uuid:pk>/", cnc_map_views.MapDeleteView.as_view())
     # path("img/<uuid:map_id>/"),
     # path("img/<uuid:map_id>/", ...),
     # path("search/")

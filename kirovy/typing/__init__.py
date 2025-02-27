@@ -28,6 +28,9 @@ UiPermissionName = str
 """:attr: A string passed to the UI to show/hide certain features. Does not control backend permissions, this is just
 for UX."""
 
+NO_VALUE = object()
+""":attr: Used for cases where you want an optional parameter, but ``None`` is a valid value."""
+
 
 class PaginationMetadata(TypedDict):
     offset: int

@@ -1,4 +1,6 @@
-from kirovy.models import CncGame
+from django.db.models import UUIDField
+
+from kirovy.models import CncGame, CncUser
 from kirovy.models.cnc_map import CncMap, CncMapFile, MapCategory
 from kirovy import typing as t
 import pytest
@@ -35,7 +37,7 @@ def cnc_map_category(create_cnc_map_category) -> MapCategory:
 
 
 @pytest.fixture
-def create_cnc_map(db, cnc_map_category, game_yuri):
+def create_cnc_map(db, cnc_map_category, game_yuri, client_user):
     """Return a function to create a CncMap object."""
 
     def _inner(
@@ -43,6 +45,8 @@ def create_cnc_map(db, cnc_map_category, game_yuri):
         description: str = "A fun map. Capture the center airports for a Hind.",
         cnc_game: CncGame = game_yuri,
         map_categories: t.List[MapCategory] = None,
+        user_id: t.Union[UUIDField, str, None, t.NO_VALUE] = t.NO_VALUE,
+        is_legacy: bool = False,
     ) -> CncMap:
         """Create a CncMap object.
 
@@ -55,9 +59,14 @@ def create_cnc_map(db, cnc_map_category, game_yuri):
         :param map_categories:
             The categories the map falls under. These can be found in the map file INI
             for the 2d C&C games. ``Basic.GameMode``. Many-to-many
+        :param user_id:
+            The user who owns the map. ``None`` is a valid option.
+            Defaults to the user from the :func:`~tests.fixtures.common_fixtures.client_user` fixture.
         :return:
             A ``CncMap`` object that can be used to create :class:`kirovy.models.cnc_map.CncMapFile` objects in tests.
         """
+        if user_id is t.NO_VALUE:
+            user_id = client_user.kirovy_user.id
         if not map_categories:
             map_categories = [
                 cnc_map_category,
@@ -67,6 +76,8 @@ def create_cnc_map(db, cnc_map_category, game_yuri):
             cnc_game=cnc_game,
             description=description,
             map_name=map_name,
+            is_legacy=is_legacy,
+            cnc_user_id=user_id,
         )
         cnc_map.save()
         cnc_map.categories.add(*map_categories)
