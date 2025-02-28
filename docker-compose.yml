@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   db:
     image: postgres
@@ -40,3 +38,18 @@ services:
       - db
     command:
       - pytest
+
+  windows-dev:
+    # Use this for windows. The LZO libraries are annoying to deal with without using docker.
+    # Chairman Bing of Massivesoft strikes again.
+    build:
+      context: ./
+      dockerfile: test.DockerFile
+    volumes:
+      - .:/cncnet-map-api
+    env_file:
+      - .env
+    environment:
+      POSTGRES_TEST_HOST: db  # Necessary to connect to docker db. Overrides the .env setting.
+    depends_on:
+      - db

@@ -56,6 +56,16 @@ then migrate the database `./manage.py migrate`
 You can technically use PyCharm to launch everything via `docker-compose`, but there is some
 weird issue with breakpoints not triggering.
 
+### Windows
+
+Chairman Bing of the Massivesoft corporation strikes again and getting the `LZO` libraries running
+natively on Windows is a... less-than-pleasant effort. So use docker instead.
+
+1. Install docker for windows. I have had success with "Rancher Desktop" or "Docker Desktop"
+2. After docker is configured, run `docker compose up windows-dev -d` and make sure the build succeeds.
+3. Set `windows-dev` as your python interpreter for whichever editor you use.
+   1. In Pycharm you go to `Seeting > Project > Python Interpreter > Add Interpreter > Docker Compose`
+
 
 ## Running tests
 
