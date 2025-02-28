@@ -10,6 +10,7 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.parsers import MultiPartParser
 from rest_framework.views import APIView
 
+import kirovy.objects.ui_objects
 from kirovy import permissions, typing as t, exceptions, constants
 from kirovy.models import (
     MapCategory,
@@ -108,7 +109,7 @@ class MapFileUploadView(APIView):
 
         if uploaded_size > max_size:
             return KirovyResponse(
-                t.ErrorResponseData(
+                kirovy.objects.ui_objects.ErrorResponseData(
                     message="File too large",
                     additional={
                         "max_bytes": str(max_size),
@@ -123,7 +124,7 @@ class MapFileUploadView(APIView):
             map_parser = CncGen2MapParser(uploaded_file)
         except exceptions.InvalidMapFile as e:
             return KirovyResponse(
-                t.ErrorResponseData(message="Invalid Map File"),
+                kirovy.objects.ui_objects.ErrorResponseData(message="Invalid Map File"),
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -204,7 +205,7 @@ class MapFileUploadView(APIView):
         # TODO: Actually serialize the return data and include the link to the preview.
         # TODO: Should probably convert this to DRF for that step.
         return KirovyResponse(
-            t.ResponseData(
+            kirovy.objects.ui_objects.ResponseData(
                 message="File uploaded successfully",
                 result={
                     "cnc_map": new_map.map_name,

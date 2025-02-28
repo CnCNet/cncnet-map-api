@@ -1,6 +1,7 @@
 """
 All exceptions for our app belong in this package.
 """
+
 from django.core.exceptions import *  # Import django exceptions for use elsewhere.
 from typing import Optional
 from django.utils.translation import gettext_lazy as _
@@ -74,3 +75,12 @@ class GameNotSupportedError(UnsupportedMediaType):
         code: Optional[int] = None,
     ):
         super().__init__(game_name_or_slug, detail, code)
+
+
+class BanException(Exception):
+    """Raised when there is an issue during the ban process.
+
+    ``str(e)`` will be returned to the UI.
+    """
+
+    pass

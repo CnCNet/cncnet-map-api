@@ -1,6 +1,6 @@
 from rest_framework import status
 
-from kirovy.permissions import UiPermissions
+from kirovy.objects.ui_objects import UiPermissions
 
 BASE_URL = "/ui-permissions/"
 

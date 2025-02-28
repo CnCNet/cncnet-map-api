@@ -13,16 +13,17 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
 
-from kirovy.views import test, cnc_map_views, permission_views
+from kirovy.views import test, cnc_map_views, permission_views, admin_views
 from kirovy import typing as t
 
 
-def _get_url_patterns() -> t.List[path]:
+def _get_url_patterns() -> list[path]:
     """Return the root level url patterns.
 
     I added this because I wanted to have the root URLs at the top of the file,
@@ -30,7 +31,7 @@ def _get_url_patterns() -> t.List[path]:
     """
     return (
         [
-            path("admin/", admin.site.urls),
+            path("admin/", include(admin_patterns)),
             path("test/jwt", test.TestJwt.as_view()),
             path(
                 "ui-permissions/", permission_views.ListPermissionForAuthUser.as_view()
@@ -51,11 +52,19 @@ map_patterns = [
     path("categories/", cnc_map_views.MapCategoryListCreateView.as_view()),
     path("upload/", cnc_map_views.MapFileUploadView.as_view()),
     path("<uuid:pk>/", cnc_map_views.MapRetrieveUpdateView.as_view()),
-    path("delete/<uuid:pk>/", cnc_map_views.MapDeleteView.as_view())
+    path("delete/<uuid:pk>/", cnc_map_views.MapDeleteView.as_view()),
     # path("img/<uuid:map_id>/"),
     # path("img/<uuid:map_id>/", ...),
     # path("search/")
 ]
+
+# /users/
+user_patterns = [
+    # path("<uuid:pk>")
+]
+
+# /admin/
+admin_patterns = [path("ban/", admin_views.BanView.as_view())]
 
 
 urlpatterns = _get_url_patterns()

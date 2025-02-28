@@ -1,5 +1,6 @@
 import datetime
 import json
+from random import randint
 from unittest import mock
 
 import pytest
@@ -218,7 +219,7 @@ def create_kirovy_user(db):
     """Return a user creation factory."""
 
     def _inner(
-        cncnet_id: int = 686,
+        cncnet_id: int = None,
         username: str = "EbullientPrism",
         verified_map_uploader: bool = True,
         verified_email: bool = True,
@@ -234,6 +235,8 @@ def create_kirovy_user(db):
         See the model for param descriptions.
         :class:`~kirovy.models.cnc_user.CncUser`
         """
+        if cncnet_id is None:
+            cncnet_id = randint(1, 999999999)
         user = CncUser(
             cncnet_id=cncnet_id,
             username=username,
