@@ -30,13 +30,11 @@ You can use docker compose if you'd like, but here are the native OS instruction
 ### Linux and Mac
 
 1. Download and install [pyenv](https://github.com/pyenv/pyenv)
-   > [!NOTE]
    > You don't have to use `pyenv` but it makes life much easier when dealing with virtual environments.
 2. Install [PostgreSQL](https://www.postgresql.org/) for your system. This is required for Django
    - On Mac you can do `brew install postgresql` if you have brew installed.
 3. Install LibMagic for [Python Magic](https://github.com/ahupp/python-magic)
    - On Mac you can do `brew install libmagic` if you have brew installed.
-   > [!NOTE]
    > LibMagic is used for checking file types.
 4. Checkout the repository
 5. Switch to the repository directory
@@ -73,8 +71,9 @@ natively on Windows is a... less-than-pleasant effort. So use docker instead.
 2. After docker is running, switch to your local git repo and run `docker compose up windows-dev -d`.
    Make sure the build succeeds.
 3. Set `windows-dev` as your python interpreter for whichever editor you use.
-   > [!TIP]
-   > In Pycharm you go to `Seeting > Project > Python Interpreter > Add Interpreter > Docker Compose`
+
+> [!TIP]
+> In Pycharm you go to `Settings > Project > Python Interpreter > Add Interpreter > Docker Compose`
 
 
 ## Running tests (backend devs)
