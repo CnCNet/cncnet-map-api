@@ -11,7 +11,7 @@ COPY .env /cncnet-map-api/
 # Copy files needed for build
 COPY requirements.txt /cncnet-map-api
 COPY requirements-dev.txt /cncnet-map-api
-COPY start.sh /cncnet-map-api
+COPY web_entry_point.sh /cncnet-map-api
 
 RUN apt-get update && apt-get install -y liblzo2-dev
 RUN pip install --upgrade pip
