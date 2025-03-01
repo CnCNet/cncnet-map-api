@@ -12,6 +12,18 @@ services:
     ports:
       - "127.0.0.1:${POSTGRES_PORT}:${POSTGRES_PORT}"
     command: -p ${POSTGRES_PORT}
+
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ${STATIC_ROOT}:/usr/share/nginx/html/static
+      - ${MEDIA_ROOT}:/usr/share/nginx/html/media
+    ports:
+      - "80:80"
+    depends_on:
+      - web
+
   web:
     build: .
     volumes:
@@ -24,6 +36,9 @@ services:
       - .env
     depends_on:
       - db
+    command: [ "gunicorn", "kirovy.wsgi:application", "--bind", "0.0.0.0:8000" ]
+
+
   test:
     build:
       context: ./
