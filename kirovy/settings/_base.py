@@ -145,6 +145,7 @@ CNC_MAP_DIRECTORY = "maps"
 ### --------------- SERVING FILES ---------------
 ### This section of settings has to do with serving files
 ### I recommend having `docker-compose.yml` and `nginx.conf` open if you're trying to decipher these settings.
+
 MEDIA_ROOT = "/data/cncnet_silo/"
 """:attr: The directory where all user uploads will be stored."""
 

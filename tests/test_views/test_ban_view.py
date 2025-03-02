@@ -59,7 +59,7 @@ def test_ban_no_permission(client_user, create_kirovy_user, client_anonymous):
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
-def test_ban_cant_ban_legacy_maps(client_god, create_cnc_map, user):
+def test_ban_cant_ban_legacy_maps(client_god, create_cnc_map, user, settings):
     """Sacred artifacts of the old internet can't be banned over the API."""
     sacred_artifact = create_cnc_map(user_id=user.id, is_legacy=True)
     data = dict(
@@ -67,7 +67,6 @@ def test_ban_cant_ban_legacy_maps(client_god, create_cnc_map, user):
         object_id=str(sacred_artifact.id),
         is_banned=True,
     )
-
     response = client_god.post(BASE_URL, data=data)
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert response.data["message"] == "legacy-maps-cannot-be-banned"

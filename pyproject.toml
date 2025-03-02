@@ -1,0 +1,8 @@
+[tool.black]
+line-length = 120  # GitHub's line length. Black will help prevent you from needing to right-scroll.
+target-version = ['py312']
+
+[project]
+requires-python = "3.12.4"
+name  = "cncnet-map-api"
+dynamic = ["version"]
