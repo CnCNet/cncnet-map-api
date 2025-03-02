@@ -26,7 +26,7 @@ def test_delete_map__staff(client_moderator, create_cnc_map, user):
 
 
 def test_delete_map__legacy(client_god, create_cnc_map):
-    """No one can delete maps over the API."""
+    """No one can delete legacy maps over the API."""
     cnc_map = create_cnc_map(user_id=None, is_legacy=True)
     url = f"{BASE_URL}{cnc_map.id}/"
 
