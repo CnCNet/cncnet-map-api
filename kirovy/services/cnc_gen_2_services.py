@@ -174,6 +174,8 @@ class CncGen2MapParser:
     def is_text(cls, uploaded_file: File) -> bool:
         """Check if a file is readable as text.
 
+        Also checks for ``ini`` files if the host OS supports them.
+
         :param uploaded_file:
             The supposed map file
         :return:
@@ -183,7 +185,7 @@ class CncGen2MapParser:
         uploaded_file.seek(0)
         mr_mime = magic_parser.from_buffer(uploaded_file.read())
         uploaded_file.seek(0)
-        return mr_mime == "text/plain"
+        return mr_mime in {"text/plain", "application/x-wine-extension-ini"}
 
     def extract_preview(self) -> t.Optional[Image.Image]:
         """Extract the map preview if it exists.

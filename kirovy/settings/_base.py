@@ -85,6 +85,7 @@ REST_FRAMEWORK = {
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
 DATABASES = {
+    # If you use docker compose then these should be defined for you.
     "default": {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": get_env_var("POSTGRES_DB"),
@@ -130,29 +131,56 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.1/howto/static-files/
 
-STATIC_URL = "static/"
-"""str: The static directory for serving web files. This is for assets for the website, **not** for uploads."""
-
 CNC_GAME_IMAGE_DIRECTORY = "game_images/"
 """
 str: The directory inside of :attr:`~kirovy.settings._base.STATIC_URL` where we store game-specific and mod-specific
-logos and backgrounds.
+logos and backgrounds. So a Red Alert 2 icon would be in e.g. ``URL/static/game_images/ra2/icons/allies.png``
 """
 
-
-MEDIA_ROOT = get_env_var("MEDIA_ROOT")
-""":attr: The directory where all user uploads will be stored."""
-
-MEDIA_URL = get_env_var("MEDIA_URL", default="downloads/")
-"""str: The URL path that ``settings.MEDIA_ROOT`` files will be served from."""
 
 CNC_MAP_DIRECTORY = "maps"
 """:attr: The directory, beneath the game slug, where map files will be stored."""
 
-STATICFILES_DIRS = (Path(BASE_DIR, STATIC_URL),)
-""":attr: Where uploaded files will be stored."""
 
-STATIC_ROOT = get_env_var("STATIC_ROOT")
+### --------------- SERVING FILES ---------------
+### This section of settings has to do with serving files
+### I recommend having `docker-compose.yml` and `nginx.conf` open if you're trying to decipher these settings.
+
+MEDIA_ROOT = "/data/cncnet_silo/"
+""":attr: The directory where all user uploads will be stored."""
+
+MEDIA_URL = "silo/"
+"""str: The URL path that ``settings.MEDIA_ROOT`` files will be served from.
+The URL will be ``HOST/silo/``
+
+Matches the path in :file:`nginx.conf`.
+"""
+
+STATIC_URL = "static/"
+"""str: The URL path for serving web files. This is for assets for the website, **not** for uploads.
+
+This also doubles as the repo directory name for where kirovy stores static files before ``collectstatic`` gathers
+them to be served by nginx.
+"""
+
+STATICFILES_DIRS = (Path(BASE_DIR, STATIC_URL),)
+""":attr: Directories to gather as part of ``collectstatic``.
+
+All assets listed here will be bundled into a single directory -- defined by ``STATIC_ROOT`` -- as part of
+the ``collectstatiic`` command during the build process.
+"""
+
+STATIC_ROOT = "/data/cncnet_static"
+"""attr: The directory where django will gather static files to when ``collectstatic`` is run.
+
+``collectstatic`` is a command run as part of the build process. It gathers the assets from the
+:attr:`kirovy.settings._base.STATICFILES_DIRS` and merges them all into one place for serving via nginx.
+This is necessary because django app dependencies -- like the admin plugin -- have their own static assets.
+
+Basically, ``collectstatic`` copies static files from your project directories to the web server's exposed directory.
+"""
+
+### ------------- END SERVING FILES -------------
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
@@ -163,3 +191,4 @@ AUTH_USER_MODEL = "kirovy.CncUser"
 
 
 RUN_ENVIRONMENT = get_env_var("RUN_ENVIRONMENT", "dev")
+"""attr: Defines which type of environment we are running on. Useful for debug logic."""

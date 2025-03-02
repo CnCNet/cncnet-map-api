@@ -1,6 +1,7 @@
 from rest_framework import status
 from rest_framework.views import APIView
 
+import kirovy.objects.ui_objects
 from kirovy import permissions, typing as t
 from kirovy.request import KirovyRequest
 from kirovy.response import KirovyResponse
@@ -19,7 +20,7 @@ class ListPermissionForAuthUser(APIView):
     ]
 
     def get(self, request: KirovyRequest, *args, **kwargs) -> KirovyResponse:
-        data = t.ResponseData(
-            result=permissions.UiPermissions.render_static(request, self)
+        data = kirovy.objects.ui_objects.ResponseData(
+            result=kirovy.objects.ui_objects.UiPermissions.render_static(request, self)
         )
         return KirovyResponse(data=data, status=status.HTTP_200_OK)

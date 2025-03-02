@@ -162,6 +162,11 @@ class CncUser(AbstractBaseUser):
 
         return kirovy_user
 
+    def set_ban(self, is_banned: bool, banned_by: "CncUser") -> None:
+        # TODO: bannable objects should probably be an abstract class
+        self.is_banned = is_banned
+        self.save(update_fields=["is_banned"])
+
 
 class CncNetUserOwnedModel(CncNetBaseModel):
     """A mixin model for any models that will be owned by a user."""

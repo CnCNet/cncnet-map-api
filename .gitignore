@@ -163,3 +163,5 @@ cython_debug/
 data/
 
 test.bmp
+# Photoshop files
+image-source/

@@ -7,7 +7,7 @@ from django.utils import text as text_utils
 from kirovy.models import file_base
 from kirovy.models import cnc_game as game_models, cnc_user
 from kirovy.models.cnc_base_model import CncNetBaseModel
-from kirovy import typing as t
+from kirovy import typing as t, exceptions
 
 
 class MapCategory(CncNetBaseModel):
@@ -159,6 +159,12 @@ class CncMap(cnc_user.CncNetUserOwnedModel):
             settings.CNC_MAP_DIRECTORY,
             self.id.hex,
         )
+
+    def set_ban(self, is_banned: bool, banned_by: cnc_user.CncUser) -> None:
+        if self.is_legacy:
+            raise exceptions.BanException("legacy-maps-cannot-be-banned")
+        self.is_banned = is_banned
+        self.save(update_fields=["is_banned"])
 
 
 class CncMapFile(file_base.CncNetFileBaseModel):

@@ -10,6 +10,7 @@ from rest_framework import (
 )
 from rest_framework.response import Response
 
+import kirovy.objects.ui_objects
 from kirovy import permissions, typing as t
 from kirovy.request import KirovyRequest
 from kirovy.response import KirovyResponse
@@ -23,9 +24,9 @@ class KirovyDefaultPagination(_pagination.LimitOffsetPagination):
     max_limit = 200
 
     def get_paginated_response(self, results: t.List[t.DictStrAny]) -> Response:
-        data = t.ListResponseData(
+        data = kirovy.objects.ui_objects.ListResponseData(
             results=results,
-            pagination_metadata=t.PaginationMetadata(
+            pagination_metadata=kirovy.objects.ui_objects.PaginationMetadata(
                 offset=self.offset,
                 limit=self.limit,
                 remaining_count=self.count,
@@ -72,7 +73,7 @@ class KirovyListCreateView(_g.ListCreateAPIView):
             return self.get_paginated_response(serializer.data)
 
         serializer = self.get_serializer(queryset, many=True)
-        data = t.ListResponseData(results=serializer.data)
+        data = kirovy.objects.ui_objects.ListResponseData(results=serializer.data)
         return Response(data, status=status.HTTP_200_OK)
 
     def get_paginated_response(self, data: t.List[t.DictStrAny]) -> Response:
@@ -103,7 +104,7 @@ class KirovyRetrieveUpdateView(_g.RetrieveUpdateAPIView):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         return KirovyResponse(
-            t.ResponseData(
+            kirovy.objects.ui_objects.ResponseData(
                 result=serializer.data,
             ),
             status=status.HTTP_200_OK,

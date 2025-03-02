@@ -10,7 +10,7 @@ COPY .env /cncnet-map-api/
 # Copy files needed for build
 COPY requirements.txt /cncnet-map-api
 COPY requirements-dev.txt /cncnet-map-api
-COPY start.sh /cncnet-map-api
+COPY web_entry_point.sh /cncnet-map-api
 
 RUN apt-get update && apt-get install -y liblzo2-dev  # Compression library used by westwood.
 RUN apt-get install libmagic1  # File type checking.
@@ -18,5 +18,5 @@ RUN pip install --upgrade pip
 # The cflags are needed to build the lzo library on Apple silicon.
 RUN CFLAGS=-I$(brew --prefix)/include LDFLAGS=-L$(brew --prefix)/lib pip install -r ./requirements-dev.txt
 
-RUN chmod +x /cncnet-map-api/start.sh
-ENTRYPOINT "/cncnet-map-api/start.sh"
+RUN chmod +x /cncnet-map-api/web_entry_point.sh
+ENTRYPOINT "/cncnet-map-api/web_entry_point.sh"

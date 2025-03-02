@@ -6,9 +6,11 @@ from django.conf import settings
 from django.core.files.uploadedfile import UploadedFile, InMemoryUploadedFile
 from django.db.models import Q
 from rest_framework import status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.parsers import MultiPartParser
 from rest_framework.views import APIView
 
+import kirovy.objects.ui_objects
 from kirovy import permissions, typing as t, exceptions, constants
 from kirovy.models import (
     MapCategory,
@@ -82,7 +84,14 @@ class MapRetrieveUpdateView(base_views.KirovyRetrieveUpdateView):
 
 
 class MapDeleteView(base_views.KirovyDestroyView):
-    ...
+    queryset = CncMap.objects.filter()
+
+    def perform_destroy(self, instance: CncMap):
+        if instance.is_legacy:
+            raise PermissionDenied(
+                "cannot-delete-legacy-maps", status.HTTP_403_FORBIDDEN
+            )
+        return super().perform_destroy(instance)
 
 
 class MapFileUploadView(APIView):
@@ -100,7 +109,7 @@ class MapFileUploadView(APIView):
 
         if uploaded_size > max_size:
             return KirovyResponse(
-                t.ErrorResponseData(
+                kirovy.objects.ui_objects.ErrorResponseData(
                     message="File too large",
                     additional={
                         "max_bytes": str(max_size),
@@ -115,7 +124,7 @@ class MapFileUploadView(APIView):
             map_parser = CncGen2MapParser(uploaded_file)
         except exceptions.InvalidMapFile as e:
             return KirovyResponse(
-                t.ErrorResponseData(message="Invalid Map File"),
+                kirovy.objects.ui_objects.ErrorResponseData(message="Invalid Map File"),
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -196,7 +205,7 @@ class MapFileUploadView(APIView):
         # TODO: Actually serialize the return data and include the link to the preview.
         # TODO: Should probably convert this to DRF for that step.
         return KirovyResponse(
-            t.ResponseData(
+            kirovy.objects.ui_objects.ResponseData(
                 message="File uploaded successfully",
                 result={
                     "cnc_map": new_map.map_name,

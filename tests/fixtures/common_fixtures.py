@@ -1,19 +1,24 @@
 import datetime
 import json
+import pathlib
+from random import randint
 from unittest import mock
 
 import pytest
 import requests
 import ujson
+from django.conf import UserSettingsHolder
 from django.contrib.auth.models import AnonymousUser
+from django.http import FileResponse
 from django.test import Client
-from django.conf import (
-    settings as _settings,
-)  # Need to rename to not conflict with setting fixture.
+from pytest_django.fixtures import settings
 from pytest_django.lazy_django import skip_if_no_django
+from rest_framework import status
 
 from kirovy import objects, typing as t, constants
 from kirovy.models import CncUser
+from kirovy.objects.ui_objects import ErrorResponseData
+from kirovy.response import KirovyResponse
 
 
 @pytest.fixture
@@ -31,14 +36,14 @@ def create_auth_header():
 
 
 @pytest.fixture
-def jwt_header(create_auth_header):
+def jwt_header(create_auth_header, settings):
     """Generates headers for calls to JWT protected endpoints.
 
     You need an account on CncNet and the environment variables for the credentials set.
     """
     email_pass = {
-        "email": _settings.TESTING_API_USERNAME,
-        "password": _settings.TESTING_API_PASSWORD,
+        "email": settings.TESTING_API_USERNAME,
+        "password": settings.TESTING_API_PASSWORD,
     }
     response = requests.post("https://ladder.cncnet.org/api/v1/auth/login", email_pass)
 
@@ -50,8 +55,12 @@ def jwt_header(create_auth_header):
 
 @pytest.fixture(autouse=True)
 def tmp_media_root(tmp_path, settings):
-    """Makes all file uploads go to tmp paths to not fill up developer drives."""
-    tmp_media = tmp_path / settings.MEDIA_ROOT
+    """Makes all file uploads go to tmp paths to not fill up developer drives.
+
+    Modifies
+    """
+    # If the path begins in a slash then it will override the temp path, so we need to make sure it doesn't.
+    tmp_media = tmp_path / settings.MEDIA_ROOT.lstrip("/")
     if not tmp_media.exists():
         tmp_media.mkdir(parents=True)
     settings.MEDIA_ROOT = tmp_media
@@ -62,6 +71,8 @@ class KirovyClient(Client):
     """A client wrapper with defaults I prefer.
 
     Our whole API will be JSON, so all write methods are wrapped to default to JSON.
+
+    **Don't construct manually**, use the ``client_*`` fixtures.
     """
 
     cncnet_user_info: t.Optional[objects.CncnetUserInfo] = None
@@ -101,15 +112,28 @@ class KirovyClient(Client):
         self.kirovy_user = kirovy_user
         self.cncnet_user_info = cncnet_user_info
 
-    def request(self, **request):
+    def request(self, **request) -> KirovyResponse | FileResponse:
         """Wraps request to mock the authenticate method to return our "active" user."""
-        with mock.patch(
-            "kirovy.authentication.CncNetAuthentication.authenticate"
-        ) as mocked:
+        with mock.patch("kirovy.authentication.CncNetAuthentication.authenticate") as mocked:
             if not self.kirovy_user:
                 mocked.return_value = None
             else:
                 mocked.return_value = self.kirovy_user, self.cncnet_user_info
+
+            # Local imports are usually bad, but we don't want to interfere with the settings fixture.
+            from django.conf import settings as _settings
+
+            # Emulate serving files so that we don't need to run a full WSGI stack for pytest.
+            if (url_path := request.get("PATH_INFO", "")) and url_path.startswith(_settings.MEDIA_URL):
+                # This file path relies on the ``tmp_media_root`` fixture switching ``MEDIA_ROOT`` to the test path.
+                # ``tmp_media_root`` is set to ``autouse=True`` so this shouldn't have issues.
+                file_path: pathlib.Path = _settings.MEDIA_ROOT / url_path.replace(_settings.MEDIA_URL, "")
+                if not file_path.exists() or not file_path.is_file():
+                    return KirovyResponse(
+                        data=ErrorResponseData(message="file-not-found"), status=status.HTTP_404_NOT_FOUND
+                    )
+                return FileResponse(file_path.open("rb"), as_attachment=True)
+
             return super().request(**request)
 
     def post(
@@ -187,7 +211,7 @@ class KirovyClient(Client):
 
 
 @pytest.fixture
-def create_client(db):
+def create_client(db, tmp_media_root):
     """Return a factory to create a kirovy test http client.
 
     The db fixture is included because you'll probably want DB access
@@ -218,7 +242,7 @@ def create_kirovy_user(db):
     """Return a user creation factory."""
 
     def _inner(
-        cncnet_id: int = 686,
+        cncnet_id: int = None,
         username: str = "EbullientPrism",
         verified_map_uploader: bool = True,
         verified_email: bool = True,
@@ -234,6 +258,8 @@ def create_kirovy_user(db):
         See the model for param descriptions.
         :class:`~kirovy.models.cnc_user.CncUser`
         """
+        if cncnet_id is None:
+            cncnet_id = randint(1, 999999999)
         user = CncUser(
             cncnet_id=cncnet_id,
             username=username,
@@ -289,25 +315,19 @@ def non_verified_user(create_kirovy_user) -> CncUser:
 @pytest.fixture
 def moderator(create_kirovy_user) -> CncUser:
     """Convenience method to create a moderator."""
-    return create_kirovy_user(
-        cncnet_id=117649, username="DespondentPyre", group=constants.CncnetUserGroup.MOD
-    )
+    return create_kirovy_user(cncnet_id=117649, username="DespondentPyre", group=constants.CncnetUserGroup.MOD)
 
 
 @pytest.fixture
 def admin(create_kirovy_user) -> CncUser:
     """Convenience method to create an admin."""
-    return create_kirovy_user(
-        cncnet_id=49, username="MendicantBias", group=constants.CncnetUserGroup.ADMIN
-    )
+    return create_kirovy_user(cncnet_id=49, username="MendicantBias", group=constants.CncnetUserGroup.ADMIN)
 
 
 @pytest.fixture
 def god(create_kirovy_user) -> CncUser:
     """Convenience method to create a god."""
-    return create_kirovy_user(
-        cncnet_id=1, username="ThePrimordial", group=constants.CncnetUserGroup.GOD
-    )
+    return create_kirovy_user(cncnet_id=1, username="ThePrimordial", group=constants.CncnetUserGroup.GOD)
 
 
 @pytest.fixture
