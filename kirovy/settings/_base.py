@@ -36,13 +36,14 @@ ALLOWED_HOSTS = []
 
 INSTALLED_APPS = [
     "kirovy",
+    "django.contrib.postgres",  # necessary for full-text search and advanced postgres functionality.
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "rest_framework",
+    "rest_framework",  # Django REST Framework.
 ]
 
 MIDDLEWARE = [
@@ -55,7 +56,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = "kirovy.urls"
+ROOT_URLCONF = "kirovy.urls"  # The file that holds our URL routing.
 
 TEMPLATES = [
     {
@@ -80,6 +81,16 @@ REST_FRAMEWORK = {
         "kirovy.authentication.CncNetAuthentication",
     ]
 }
+"""
+attr: Define the default authentication backend for endpoints.
+Can be overwritten for views, but this is rare. See :class:`kirovy.authentication.CncNetAuthentication`.
+
+.. warning::
+
+    Authentication is **not** a permission system. Authentication just checks if a user is logged in or
+    not. For checking e.g. object permissions, see the module :mod:`kirovy.permissions`. To understand how permissions
+    are set in Django Rest Framework, see `The DRF docs <https://www.django-rest-framework.org/api-guide/permissions/>`_
+"""
 
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
@@ -139,7 +150,7 @@ logos and backgrounds. So a Red Alert 2 icon would be in e.g. ``URL/static/game_
 
 
 CNC_MAP_DIRECTORY = "maps"
-""":attr: The directory, beneath the game slug, where map files will be stored."""
+"""attr: The directory, beneath the game slug, where map files will be stored."""
 
 
 ### --------------- SERVING FILES ---------------

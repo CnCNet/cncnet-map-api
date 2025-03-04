@@ -7,6 +7,7 @@ from django.core.files.uploadedfile import UploadedFile, InMemoryUploadedFile
 from django.db.models import Q
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.parsers import MultiPartParser
 from rest_framework.views import APIView
 
@@ -42,6 +43,53 @@ class MapListCreateView(base_views.KirovyListCreateView):
     The view for maps.
     """
 
+    def get_queryset(self):
+        """The default query from which all other map list queries are built.
+
+        By default, maps will be shown if (they are published, and not banned) or if they're a legacy map.
+
+        .. code-block:: python
+
+            ```CncMap.objects.filter(Q(x=y, z=a) | Q(a=b))```
+
+        Translates to:
+
+        .. code-block:: sql
+
+            SELECT * FROM cnc_maps WHERE (x=y AND z=a) OR a=b
+
+        """
+        base_query = CncMap.objects.filter(
+            Q(is_banned=False, is_published=True, incomplete_upload=False, is_temporary=False) | Q(is_legacy=True)
+        )
+        return base_query
+
+    filter_backends = [
+        SearchFilter,
+        OrderingFilter,
+    ]
+
+    search_fields = [
+        "@map_name",
+        "^description",
+    ]
+    """
+    attr: Fields that can be text searched using query params.
+    `Django REST Framework docs <https://www.django-rest-framework.org/api-guide/filtering/#searchfilter>`_.
+    `Built-in django search docs <https://docs.djangoproject.com/en/4.2/ref/contrib/postgres/search/>`_.
+    """
+
+    ordering_fields = [
+        "map_name",
+        "modified",
+        "created",
+        "cnc_map_file__created",  # For finding maps with new file versions.
+    ]
+    """
+    attr: The fields we will sort ordering by.
+    `Docs <https://www.django-rest-framework.org/api-guide/filtering/#orderingfilter>`_
+    """
+
 
 class MapRetrieveUpdateView(base_views.KirovyRetrieveUpdateView):
     serializer_class = cnc_map_serializers.CncMapBaseSerializer
@@ -71,8 +119,7 @@ class MapRetrieveUpdateView(base_views.KirovyRetrieveUpdateView):
 
         # Anyone can view legacy maps, temporary maps (for the cncnet client,) and published maps that aren't banned.
         queryset = CncMap.objects.filter(
-            Q(Q(is_published=True) | Q(is_legacy=True) | Q(is_temporary=True))
-            & Q(is_banned=False)
+            Q(Q(is_published=True) | Q(is_legacy=True) | Q(is_temporary=True)) & Q(is_banned=False)
         )
 
         if self.request.user.is_authenticated:
@@ -88,9 +135,7 @@ class MapDeleteView(base_views.KirovyDestroyView):
 
     def perform_destroy(self, instance: CncMap):
         if instance.is_legacy:
-            raise PermissionDenied(
-                "cannot-delete-legacy-maps", status.HTTP_403_FORBIDDEN
-            )
+            raise PermissionDenied("cannot-delete-legacy-maps", status.HTTP_403_FORBIDDEN)
         return super().perform_destroy(instance)
 
 
@@ -101,9 +146,7 @@ class MapFileUploadView(APIView):
     def post(self, request: KirovyRequest, format=None) -> KirovyResponse:
         game = CncGame.objects.get(id=request.data["game_id"])
         uploaded_file: UploadedFile = request.data["file"]
-        extension = CncFileExtension.objects.get(
-            extension=pathlib.Path(uploaded_file.name).suffix.lstrip(".")
-        )
+        extension = CncFileExtension.objects.get(extension=pathlib.Path(uploaded_file.name).suffix.lstrip("."))
         max_size = file_utils.ByteSized(mega=25)
         uploaded_size = file_utils.ByteSized(uploaded_file.size)
 
@@ -190,9 +233,7 @@ class MapFileUploadView(APIView):
             image_io = io.BytesIO()
             image_extension = CncFileExtension.objects.get(extension="jpg")
             extracted_image.save(image_io, format="JPEG", quality=95)
-            django_image = InMemoryUploadedFile(
-                image_io, None, "temp.jpg", "image/jpeg", image_io.tell(), None
-            )
+            django_image = InMemoryUploadedFile(image_io, None, "temp.jpg", "image/jpeg", image_io.tell(), None)
             new_map_preview = map_preview.MapPreview(
                 is_extracted=True,
                 cnc_map_file=new_map_file,
@@ -205,7 +246,7 @@ class MapFileUploadView(APIView):
         # TODO: Actually serialize the return data and include the link to the preview.
         # TODO: Should probably convert this to DRF for that step.
         return KirovyResponse(
-            kirovy.objects.ui_objects.ResponseData(
+            kirovy.objects.ui_objects.ResultResponseData(
                 message="File uploaded successfully",
                 result={
                     "cnc_map": new_map.map_name,

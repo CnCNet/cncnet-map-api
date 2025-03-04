@@ -34,9 +34,7 @@ class BanView(APIView):
                 data=ui_objects.ErrorResponseData(message="data_failed_validation"),
             )
 
-        obj = get_object_or_404(
-            ban_data.get_model().objects.filter(), id=ban_data.object_id
-        )
+        obj = get_object_or_404(ban_data.get_model().objects.filter(), id=ban_data.object_id)
         try:
             obj.set_ban(ban_data.is_banned, self.request.user)
         except exceptions.BanException as e:
@@ -47,5 +45,5 @@ class BanView(APIView):
 
         return KirovyResponse(
             status=status.HTTP_200_OK,
-            data=ui_objects.ResponseData(message="", result=ban_data.model_dump()),
+            data=ui_objects.ResultResponseData(message="", result=ban_data.model_dump()),
         )

@@ -1,6 +1,7 @@
 """
 Base views with common functionality for all API views in Kirovy
 """
+
 from rest_framework import (
     exceptions as _e,
     generics as _g,
@@ -12,6 +13,7 @@ from rest_framework.response import Response
 
 import kirovy.objects.ui_objects
 from kirovy import permissions, typing as t
+from kirovy.objects import ui_objects
 from kirovy.request import KirovyRequest
 from kirovy.response import KirovyResponse
 from kirovy.serializers import KirovySerializer
@@ -23,7 +25,7 @@ class KirovyDefaultPagination(_pagination.LimitOffsetPagination):
     default_limit = 30
     max_limit = 200
 
-    def get_paginated_response(self, results: t.List[t.DictStrAny]) -> Response:
+    def get_paginated_response(self, results: t.List[t.DictStrAny]) -> KirovyResponse[ui_objects.ListResponseData]:
         data = kirovy.objects.ui_objects.ListResponseData(
             results=results,
             pagination_metadata=kirovy.objects.ui_objects.PaginationMetadata(
@@ -33,7 +35,7 @@ class KirovyDefaultPagination(_pagination.LimitOffsetPagination):
             ),
         )
 
-        return Response(data, status=status.HTTP_200_OK)
+        return KirovyResponse(data, status=status.HTTP_200_OK)
 
     def get_paginated_response_schema(self, schema):
         raise NotImplementedError()
@@ -50,21 +52,18 @@ class KirovyListCreateView(_g.ListCreateAPIView):
     _paginator: t.Optional[KirovyDefaultPagination]
     request: KirovyRequest  # Added for type hinting. Populated by DRF ``.setup()``
 
-    def create(self, request: KirovyRequest, *args, **kwargs) -> Response:
+    def create(self, request: KirovyRequest, *args, **kwargs) -> KirovyResponse[ui_objects.ResultResponseData]:
         data = request.data
-        if isinstance(data, dict) and issubclass(
-            self.get_serializer_class(), KirovySerializer
-        ):
+        if isinstance(data, dict) and issubclass(self.get_serializer_class(), KirovySerializer):
             data["last_modified_by_id"] = request.user.id
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
-        return Response(
-            serializer.data, status=status.HTTP_201_CREATED, headers=headers
-        )
+        data = ui_objects.ResultResponseData(result=serializer.data)
+        return KirovyResponse(data, status=status.HTTP_201_CREATED, headers=headers)
 
-    def list(self, request, *args, **kwargs):
+    def list(self, request, *args, **kwargs) -> KirovyResponse[ui_objects.ListResponseData]:
         queryset = self.filter_queryset(self.get_queryset())
 
         page = self.paginate_queryset(queryset)
@@ -74,9 +73,9 @@ class KirovyListCreateView(_g.ListCreateAPIView):
 
         serializer = self.get_serializer(queryset, many=True)
         data = kirovy.objects.ui_objects.ListResponseData(results=serializer.data)
-        return Response(data, status=status.HTTP_200_OK)
+        return KirovyResponse(data, status=status.HTTP_200_OK)
 
-    def get_paginated_response(self, data: t.List[t.DictStrAny]) -> Response:
+    def get_paginated_response(self, data: t.List[t.DictStrAny]) -> KirovyResponse[ui_objects.ListResponseData]:
         """
         Return a paginated style `Response` object for the given output data.
         """
@@ -84,7 +83,7 @@ class KirovyListCreateView(_g.ListCreateAPIView):
 
     @property
     def paginator(self) -> t.Optional[KirovyDefaultPagination]:
-        """Just here for typing."""
+        """Just here for type hinting."""
         return super().paginator
 
 
@@ -104,7 +103,7 @@ class KirovyRetrieveUpdateView(_g.RetrieveUpdateAPIView):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         return KirovyResponse(
-            kirovy.objects.ui_objects.ResponseData(
+            kirovy.objects.ui_objects.ResultResponseData(
                 result=serializer.data,
             ),
             status=status.HTTP_200_OK,
