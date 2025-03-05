@@ -9,3 +9,4 @@ ujson==5.*
 python-magic>=0.4.27
 pydantic>=2.10,<3.0
 gunicorn>=22.0.0,<23.0.0
+django-filter==25.1

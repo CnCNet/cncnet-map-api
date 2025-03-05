@@ -2,14 +2,14 @@ import io
 import logging
 import pathlib
 
-from django.conf import settings
 from django.core.files.uploadedfile import UploadedFile, InMemoryUploadedFile
-from django.db.models import Q
+from django.db.models import Q, QuerySet
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.parsers import MultiPartParser
 from rest_framework.views import APIView
+from django_filters import rest_framework as filters
 
 import kirovy.objects.ui_objects
 from kirovy import permissions, typing as t, exceptions, constants
@@ -38,6 +38,83 @@ class MapCategoryListCreateView(base_views.KirovyListCreateView):
     queryset = MapCategory.objects.all()
 
 
+class MapListFilters(filters.FilterSet):
+    """The filters for the map list endpoint.
+
+    `Docs on how these work <https://django-filter.readthedocs.io/en/stable/guide/rest_framework.html>`_
+    """
+
+    include_edits = filters.BooleanFilter(field_name="parent_id", method="filter_include_map_edits")
+    # include_maps_from_sub_games = filters.BooleanFilter(
+    #     field_name="cnc_game__parent_id", method="filter_include_maps_from_sub_games"
+    # )
+    cnc_game = filters.ModelMultipleChoiceFilter(
+        field_name="cnc_game__id", to_field_name="id", queryset=CncGame.objects.filter(is_visible=True)
+    )
+    categories = filters.ModelMultipleChoiceFilter(MapCategory.objects.filter())
+
+    class Meta:
+        model = CncMap
+        fields = ["is_legacy", "is_reviewed", "parent", "categories"]
+
+    def filter_include_map_edits(self, queryset: QuerySet[CncMap], name: str, value: bool) -> QuerySet[CncMap]:
+        """We will exclude maps that are edits of other maps by default.
+
+        If ``value`` is true, then we will return edits of other maps.
+        Maps with ``parent_id IS NOT NULL`` are edits of another map.
+
+        See: :attr:`kirovy.models.cnc_map.CncMap.parent`.
+
+        :param queryset:
+            The queryset that we will modify with our filters.
+        :param name:
+            The name of the field. We don't use it, but it's required for the interface.
+        :param value:
+            The value from the UI. If ``True``, then we will include map edits.
+        :return:
+            The queryset, maybe modified to include map edits.
+        """
+        if not value:
+            # Was not provided, or set to false. Don't include map edits.
+            return queryset.exclude(parent_id__isnull=False)
+
+        return queryset
+
+    # TODO: Does anyone even want this behavior?
+    # def filter_include_maps_from_sub_games(
+    #     self, queryset: QuerySet[CncMap], name: str, value: bool
+    # ) -> QuerySet[CncMap]:
+    #     """We will exclude maps that are for sub games of the selected games by default.
+    #
+    #     If ``value`` is true, then we will return maps for sub games.
+    #     e.g. return Yuri's Revenge maps if game is Red Alert 2.
+    #
+    #     Sub games can also be mods, according to the database, so make sure to set the filter for including mods
+    #     too.
+    #
+    #     See: :attr:`kirovy.models.cnc_game.CncGame.parent_game`.
+    #
+    #     :param queryset:
+    #         The queryset that we will modify with our filters.
+    #     :param name:
+    #         The name of the field. We don't use it, but it's required for the interface.
+    #     :param value:
+    #         The value from the UI. If ``True``, then we will include maps for sub games of the game filter.
+    #     :return:
+    #         The queryset, maybe modified to include maps for sub games.
+    #     """
+    #     specified_games = self.data["cnc_game"]
+    #     if not specified_games:
+    #         # The user didn't specify a game, so don't perform any modifications to the query.
+    #         return queryset
+    #     if not value:
+    #         # User provided games, but does not want to see sub games.
+    #         return queryset.exclude(cnc_game__parent_game_id__isnull=False)
+    #
+    #     # User wants to see sub games
+    #     return queryset | CncMap.objects.filter(cnc_game__parent_game__in=)
+
+
 class MapListCreateView(base_views.KirovyListCreateView):
     """
     The view for maps.
@@ -47,6 +124,8 @@ class MapListCreateView(base_views.KirovyListCreateView):
         """The default query from which all other map list queries are built.
 
         By default, maps will be shown if (they are published, and not banned) or if they're a legacy map.
+
+        We only show maps for games that are visible (so we can hide Generals until it's done.)
 
         .. code-block:: python
 
@@ -59,14 +138,23 @@ class MapListCreateView(base_views.KirovyListCreateView):
             SELECT * FROM cnc_maps WHERE (x=y AND z=a) OR a=b
 
         """
-        base_query = CncMap.objects.filter(
-            Q(is_banned=False, is_published=True, incomplete_upload=False, is_temporary=False) | Q(is_legacy=True)
+        base_query = (
+            CncMap.objects.filter(
+                Q(is_banned=False, is_published=True, incomplete_upload=False, is_temporary=False) | Q(is_legacy=True)
+            ).filter(cnc_game__is_visible=True)
+            # Prefetch data necessary to the map grid. Pre-fetching avoids hitting the database in a loop.
+            .select_related("cnc_user", "cnc_game", "parent", "parent__cnc_user")
+            # Prefetch the categories because they're displayed like tags.
+            # TODO: Since the category list is going to be somewhat small,
+            #  maybe the UI should just cache them and I return IDs instead of objects?
+            .prefetch_related("categories")
         )
         return base_query
 
     filter_backends = [
         SearchFilter,
         OrderingFilter,
+        MapListFilters,
     ]
 
     search_fields = [
@@ -81,9 +169,9 @@ class MapListCreateView(base_views.KirovyListCreateView):
 
     ordering_fields = [
         "map_name",
-        "modified",
-        "created",
         "cnc_map_file__created",  # For finding maps with new file versions.
+        "cnc_map_file__width",
+        "cnc_map_file__height",
     ]
     """
     attr: The fields we will sort ordering by.

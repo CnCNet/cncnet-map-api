@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django_filters",  # Used for advanced querying on the API.
     "rest_framework",  # Django REST Framework.
 ]
 
