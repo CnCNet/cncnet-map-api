@@ -42,6 +42,13 @@ class MapListFilters(filters.FilterSet):
     """The filters for the map list endpoint.
 
     `Docs on how these work <https://django-filter.readthedocs.io/en/stable/guide/rest_framework.html>`_
+
+    For the Many-to-Many filters, like categories, refer to the
+    `MultipleChoiceFilterDocs <https://django-filter.readthedocs.io/en/stable/ref/filters.html#multiplechoicefilter>_`.
+
+    The TL;DR is that multiple choices are done by specifying the same field multiple times.
+
+    e.g. ``/maps/search/?categories=1&categories=2&categories=3``
     """
 
     include_edits = filters.BooleanFilter(field_name="parent_id", method="filter_include_map_edits")
@@ -51,7 +58,7 @@ class MapListFilters(filters.FilterSet):
     cnc_game = filters.ModelMultipleChoiceFilter(
         field_name="cnc_game__id", to_field_name="id", queryset=CncGame.objects.filter(is_visible=True)
     )
-    categories = filters.ModelMultipleChoiceFilter(MapCategory.objects.filter())
+    # categories = filters.ModelMultipleChoiceFilter(queryset=MapCategory.objects.filter())
 
     class Meta:
         model = CncMap
@@ -154,8 +161,9 @@ class MapListCreateView(base_views.KirovyListCreateView):
     filter_backends = [
         SearchFilter,
         OrderingFilter,
-        MapListFilters,
+        filters.DjangoFilterBackend,
     ]
+    filterset_class = MapListFilters
 
     search_fields = [
         "@map_name",
@@ -177,6 +185,8 @@ class MapListCreateView(base_views.KirovyListCreateView):
     attr: The fields we will sort ordering by.
     `Docs <https://www.django-rest-framework.org/api-guide/filtering/#orderingfilter>`_
     """
+
+    serializer_class = cnc_map_serializers.CncMapBaseSerializer
 
 
 class MapRetrieveUpdateView(base_views.KirovyRetrieveUpdateView):

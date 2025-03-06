@@ -47,6 +47,10 @@ def create_cnc_map(db, cnc_map_category, game_yuri, client_user):
         map_categories: t.List[MapCategory] = None,
         user_id: t.Union[UUIDField, str, None, t.NO_VALUE] = t.NO_VALUE,
         is_legacy: bool = False,
+        is_published: bool = True,
+        is_banned: bool = False,
+        is_reviewed: bool = False,
+        is_temporary: bool = False,
     ) -> CncMap:
         """Create a CncMap object.
 
@@ -62,6 +66,17 @@ def create_cnc_map(db, cnc_map_category, game_yuri, client_user):
         :param user_id:
             The user who owns the map. ``None`` is a valid option.
             Defaults to the user from the :func:`~tests.fixtures.common_fixtures.client_user` fixture.
+        :param is_legacy:
+            If true, this is a map copied from the old map database. Has a potential to be garbage, or a holy relic.
+        :param is_published:
+            If true, the map author has decided to make their map publicly visible.
+        :param is_banned:
+            If true, the map has been banned from all list views.
+        :param is_reviewed:
+            If true, a staff member has reviewed this map.
+        :param is_temporary:
+            If true, then this map was uploaded by the CnCNet client, and is only visible to the client.
+            Will only be available through direct links for a limited time.
         :return:
             A ``CncMap`` object that can be used to create :class:`kirovy.models.cnc_map.CncMapFile` objects in tests.
         """
@@ -78,6 +93,10 @@ def create_cnc_map(db, cnc_map_category, game_yuri, client_user):
             map_name=map_name,
             is_legacy=is_legacy,
             cnc_user_id=user_id,
+            is_published=is_published,
+            is_banned=is_banned,
+            is_reviewed=is_reviewed,
+            is_temporary=is_temporary,
         )
         cnc_map.save()
         cnc_map.categories.add(*map_categories)
