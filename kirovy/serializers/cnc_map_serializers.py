@@ -66,5 +66,6 @@ class CncMapBaseSerializer(CncNetUserOwnedModelSerializer):
 
     class Meta:
         model = cnc_map.CncMap
+        # We return the ID instead of the whole object.
         exclude = ["cnc_game", "categories"]
         fields = "__all__"
