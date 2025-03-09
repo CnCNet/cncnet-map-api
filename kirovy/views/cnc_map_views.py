@@ -1,33 +1,18 @@
-import hashlib
-import io
 import logging
-import pathlib
 
-from django.core.files.uploadedfile import UploadedFile, InMemoryUploadedFile
 from django.db.models import Q, QuerySet
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import SearchFilter, OrderingFilter
-from rest_framework.parsers import MultiPartParser
-from rest_framework.views import APIView
 from django_filters import rest_framework as filters
 
-import kirovy.objects.ui_objects
-from kirovy import permissions, typing as t, exceptions, constants
+from kirovy import permissions
 from kirovy.models import (
     MapCategory,
-    cnc_map,
     CncGame,
-    CncFileExtension,
-    map_preview,
     CncMap,
 )
-from kirovy.objects.ui_objects import ErrorResponseData
-from kirovy.request import KirovyRequest
-from kirovy.response import KirovyResponse
 from kirovy.serializers import cnc_map_serializers
-from kirovy.services.cnc_gen_2_services import CncGen2MapParser, CncGen2MapSections
-from kirovy.utils import file_utils
 from kirovy.views import base_views
 
 
@@ -237,174 +222,3 @@ class MapDeleteView(base_views.KirovyDestroyView):
         if instance.is_legacy:
             raise PermissionDenied("cannot-delete-legacy-maps", status.HTTP_403_FORBIDDEN)
         return super().perform_destroy(instance)
-
-
-class MapHashes(t.NamedTuple):
-    md5: str
-    sha1: str
-    sha512: str
-
-
-class MapFileUploadView(APIView):
-    parser_classes = [MultiPartParser]
-    permission_classes = [permissions.CanUpload]
-    request: KirovyRequest
-
-    @staticmethod
-    def _get_map_hashes(uploaded_file: UploadedFile) -> MapHashes:
-        file_contents = uploaded_file.read()
-        map_hash_sha512 = hashlib.sha512(file_contents).hexdigest()
-        map_hash_md5 = hashlib.md5(file_contents).hexdigest()
-        map_hash_sha1 = hashlib.sha1().hexdigest()  # legacy ban list support
-
-        return MapHashes(md5=map_hash_md5, sha1=map_hash_sha1, sha512=map_hash_sha512)
-
-    def validate_map_file(self, uploaded_file: UploadedFile, hashes: MapHashes) -> t.Tuple[bool, t.Optional[str]]:
-        matched_hashes = cnc_map.CncMapFile.objects.filter(
-            Q(hash_md5=hashes.md5) | Q(hash_sha512=hashes.sha512)
-        ).prefetch_related("cnc_map")
-
-        if not matched_hashes:
-            return True, None
-
-        is_banned = next(iter([x for x in matched_hashes if x.cnc_map.is_banned]))
-
-        if is_banned:
-            naughty_ip_address = self.request.META.get("HTTP_X_FORWARDED_FOR", "unknown")
-            user = self.request.user
-
-            log_attrs = {
-                "ip_address": naughty_ip_address,
-                "user": f"[{user.cncnet_id}] {user.username}" if user else "unauthenticated_upload",
-                "map_file_id": is_banned.id,
-                "map_id": is_banned.cnc_map.id,
-            }
-
-            _LOGGER.info("attempted_uploading_banned_map_file", log_attrs)
-
-        return False, "duplicate-file"
-
-    def post(self, request: KirovyRequest, format=None) -> KirovyResponse:
-        # todo: add file version support.
-        # todo: make validation less trash
-        game = CncGame.objects.get(id=request.data["game_id"])
-        uploaded_file: UploadedFile = request.data["file"]
-        extension = CncFileExtension.objects.get(extension=pathlib.Path(uploaded_file.name).suffix.lstrip("."))
-        max_size = file_utils.ByteSized(mega=25)
-        uploaded_size = file_utils.ByteSized(uploaded_file.size)
-
-        if uploaded_size > max_size:
-            return KirovyResponse(
-                kirovy.objects.ui_objects.ErrorResponseData(
-                    message="File too large",
-                    additional={
-                        "max_bytes": str(max_size),
-                        "your_bytes": str(uploaded_file),
-                    },
-                ),
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        map_hashes = self._get_map_hashes(uploaded_file)
-        valid, validation_message = self.validate_map_file(uploaded_file, map_hashes)
-        if not valid:
-            return KirovyResponse(
-                data=ErrorResponseData(message=validation_message), status=status.HTTP_400_BAD_REQUEST
-            )
-
-        try:
-            map_parser = CncGen2MapParser(uploaded_file)
-        except exceptions.InvalidMapFile as e:
-            return KirovyResponse(
-                kirovy.objects.ui_objects.ErrorResponseData(message="Invalid Map File"),
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        parent: t.Optional[cnc_map.CncMap] = None
-        cnc_map_id: t.Optional[str] = map_parser.ini.get(
-            constants.CNCNET_INI_SECTION, constants.CNCNET_INI_MAP_ID_KEY, fallback=None
-        )
-        if cnc_map_id:
-            parent = cnc_map.CncMap.objects.filter(id=cnc_map_id).first()
-
-        new_map = cnc_map.CncMap(
-            map_name=map_parser.ini.map_name,
-            cnc_game=game,
-            is_published=False,
-            incomplete_upload=True,
-            cnc_user=request.user,
-            parent=parent,
-        )
-        new_map.save()
-
-        cnc_net_ini = {constants.CNCNET_INI_MAP_ID_KEY: str(new_map.id)}
-        if parent:
-            cnc_net_ini[constants.CNCNET_INI_PARENT_ID_KEY] = str(parent.id)
-
-        map_parser.ini[constants.CNCNET_INI_SECTION] = cnc_net_ini
-
-        # Write the modified ini to the uploaded file before we save it to its final location.
-        written_ini = io.StringIO()  # configparser doesn't like
-        map_parser.ini.write(written_ini)
-        written_ini.seek(0)
-        uploaded_file.seek(0)
-        uploaded_file.truncate()
-        uploaded_file.write(written_ini.read().encode("utf8"))
-
-        # Add categories.
-        non_existing_categories: t.Set[str] = set()
-        for game_mode in map_parser.ini.categories:
-            category = MapCategory.objects.filter(name__iexact=game_mode).first()
-            if not category:
-                non_existing_categories.add(game_mode)
-                continue
-            new_map.categories.add(category)
-
-        if non_existing_categories:
-            _LOGGER.warning(
-                "User attempted to upload map with categories that don't exist: non_existing_categories=%s",
-                non_existing_categories,
-            )
-
-        new_map_file = cnc_map.CncMapFile(
-            width=map_parser.ini.get(CncGen2MapSections.HEADER, "Width"),
-            height=map_parser.ini.get(CncGen2MapSections.HEADER, "Height"),
-            cnc_map=new_map,
-            file=uploaded_file,
-            file_extension=extension,
-            cnc_game=new_map.cnc_game,
-            hash_md5=map_hashes.md5,
-            hash_sha512=map_hashes.sha512,
-        )
-        new_map_file.save()
-
-        extracted_image = map_parser.extract_preview()
-        extracted_image_url: str = ""
-        if extracted_image:
-            image_io = io.BytesIO()
-            image_extension = CncFileExtension.objects.get(extension="jpg")
-            extracted_image.save(image_io, format="JPEG", quality=95)
-            django_image = InMemoryUploadedFile(image_io, None, "temp.jpg", "image/jpeg", image_io.tell(), None)
-            new_map_preview = map_preview.MapPreview(
-                is_extracted=True,
-                cnc_map_file=new_map_file,
-                file=django_image,
-                file_extension=image_extension,
-            )
-            new_map_preview.save()
-            extracted_image_url = new_map_preview.file.url
-
-        # TODO: Actually serialize the return data and include the link to the preview.
-        # TODO: Should probably convert this to DRF for that step.
-        return KirovyResponse(
-            kirovy.objects.ui_objects.ResultResponseData(
-                message="File uploaded successfully",
-                result={
-                    "cnc_map": new_map.map_name,
-                    "cnc_map_file": new_map_file.file.url,
-                    "cnc_map_id": new_map.id,
-                    "extracted_preview_file": extracted_image_url,
-                },
-            ),
-            status=status.HTTP_201_CREATED,
-        )

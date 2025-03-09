@@ -7,13 +7,14 @@ from rest_framework import status
 
 from kirovy import settings
 from kirovy.models import CncMap, CncMapFile, MapCategory
+from kirovy.response import KirovyResponse
 from kirovy.services.cnc_gen_2_services import CncGen2MapParser
 
 _UPLOAD_URL = "/maps/upload/"
 
 
 def test_map_file_upload_happy_path(client_user, file_map_desert, game_yuri, extension_map, tmp_media_root):
-    response = client_user.post(
+    response: KirovyResponse = client_user.post(
         _UPLOAD_URL,
         {"file": file_map_desert, "game_id": str(game_yuri.id)},
         format="multipart",

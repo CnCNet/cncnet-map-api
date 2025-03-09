@@ -19,6 +19,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
 
+import kirovy.views.map_upload_views
 from kirovy.views import test, cnc_map_views, permission_views, admin_views
 from kirovy import typing as t
 
@@ -48,7 +49,7 @@ map_patterns = [
     # path("categories/", ...),  # return all categories
     # path("categories/game/<uuid:cnc_game_id>/", ...),
     path("categories/", cnc_map_views.MapCategoryListCreateView.as_view()),
-    path("upload/", cnc_map_views.MapFileUploadView.as_view()),
+    path("upload/", kirovy.views.map_upload_views.MapFileUploadView.as_view()),
     path("<uuid:pk>/", cnc_map_views.MapRetrieveUpdateView.as_view()),
     path("delete/<uuid:pk>/", cnc_map_views.MapDeleteView.as_view()),
     path("search/", cnc_map_views.MapListCreateView.as_view()),

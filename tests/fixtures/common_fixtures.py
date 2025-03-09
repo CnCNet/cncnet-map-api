@@ -67,6 +67,9 @@ def tmp_media_root(tmp_path, settings):
     return settings.MEDIA_ROOT
 
 
+_ClientReturnT = KirovyResponse | FileResponse
+
+
 class KirovyClient(Client):
     """A client wrapper with defaults I prefer.
 
@@ -112,7 +115,7 @@ class KirovyClient(Client):
         self.kirovy_user = kirovy_user
         self.cncnet_user_info = cncnet_user_info
 
-    def request(self, **request) -> KirovyResponse | FileResponse:
+    def request(self, **request) -> _ClientReturnT:
         """Wraps request to mock the authenticate method to return our "active" user."""
         with mock.patch("kirovy.authentication.CncNetAuthentication.authenticate") as mocked:
             if not self.kirovy_user:
@@ -144,7 +147,7 @@ class KirovyClient(Client):
         follow=False,
         secure=False,
         **extra,
-    ):
+    ) -> _ClientReturnT:
         """Wraps post to make it default to JSON."""
 
         data = self.__convert_data(data, content_type)
@@ -175,7 +178,7 @@ class KirovyClient(Client):
         follow=False,
         secure=False,
         **extra,
-    ):
+    ) -> _ClientReturnT:
         """Wraps patch to make it default to JSON."""
 
         data = self.__convert_data(data, content_type)
@@ -196,7 +199,7 @@ class KirovyClient(Client):
         follow=False,
         secure=False,
         **extra,
-    ):
+    ) -> _ClientReturnT:
         """Wraps put to make it default to JSON."""
 
         data = self.__convert_data(data, content_type)

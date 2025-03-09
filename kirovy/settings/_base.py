@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
 from pathlib import Path
+
+from kirovy.utils import file_utils
 from kirovy.utils.settings_utils import (
     get_env_var,
     secret_key_validator,
@@ -30,6 +32,8 @@ SECRET_KEY = get_env_var("SECRET_KEY", validation_callback=secret_key_validator)
 DEBUG = get_env_var("DEBUG", False, validation_callback=not_allowed_on_prod)
 
 ALLOWED_HOSTS = []
+
+MAX_UPLOADED_FILE_SIZE_MAP = file_utils.ByteSized(mega=25)
 
 
 # Application definition
