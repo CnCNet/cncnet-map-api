@@ -240,7 +240,9 @@ class _BaseMapFileUploadView(APIView, metaclass=ABCMeta):
             Raised if a duplicate file exists.
         """
         matched_hashes: QuerySet[cnc_map.CncMapFile] = (
-            cnc_map.CncMapFile.objects.filter(Q(hash_md5=hashes.md5) | Q(hash_sha512=hashes.sha512))
+            cnc_map.CncMapFile.objects.filter(
+                Q(hash_md5=hashes.md5) | Q(hash_sha512=hashes.sha512) | Q(hash_sha1=hashes.sha1)
+            )
             .prefetch_related("cnc_map")
             .order_by("created")
             .all()
