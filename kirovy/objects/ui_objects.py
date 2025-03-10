@@ -53,7 +53,7 @@ class PaginationMetadata(TypedDict):
 class BaseResponseData(TypedDict):
     """Basic response from Kirovy to the UI.
 
-    Mostly used for post requests where the only side effect is some kind of success or failure message.
+    Mostly used for post requests where the only response is some kind of success or failure message.
     """
 
     message: NotRequired[str]
@@ -71,10 +71,11 @@ class ListResponseData(BaseResponseData):
     pagination_metadata: NotRequired[PaginationMetadata]
 
 
-class ResponseData(BaseResponseData):
+class ResultResponseData(BaseResponseData):
     """Basic response that returns a dictionary in addition to the message from ``BaseResponseData``.
 
-    Mostly subclassed for endpoints that return side effects to the UI.
+    Mostly for endpoints that return object data to the UI. e.g. a ``create`` endpoint returning
+    the object that was created.
     """
 
     result: DictStrAny
@@ -83,7 +84,14 @@ class ResponseData(BaseResponseData):
 class ErrorResponseData(BaseResponseData):
     """Basic response that returns a dictionary of additional data related to an error."""
 
+    code: str
+    """attr: The same as ``code`` in :class:`rest_framework.exceptions.APIException`.
+
+    This is a string for the UI. The human-readable error should go in ``message``.
+    """
+
     additional: NotRequired[DictStrAny]
+    """attr: Arbitrary data to return to the UI to help user's understand what they did wrong."""
 
 
 class UiPermissions:
@@ -117,9 +125,7 @@ class UiPermissions:
     """
 
     @classmethod
-    def render_static(
-        cls, request: KirovyRequest, view: View
-    ) -> t.Dict[t.UiPermissionName, bool]:
+    def render_static(cls, request: KirovyRequest, view: View) -> t.Dict[t.UiPermissionName, bool]:
         """Create a dictionary of permissions to tell the UI what to display.
 
         This **DOES NOT** control the backend permissions, it's just to help the UI know which buttons to show.

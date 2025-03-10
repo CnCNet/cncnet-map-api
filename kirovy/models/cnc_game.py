@@ -17,9 +17,7 @@ def is_valid_extension(extension: str) -> None:
         Raised for invalid file extension strings.
     """
     if not extension.isalnum():
-        raise exceptions.InvalidFileExtension(
-            f'"{extension}" is not a valid file extension. Must be alpha only.'
-        )
+        raise exceptions.InvalidFileExtension(f'"{extension}" is not a valid file extension. Must be alpha only.')
 
 
 class CncFileExtension(CncNetBaseModel):
@@ -45,9 +43,7 @@ class CncFileExtension(CncNetBaseModel):
         IMAGE = "image", "image"
         """This file extension represents some kind of image uploaded by a user to display on the website."""
 
-    extension = models.CharField(
-        max_length=32, unique=True, validators=[is_valid_extension], blank=False
-    )
+    extension = models.CharField(max_length=32, unique=True, validators=[is_valid_extension], blank=False)
     """The actual file extension. Case insensitive but ``.lower()`` will be called all over."""
 
     about = models.CharField(max_length=2048, null=True, blank=False)
@@ -61,9 +57,8 @@ class CncFileExtension(CncNetBaseModel):
     )
 
     def save(self, *args, **kwargs):
-        is_valid_extension(
-            self.extension
-        )  # force validator on save instead from a view.
+        self.extension = self.extension.lower()  # Force lowercase
+        is_valid_extension(self.extension)  # force validator on save instead from a view.
         super().save(*args, **kwargs)
 
     @property
@@ -94,9 +89,7 @@ class CncGame(CncNetBaseModel):
     Does not affect temporary uploads via the multiplayer lobby.
     """
 
-    compatible_with_parent_maps = models.BooleanField(
-        default=False, null=False, blank=False
-    )
+    compatible_with_parent_maps = models.BooleanField(default=False, null=False, blank=False)
     """If true then the maps from the parent game work in this game. e.g. RA2 maps work in YR."""
 
     parent_game = models.ForeignKey("self", models.PROTECT, null=True, default=None)
