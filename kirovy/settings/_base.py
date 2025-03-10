@@ -51,6 +51,8 @@ INSTALLED_APPS = [
     "rest_framework",  # Django REST Framework.
 ]
 
+REST_FRAMEWORK = {"EXCEPTION_HANDLER": "kirovy.exception_handler.custom_exception_handler"}
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",

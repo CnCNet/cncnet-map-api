@@ -84,7 +84,14 @@ class ResultResponseData(BaseResponseData):
 class ErrorResponseData(BaseResponseData):
     """Basic response that returns a dictionary of additional data related to an error."""
 
+    code: str
+    """attr: The same as ``code`` in :class:`rest_framework.exceptions.APIException`.
+
+    This is a string for the UI. The human-readable error should go in ``message``.
+    """
+
     additional: NotRequired[DictStrAny]
+    """attr: Arbitrary data to return to the UI to help user's understand what they did wrong."""
 
 
 class UiPermissions:
