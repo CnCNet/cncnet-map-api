@@ -50,6 +50,7 @@ map_patterns = [
     # path("categories/game/<uuid:cnc_game_id>/", ...),
     path("categories/", cnc_map_views.MapCategoryListCreateView.as_view()),
     path("upload/", kirovy.views.map_upload_views.MapFileUploadView.as_view()),
+    path("client/upload/", kirovy.views.map_upload_views.CncnetClientMapUploadView.as_view()),
     path("<uuid:pk>/", cnc_map_views.MapRetrieveUpdateView.as_view()),
     path("delete/<uuid:pk>/", cnc_map_views.MapDeleteView.as_view()),
     path("search/", cnc_map_views.MapListCreateView.as_view()),

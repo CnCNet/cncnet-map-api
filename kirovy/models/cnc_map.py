@@ -159,7 +159,12 @@ class CncMap(cnc_user.CncNetUserOwnedModel):
 
 
 class CncMapFile(file_base.CncNetFileBaseModel):
-    """Represents the actual map file that a Command & Conquer game reads."""
+    """Represents the actual map file that a Command & Conquer game reads.
+
+    .. warning::
+
+        ``name`` is auto-generated for this file subclass.
+    """
 
     width = models.IntegerField()
     height = models.IntegerField()

@@ -1,21 +1,22 @@
-import hashlib
 import io
 import pathlib
 from abc import ABCMeta
 
 from cryptography.utils import cached_property
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.uploadedfile import UploadedFile, InMemoryUploadedFile
 from django.db.models import Q, QuerySet
 from rest_framework import status, serializers
 from rest_framework.parsers import MultiPartParser
-from rest_framework.permissions import BasePermission
+from rest_framework.permissions import BasePermission, AllowAny
 from rest_framework.views import APIView
 
 from kirovy import typing as t, permissions, exceptions, constants, logging
+from kirovy.constants.api_codes import UploadApiCodes
 from kirovy.exceptions.view_exceptions import KirovyValidationError
 from kirovy.models import cnc_map, CncGame, CncFileExtension, MapCategory, map_preview
-from kirovy.objects.ui_objects import ErrorResponseData, ResultResponseData
+from kirovy.objects.ui_objects import ResultResponseData
 from kirovy.request import KirovyRequest
 from kirovy.response import KirovyResponse
 from kirovy.serializers import cnc_map_serializers
@@ -187,7 +188,7 @@ class _BaseMapFileUploadView(APIView, metaclass=ABCMeta):
         user = self.request.user
         return {
             "ip_address": naughty_ip_address,
-            "user": f"[{user.cncnet_id}] {user.username}" if user else "unauthenticated_upload",
+            "user": f"[{user.cncnet_id}] {user.username}" if user.is_authenticated else "unauthenticated_upload",
         }
 
     @staticmethod
@@ -223,7 +224,7 @@ class _BaseMapFileUploadView(APIView, metaclass=ABCMeta):
         )
         raise serializers.ValidationError(
             detail=f"'{uploaded_extension}' is not a valid map file extension.",
-            code="file-extension-not-supported",
+            code=UploadApiCodes.FILE_EXTENSION_NOT_SUPPORTED,
         )
 
     def verify_file_does_not_exist(self, hashes: MapHashes) -> None:
@@ -264,8 +265,8 @@ class _BaseMapFileUploadView(APIView, metaclass=ABCMeta):
 
         raise KirovyValidationError(
             detail="This map file already exists",
-            code="duplicate-map",
-            additional={"existing_map_id": matched_hashes[0].cnc_map_id},
+            code=UploadApiCodes.DUPLICATE_MAP,
+            additional={"existing_map_id": str(matched_hashes[0].cnc_map_id)},
         )
 
     def verify_file_size_is_allowed(self, uploaded_file: UploadedFile) -> None:
@@ -282,12 +283,12 @@ class _BaseMapFileUploadView(APIView, metaclass=ABCMeta):
         if uploaded_size == file_utils.ByteSized(0):
             raise KirovyValidationError(
                 detail="The uploaded file is empty",
-                code="where-file",
+                code=UploadApiCodes.EMPTY_UPLOAD,
             )
         if uploaded_size > settings.MAX_UPLOADED_FILE_SIZE_MAP:
             raise KirovyValidationError(
                 detail="File too large",
-                code="file-too-large",
+                code=UploadApiCodes.FILE_TO_LARGE,
                 additional={
                     "max_bytes": str(settings.MAX_UPLOADED_FILE_SIZE_MAP),
                     "your_bytes": str(uploaded_file),
@@ -301,3 +302,42 @@ class MapFileUploadView(_BaseMapFileUploadView):
 
     def get_game_id_from_request(self, request: KirovyRequest) -> str | None:
         return request.data.get("game_id")
+
+
+class CncnetClientMapUploadView(_BaseMapFileUploadView):
+    permission_classes = [AllowAny]
+    upload_is_temporary = True
+
+    def get_game_id_from_request(self, request: KirovyRequest) -> str | None:
+        """Get the game ID for a CnCNet client upload.
+
+        The client currently sends a slug in ``request.data["game"]``. The game table has a unique constraint
+        on :attr:`kirovy.models.cnc_game.CncGame.slug` and the slugs were copied from
+        `The legacy database <https://github.com/CnCNet/mapdb.cncnet.org/blob/75207fe70d4569d34372da1bf5c6691e8dc91ced/public/upload.php#L7C1-L14C3>`_
+        We also added new games, like *Mental Omega*. Those slugs are defined in :file:`kirovy/migrations/0002_add_games.py`
+
+        :param request:
+        :return:
+            The ID for the game corresponding to the slug from ``request.data["game"]``
+        :raises KirovyValidationError:
+            Raised if we can't find a game matching the slug.
+        """
+        game_slug = request.data.get("game")  # TODO: get game_slug after updating cncnet client.
+        if not game_slug:
+            raise KirovyValidationError(detail="Game name must be provided.", code=UploadApiCodes.MISSING_GAME_SLUG)
+
+        try:
+            game = CncGame.objects.get(slug__iexact=game_slug)
+        except ObjectDoesNotExist:
+            _LOGGER.warning(
+                "client.map_upload: User attempted to upload for game slug that does not exist",
+                attempted_slug=game_slug,
+                **self.user_log_attrs,
+            )
+            raise KirovyValidationError(
+                detail="Game with that name does not exist",
+                code=UploadApiCodes.GAME_SLUG_DOES_NOT_EXIST,
+                additional={"attempted_slug": game_slug},
+            )
+
+        return str(game.id)

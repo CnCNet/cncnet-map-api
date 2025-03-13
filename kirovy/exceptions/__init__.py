@@ -53,6 +53,7 @@ class InvalidMimeType(ValidationError):
 class InvalidMapFile(ValidationError):
     """Raised when a map can't be parsed or if it's missing a header."""
 
+    # TODO: Unify with kirovy.exceptions.view_exceptions.KirovyValidationError
     pass
 
 

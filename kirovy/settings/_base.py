@@ -51,7 +51,6 @@ INSTALLED_APPS = [
     "rest_framework",  # Django REST Framework.
 ]
 
-REST_FRAMEWORK = {"EXCEPTION_HANDLER": "kirovy.exception_handler.custom_exception_handler"}
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -86,7 +85,8 @@ WSGI_APPLICATION = "kirovy.wsgi.application"
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "kirovy.authentication.CncNetAuthentication",
-    ]
+    ],
+    "EXCEPTION_HANDLER": "kirovy.exception_handler.kirovy_exception_handler",
 }
 """
 attr: Define the default authentication backend for endpoints.

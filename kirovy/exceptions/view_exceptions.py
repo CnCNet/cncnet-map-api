@@ -23,6 +23,8 @@ class KirovyValidationError(_DRFAPIException):
 
     def __init__(self, detail: str | None = None, code: str | None = None, additional: _t.DictStrAny | None = None):
         super().__init__(detail=detail, code=code)
+        self.code = str(code) if code else self.default_code
+        self.detail = str(detail) if detail else self.default_detail
         self.additional = additional
 
     def as_error_response_data(self) -> ui_objects.ErrorResponseData:

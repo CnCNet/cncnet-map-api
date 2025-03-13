@@ -335,7 +335,10 @@ def god(create_kirovy_user) -> CncUser:
 
 @pytest.fixture
 def client_anonymous(create_client) -> KirovyClient:
-    """Returns a client with a user that isn't signed in."""
+    """Returns a client with a user that isn't signed in.
+
+    This also simulates uploads via the CnCNet client.
+    """
     return create_client(AnonymousUser())
 
 

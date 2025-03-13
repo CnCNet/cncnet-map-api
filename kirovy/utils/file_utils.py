@@ -2,24 +2,24 @@ import collections
 import functools
 import hashlib
 
-from django.core.files.uploadedfile import UploadedFile
+from django.core.files import File
 
 from kirovy import typing as t
 
 
-def hash_file_md5(file: UploadedFile, block_size=65536) -> str:
+def hash_file_md5(file: File, block_size=65536) -> str:
     return _hash_file(hashlib.md5(), file, block_size)
 
 
-def hash_file_sha512(file: UploadedFile, block_size=65536) -> str:
+def hash_file_sha512(file: File, block_size=65536) -> str:
     return _hash_file(hashlib.sha512(), file, block_size)
 
 
-def hash_file_sha1(file: UploadedFile, block_size=65536) -> str:
+def hash_file_sha1(file: File, block_size=65536) -> str:
     return _hash_file(hashlib.sha1(), file, block_size)
 
 
-def _hash_file(hasher: "_HASH", file: UploadedFile, block_size: int) -> str:
+def _hash_file(hasher: "_HASH", file: File, block_size: int) -> str:
     file.seek(0)
     file_contents = file.read()
     if isinstance(file_contents, str):

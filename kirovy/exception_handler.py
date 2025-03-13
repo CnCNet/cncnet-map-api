@@ -6,7 +6,7 @@ from kirovy.objects import ui_objects
 from kirovy.response import KirovyResponse
 
 
-def custom_exception_handler(exception: Exception, context) -> KirovyResponse[ui_objects.ErrorResponseData] | None:
+def kirovy_exception_handler(exception: Exception, context) -> KirovyResponse[ui_objects.ErrorResponseData] | None:
     """Exception handler to deal with our custom exception types.
 
     This gets called via the setting ``REST_FRAMEWORK['EXCEPTION_HANDLER']``.
@@ -26,8 +26,4 @@ def custom_exception_handler(exception: Exception, context) -> KirovyResponse[ui
     if isinstance(exception, KirovyValidationError):
         return KirovyResponse(exception.as_error_response_data(), status=status.HTTP_400_BAD_REQUEST)
 
-    base_handler_response = exception_handler(exception, context)
-    if not base_handler_response:
-        # Exception was not handled, kick the can down the road.
-        # Might cause a 500 error if django doesn't have a handler.
-        return base_handler_response
+    return exception_handler(exception, context)
