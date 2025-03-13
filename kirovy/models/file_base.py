@@ -5,6 +5,7 @@ from django.db import models
 from kirovy import typing as t
 from kirovy.models.cnc_base_model import CncNetBaseModel
 from kirovy.models import cnc_game as game_models
+from kirovy.utils import file_utils
 
 
 def _generate_upload_to(instance: "CncNetFileBaseModel", filename: t.Union[str, pathlib.Path]) -> pathlib.Path:
@@ -86,6 +87,10 @@ class CncNetFileBaseModel(CncNetBaseModel):
 
     def save(self, *args, **kwargs):
         self.validate_file_extension(self.file_extension)
+
+        self.hash_md5 = file_utils.hash_file_md5(self.file)
+        self.hash_sha512 = file_utils.hash_file_sha512(self.file)
+        self.hash_sha1 = file_utils.hash_file_sha1(self.file)
         super().save(*args, **kwargs)
 
     @staticmethod
