@@ -10,7 +10,7 @@ CNCNET_USER_URL = "https://ladder.cncnet.org/api/v1/user/info"
 
 CNCNET_INI_SECTION = "CnCNet"
 CNCNET_INI_MAP_ID_KEY = "ID"
-CNCNET_INI_PARENT_ID_KEY = "ParentID"
+CNCNET_INI_MAP_PARENT_ID_KEY = "ParentID"
 
 
 class CncnetUserGroup:

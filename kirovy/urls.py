@@ -19,6 +19,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
 
+import kirovy.views.map_upload_views
 from kirovy.views import test, cnc_map_views, permission_views, admin_views
 from kirovy import typing as t
 
@@ -33,9 +34,7 @@ def _get_url_patterns() -> list[path]:
         [
             path("admin/", include(admin_patterns)),
             path("test/jwt", test.TestJwt.as_view()),
-            path(
-                "ui-permissions/", permission_views.ListPermissionForAuthUser.as_view()
-            ),
+            path("ui-permissions/", permission_views.ListPermissionForAuthUser.as_view()),
             path("maps/", include(map_patterns)),
             # path("users/<uuid:cnc_user_id>/", ...),  # will show which files a user has uploaded.
             # path("games/", ...),  # get games.
@@ -50,9 +49,11 @@ map_patterns = [
     # path("categories/", ...),  # return all categories
     # path("categories/game/<uuid:cnc_game_id>/", ...),
     path("categories/", cnc_map_views.MapCategoryListCreateView.as_view()),
-    path("upload/", cnc_map_views.MapFileUploadView.as_view()),
+    path("upload/", kirovy.views.map_upload_views.MapFileUploadView.as_view()),
+    path("client/upload/", kirovy.views.map_upload_views.CncnetClientMapUploadView.as_view()),
     path("<uuid:pk>/", cnc_map_views.MapRetrieveUpdateView.as_view()),
     path("delete/<uuid:pk>/", cnc_map_views.MapDeleteView.as_view()),
+    path("search/", cnc_map_views.MapListCreateView.as_view()),
     # path("img/<uuid:map_id>/"),
     # path("img/<uuid:map_id>/", ...),
     # path("search/")

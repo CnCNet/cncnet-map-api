@@ -16,7 +16,12 @@ def test_cnc_game_url(db, settings):
 
 @pytest.mark.parametrize(
     "extension,expect_error",
-    [("mp3", False), ("mix123}", True), (".mix", True), ("YRM", False)],
+    [
+        ("mp3", False),
+        ("mix123}", True),  # Errors because of the bracket.
+        (".mix", True),  # Errors because the period is not alphanumeric.
+        ("urm", False),
+    ],
 )
 def test_cnc_extension_validator(db, extension, expect_error):
     """Test creating extensions and the extension validator."""

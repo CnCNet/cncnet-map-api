@@ -23,6 +23,7 @@ LOGGER = logging.getLogger("MapParserService")
 
 
 class CncGen2MapSections(enum.StrEnum):
+    # Todo: move to API codes.
     PREVIEW_PACK = "PreviewPack"
     PREVIEW = "Preview"
     HEADER = "Header"
@@ -65,9 +66,7 @@ class MapConfigParser(configparser.ConfigParser):
         :return:
             The map name or a string saying that the map wasn't found.
         """
-        return self.get(
-            CncGen2MapSections.BASIC, "Name", fallback=_(self.NAME_NOT_FOUND)
-        )
+        return self.get(CncGen2MapSections.BASIC, "Name", fallback=_(self.NAME_NOT_FOUND))
 
 
 class CncGen2MapParser:
@@ -99,7 +98,7 @@ class CncGen2MapParser:
         CORRUPT_MAP = _("Could not parse map file.")
         MISSING_INI = _("Missing necessary INI sections.")
 
-    def __init__(self, uploaded_file: UploadedFile):
+    def __init__(self, uploaded_file: UploadedFile | File):
         self.validate_file_type(uploaded_file)
         self.file = uploaded_file
         self.ini = MapConfigParser()
@@ -222,12 +221,7 @@ class CncGen2MapParser:
 
         # The map preview image size will be ``0,0,width,height``.
         # We cannot extract the preview if this section is missing, or the Size key value is invalid.
-        preview_size = [
-            int(x)
-            for x in self.ini.get(
-                CncGen2MapSections.PREVIEW, "Size", fallback=""
-            ).split(",")
-        ]
+        preview_size = [int(x) for x in self.ini.get(CncGen2MapSections.PREVIEW, "Size", fallback="").split(",")]
         if len(preview_size) != 4:
             LOGGER.debug("No preview size")
             return None
@@ -273,14 +267,10 @@ class CncGen2MapParser:
                 break
 
             # Read the compressed size of the block. The size is stored as a two byte integer
-            block_size_compressed, read_bytes = self._read_16bit_int_le(
-                compressed_preview, read_bytes, 2
-            )
+            block_size_compressed, read_bytes = self._read_16bit_int_le(compressed_preview, read_bytes, 2)
 
             # Read the uncompressed size of the block. The size is stored as a two byte integer
-            block_size_uncompressed, read_bytes = self._read_16bit_int_le(
-                compressed_preview, read_bytes, 2
-            )
+            block_size_uncompressed, read_bytes = self._read_16bit_int_le(compressed_preview, read_bytes, 2)
 
             # If the block sizes are 0 then we reached the end of the actual pixel data.
             if block_size_compressed == 0 or block_size_uncompressed == 0:
@@ -289,16 +279,12 @@ class CncGen2MapParser:
             # Reading the expected compressed bytes will exceed the size of the compressed data.
             # This means the ``Preview.Size`` was wrong, or the preview data is corrupt.
             projected_read_byte_count = read_bytes + block_size_compressed
-            compressed_size_exceeds_source = projected_read_byte_count > len(
-                compressed_preview
-            )
+            compressed_size_exceeds_source = projected_read_byte_count > len(compressed_preview)
 
             # The size of the written bytes will exceed the expected uncompressed image size.
             # This means the ``Preview.Size`` was wrong, or the preview data is corrupt.
             projected_written_byte_count = written_bytes + block_size_uncompressed
-            uncompressed_size_exceeds_destination = (
-                projected_written_byte_count > decompressed_expected_size
-            )
+            uncompressed_size_exceeds_destination = projected_written_byte_count > decompressed_expected_size
             error_params = {
                 "decompressed_expected_size": decompressed_expected_size,
                 "projected_decompressed_size": projected_written_byte_count,
@@ -315,16 +301,12 @@ class CncGen2MapParser:
                 )
 
             # Slice off the compressed block of bytes, according to the block header.
-            compressed_block = compressed_preview[
-                read_bytes : read_bytes + block_size_compressed
-            ]
+            compressed_block = compressed_preview[read_bytes : read_bytes + block_size_compressed]
 
             # Decompress the block.
             try:
                 # decompress without the header because we manually grabbed the necessary bytes.
-                uncompressed_block = lzo.decompress(
-                    compressed_block, False, block_size_uncompressed
-                )
+                uncompressed_block = lzo.decompress(compressed_block, False, block_size_uncompressed)
             except lzo.error as e:
                 raise exceptions.MapPreviewCorrupted(
                     "Could not decompress the preview. Preview data is corrupted in some way.",
@@ -343,9 +325,7 @@ class CncGen2MapParser:
         return decompressed_preview
 
     @staticmethod
-    def _read_16bit_int_le(
-        compressed_preview: bytes, start: int, bytes_to_read: int
-    ) -> t.Tuple[int, int]:
+    def _read_16bit_int_le(compressed_preview: bytes, start: int, bytes_to_read: int) -> t.Tuple[int, int]:
         """Read a little-endian 16bit integer from bytes.
 
         :param compressed_preview:
@@ -364,9 +344,7 @@ class CncGen2MapParser:
         )
         return read, stop
 
-    def _create_preview_bitmap(
-        self, width: int, height: int, decompressed_preview: io.BytesIO
-    ) -> Image.Image:
+    def _create_preview_bitmap(self, width: int, height: int, decompressed_preview: io.BytesIO) -> Image.Image:
         """Create the pillow image from the decompressed preview bytes.
 
         :param width:
@@ -380,7 +358,5 @@ class CncGen2MapParser:
         """
         decompressed_preview.seek(0)
         # 0, 0 means "start drawing in the top left corner."
-        img = Image.frombytes(
-            "RGB", (width, height), decompressed_preview.read(), "raw", "RGB", 0, 0
-        )
+        img = Image.frombytes("RGB", (width, height), decompressed_preview.read(), "raw", "RGB", 0, 0)
         return img

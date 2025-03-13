@@ -20,7 +20,7 @@ class ListPermissionForAuthUser(APIView):
     ]
 
     def get(self, request: KirovyRequest, *args, **kwargs) -> KirovyResponse:
-        data = kirovy.objects.ui_objects.ResponseData(
+        data = kirovy.objects.ui_objects.ResultResponseData(
             result=kirovy.objects.ui_objects.UiPermissions.render_static(request, self)
         )
         return KirovyResponse(data=data, status=status.HTTP_200_OK)

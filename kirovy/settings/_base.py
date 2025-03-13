@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
 from pathlib import Path
+
+from kirovy.utils import file_utils
 from kirovy.utils.settings_utils import (
     get_env_var,
     secret_key_validator,
@@ -31,19 +33,24 @@ DEBUG = get_env_var("DEBUG", False, validation_callback=not_allowed_on_prod)
 
 ALLOWED_HOSTS = []
 
+MAX_UPLOADED_FILE_SIZE_MAP = file_utils.ByteSized(mega=25)
+
 
 # Application definition
 
 INSTALLED_APPS = [
     "kirovy",
+    "django.contrib.postgres",  # necessary for full-text search and advanced postgres functionality.
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "rest_framework",
+    "django_filters",  # Used for advanced querying on the API.
+    "rest_framework",  # Django REST Framework.
 ]
+
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -55,7 +62,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = "kirovy.urls"
+ROOT_URLCONF = "kirovy.urls"  # The file that holds our URL routing.
 
 TEMPLATES = [
     {
@@ -78,8 +85,19 @@ WSGI_APPLICATION = "kirovy.wsgi.application"
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "kirovy.authentication.CncNetAuthentication",
-    ]
+    ],
+    "EXCEPTION_HANDLER": "kirovy.exception_handler.kirovy_exception_handler",
 }
+"""
+attr: Define the default authentication backend for endpoints.
+Can be overwritten for views, but this is rare. See :class:`kirovy.authentication.CncNetAuthentication`.
+
+.. warning::
+
+    Authentication is **not** a permission system. Authentication just checks if a user is logged in or
+    not. For checking e.g. object permissions, see the module :mod:`kirovy.permissions`. To understand how permissions
+    are set in Django Rest Framework, see `The DRF docs <https://www.django-rest-framework.org/api-guide/permissions/>`_
+"""
 
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
@@ -139,7 +157,7 @@ logos and backgrounds. So a Red Alert 2 icon would be in e.g. ``URL/static/game_
 
 
 CNC_MAP_DIRECTORY = "maps"
-""":attr: The directory, beneath the game slug, where map files will be stored."""
+"""attr: The directory, beneath the game slug, where map files will be stored."""
 
 
 ### --------------- SERVING FILES ---------------

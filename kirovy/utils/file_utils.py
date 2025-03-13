@@ -1,20 +1,25 @@
 import collections
 import functools
 import hashlib
+
+from django.core.files import File
+
 from kirovy import typing as t
 
-from django.db.models.fields.files import FieldFile
 
-
-def hash_file_md5(file: FieldFile, block_size=65536) -> str:
+def hash_file_md5(file: File, block_size=65536) -> str:
     return _hash_file(hashlib.md5(), file, block_size)
 
 
-def hash_file_sha512(file: FieldFile, block_size=65536) -> str:
+def hash_file_sha512(file: File, block_size=65536) -> str:
     return _hash_file(hashlib.sha512(), file, block_size)
 
 
-def _hash_file(hasher: "_HASH", file: FieldFile, block_size: int) -> str:
+def hash_file_sha1(file: File, block_size=65536) -> str:
+    return _hash_file(hashlib.sha1(), file, block_size)
+
+
+def _hash_file(hasher: "_HASH", file: File, block_size: int) -> str:
     file.seek(0)
     file_contents = file.read()
     if isinstance(file_contents, str):
@@ -68,9 +73,7 @@ class ByteSized:
         return self
 
     def __str__(self) -> str:
-        return ", ".join(
-            [f"{size}{desc}" for desc, size in self.__mapping.items() if size > 0]
-        )
+        return ", ".join([f"{size}{desc}" for desc, size in self.__mapping.items() if size > 0])
 
     @functools.cached_property
     def __mapping(self) -> t.Dict[str, int]:

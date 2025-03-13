@@ -16,9 +16,7 @@ class MapCategory(CncNetBaseModel):
     slug = models.CharField(max_length=16)
     """Unique slug for URLs, auto-generated from the :attr:`~kirovy.models.cnc_map.MapCategory.name`."""
 
-    def _set_slug_from_name(
-        self, update_fields: t.Optional[t.List[str]] = None
-    ) -> t.Optional[t.List[str]]:
+    def _set_slug_from_name(self, update_fields: t.Optional[t.List[str]] = None) -> t.Optional[t.List[str]]:
         """Sets ``self.slug`` based on ``self.name``.
 
         :param update_fields:
@@ -27,9 +25,7 @@ class MapCategory(CncNetBaseModel):
             The ``update_fields`` for ``.save()``.
         """
         new_slug: str = text_utils.slugify(self.name, allow_unicode=False)[:16]
-        new_slug = new_slug.rstrip(
-            "-"
-        )  # Remove trailing hyphens if the 16th character was unlucky.
+        new_slug = new_slug.rstrip("-")  # Remove trailing hyphens if the 16th character was unlucky.
 
         if new_slug != self.slug:
             self.slug = new_slug
@@ -98,9 +94,7 @@ class CncMap(cnc_user.CncNetUserOwnedModel):
         or searches. Won't have an owner until the client supports logging in.
     """
 
-    is_reviewed = models.BooleanField(
-        default=False, help_text="If true, this map was reviewed by a staff member."
-    )
+    is_reviewed = models.BooleanField(default=False, help_text="If true, this map was reviewed by a staff member.")
 
     is_banned = models.BooleanField(
         default=False,
@@ -130,10 +124,7 @@ class CncMap(cnc_user.CncNetUserOwnedModel):
             The current latest version, plus one.
         """
         previous_version: CncMapFile = (
-            CncMapFile.objects.filter(cnc_map_id=self.id)
-            .order_by("-version")
-            .only("version")
-            .first()
+            CncMapFile.objects.filter(cnc_map_id=self.id).order_by("-version").only("version").first()
         )
         if not previous_version:
             return 1
@@ -168,7 +159,12 @@ class CncMap(cnc_user.CncNetUserOwnedModel):
 
 
 class CncMapFile(file_base.CncNetFileBaseModel):
-    """Represents the actual map file that a Command & Conquer game reads."""
+    """Represents the actual map file that a Command & Conquer game reads.
+
+    .. warning::
+
+        ``name`` is auto-generated for this file subclass.
+    """
 
     width = models.IntegerField()
     height = models.IntegerField()
@@ -182,9 +178,7 @@ class CncMapFile(file_base.CncNetFileBaseModel):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(
-                fields=["cnc_map_id", "version"], name="unique_map_version"
-            ),
+            models.UniqueConstraint(fields=["cnc_map_id", "version"], name="unique_map_version"),
         ]
 
     def save(self, *args, **kwargs):

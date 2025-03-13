@@ -1,32 +1,24 @@
 import pathlib
 
 import pytest
-from django.core import validators
 
-from kirovy.models.cnc_map import CncMapFile, CncMap, MapCategory
+from kirovy.exceptions.view_exceptions import KirovyValidationError
+from kirovy.models.cnc_map import CncMapFile
 
 
-def test_cnc_map_invalid_file_extension(
-    game_yuri, extension_map, extension_mix, cnc_map
-):
+def test_cnc_map_invalid_file_extension(game_yuri, extension_map, extension_mix, cnc_map):
     """Test creating a map with a non-map file extension is rejected."""
-    with pytest.raises(validators.ValidationError) as exc_info:
-        CncMapFile(
-            file_extension=extension_mix, cnc_game=game_yuri, cnc_map=cnc_map
-        ).save()
+    with pytest.raises(KirovyValidationError) as exc_info:
+        CncMapFile(file_extension=extension_mix, cnc_game=game_yuri, cnc_map=cnc_map).save()
     assert extension_mix.extension in str(exc_info.value)
 
 
-def test_cnc_map_generate_upload_to(
-    game_yuri, extension_map, file_map_desert, cnc_map, settings
-):
+def test_cnc_map_generate_upload_to(game_yuri, extension_map, file_map_desert, cnc_map, settings):
     """Test that we generate the correct upload path for a map file.
 
     This test will fail if you alter the initial migrations.
     """
-    settings.CNC_MAP_DIRECTORY = (
-        "worlds"  # Change default to check that the settings control the upload path.
-    )
+    settings.CNC_MAP_DIRECTORY = "worlds"  # Change default to check that the settings control the upload path.
     expected_path = pathlib.Path(
         settings.MEDIA_ROOT,
         "yr",
