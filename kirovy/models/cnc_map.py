@@ -158,7 +158,7 @@ class CncMap(cnc_user.CncNetUserOwnedModel):
         self.save(update_fields=["is_banned"])
 
 
-class CncMapFile(file_base.CncNetFileBaseModel):
+class CncMapFile(file_base.CncNetZippedFileBaseModel):
     """Represents the actual map file that a Command & Conquer game reads.
 
     .. warning::

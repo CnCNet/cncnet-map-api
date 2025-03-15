@@ -1,4 +1,6 @@
 import pathlib
+import zipfile
+import io
 
 from django.core.files.uploadedfile import UploadedFile
 from rest_framework import status
@@ -26,18 +28,29 @@ def test_map_file_upload_happy_path(client_user, file_map_desert, game_yuri, ext
 
     uploaded_file_url: str = response.data["result"]["cnc_map_file"]
     uploaded_image_url: str = response.data["result"]["extracted_preview_file"]
+
+    # We need to strip the url path off of the files,
+    # then check the tmp directory to make sure the uploaded files were saved
     strip_media_url = f"/{settings.MEDIA_URL}"
-    uploaded_file = pathlib.Path(tmp_media_root) / uploaded_file_url.lstrip(strip_media_url)
+    uploaded_zipped_file = pathlib.Path(tmp_media_root) / uploaded_file_url.lstrip(strip_media_url)
     uploaded_image = pathlib.Path(tmp_media_root) / uploaded_image_url.lstrip(strip_media_url)
-    assert uploaded_file.exists()
+    assert uploaded_zipped_file.exists()
     assert uploaded_image.exists()
+
+    # We need to unzip the map so that we can actually verify the saved map contents.
+    map_filename = pathlib.Path(uploaded_file_url).name.replace(".zip", "")
+    # Extract the map from the zipfile, and convert to something that the map parser understands
+    _unzip_io = io.BytesIO()
+    _unzip_io.write(zipfile.ZipFile(uploaded_zipped_file).read(map_filename))
+    _unzip_io.seek(0)
+    uploaded_file = UploadedFile(_unzip_io)
 
     file_response = client_user.get(uploaded_file_url)
     image_response = client_user.get(uploaded_image_url)
     assert file_response.status_code == status.HTTP_200_OK
     assert image_response.status_code == status.HTTP_200_OK
 
-    parser = CncGen2MapParser(UploadedFile(open(uploaded_file, "rb")))
+    parser = CncGen2MapParser(uploaded_file)
     assert parser.ini.get("CnCNet", "ID") == str(response.data["result"]["cnc_map_id"])
 
     map_object = CncMap.objects.get(id=response.data["result"]["cnc_map_id"])
