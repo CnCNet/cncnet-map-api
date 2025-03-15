@@ -64,6 +64,7 @@ services:
       dockerfile: test.DockerFile
     volumes:
       - .:/cncnet-map-api
+      - ./data/tmp:/tmp/pytest-of-root  # For inspecting files during pytests
     env_file:
       - .env
     environment:

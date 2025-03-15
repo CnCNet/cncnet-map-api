@@ -6,6 +6,7 @@ from kirovy import typing as t
 from kirovy.models.cnc_base_model import CncNetBaseModel
 from kirovy.models import cnc_game as game_models
 from kirovy.utils import file_utils
+from kirovy.zip_storage import ZipFileStorage
 
 
 def _generate_upload_to(instance: "CncNetFileBaseModel", filename: t.Union[str, pathlib.Path]) -> pathlib.Path:
@@ -116,3 +117,16 @@ class CncNetFileBaseModel(CncNetBaseModel):
             str(instance.id),
             filename.name,
         )
+
+
+class CncNetZippedFileBaseModel(CncNetFileBaseModel):
+    """A base file class that will zip and unzip the ``file`` attribute.
+
+    Do **not** use this class for files that will be directly accessed via hyperlink.
+    e.g. don't use this class for images.
+    """
+
+    class Meta:
+        abstract = True
+
+    file = models.FileField(null=False, upload_to=_generate_upload_to, storage=ZipFileStorage)
