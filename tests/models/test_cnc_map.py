@@ -24,7 +24,7 @@ def test_cnc_map_generate_upload_to(game_yuri, extension_map, file_map_desert, c
         "yr",
         "worlds",
         cnc_map.id.hex,
-        f"yr_{cnc_map.id.hex}_v01.map",
+        f"yr_{cnc_map.id.hex}_v01.map.zip",  # We use the ZipFileStorage for maps.
     )
     saved_map = CncMapFile(
         height=117,  # doesn't matter for this test.
