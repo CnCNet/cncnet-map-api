@@ -37,8 +37,8 @@ class KirovyDefaultPagination(_pagination.LimitOffsetPagination):
 
         return KirovyResponse(data, status=status.HTTP_200_OK)
 
-    def get_paginated_response_schema(self, schema):
-        raise NotImplementedError()
+    # def get_paginated_response_schema(self, schema):
+    #     raise NotImplementedError()
 
 
 class KirovyListCreateView(_g.ListCreateAPIView):

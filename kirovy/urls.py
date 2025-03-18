@@ -18,6 +18,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 import kirovy.views.map_upload_views
 from kirovy.views import test, cnc_map_views, permission_views, admin_views
@@ -30,6 +31,14 @@ def _get_url_patterns() -> list[path]:
     I added this because I wanted to have the root URLs at the top of the file,
     but I didn't want to have other url files.
     """
+    dev_urls = []
+    if settings.RUN_ENVIRONMENT == "dev":
+        dev_urls = [
+            path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
+            # Optional UI:
+            path("api/schema/swagger-ui/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
+            path("api/schema/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
+        ]
     return (
         [
             path("admin/", include(admin_patterns)),
@@ -37,10 +46,11 @@ def _get_url_patterns() -> list[path]:
             path("ui-permissions/", permission_views.ListPermissionForAuthUser.as_view()),
             path("maps/", include(map_patterns)),
             # path("users/<uuid:cnc_user_id>/", ...),  # will show which files a user has uploaded.
-            # path("games/", ...),  # get games.
+            # path("games/", ...),  # get games.,
         ]
         + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
         + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+        + dev_urls
     )
 
 

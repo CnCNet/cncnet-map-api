@@ -49,6 +49,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django_filters",  # Used for advanced querying on the API.
     "rest_framework",  # Django REST Framework.
+    "drf_spectacular",  # Generates openapi docs.
+    "drf_spectacular_sidecar",  # swagger assets for openapi
 ]
 
 
@@ -87,6 +89,7 @@ REST_FRAMEWORK = {
         "kirovy.authentication.CncNetAuthentication",
     ],
     "EXCEPTION_HANDLER": "kirovy.exception_handler.kirovy_exception_handler",
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
 }
 """
 attr: Define the default authentication backend for endpoints.
@@ -98,6 +101,17 @@ Can be overwritten for views, but this is rare. See :class:`kirovy.authenticatio
     not. For checking e.g. object permissions, see the module :mod:`kirovy.permissions`. To understand how permissions
     are set in Django Rest Framework, see `The DRF docs <https://www.django-rest-framework.org/api-guide/permissions/>`_
 """
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Kirovy",
+    "DESCRIPTION": "CnCNet Map API",
+    "VERSION": "0.1.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SWAGGER_UI_DIST": "SIDECAR",  # shorthand to use the sidecar instead
+    "SWAGGER_UI_FAVICON_HREF": "SIDECAR",
+    "REDOC_DIST": "SIDECAR",
+}
+
 
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
@@ -208,5 +222,5 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "kirovy.CncUser"
 
 
-RUN_ENVIRONMENT = get_env_var("RUN_ENVIRONMENT", "dev")
+RUN_ENVIRONMENT = get_env_var("RUN_ENVIRONMENT", "prod")
 """attr: Defines which type of environment we are running on. Useful for debug logic."""
