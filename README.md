@@ -34,21 +34,12 @@ You can copy `example.env` to `.env` and fill in the required values.
 - Set `SECRET_KEY` to a secure secret key. You can use `from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())` in a python shell to generate it.
 - Optionally you can set `DEBUG` to `1` if needed
 
-### Load env variables
-
-Use the `load_env.sh` script to load the environment variables into your shell.
-
-```bash
-source load_env.sh
-read_env .env
-```
-
 ### Running the API
 
 Run the following command to start the API:
 
 ```bash
-docker compose up -d
+docker compose up nginx-server -d
 ```
 
 > Now you can access the API at `http://localhost`
