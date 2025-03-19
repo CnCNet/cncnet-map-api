@@ -11,3 +11,9 @@ stop:
 test:
 	docker compose build django
 	docker compose run test
+
+
+django-bash:
+	# For running developer `./mange,py` commands in local dev.
+	docker compose build django
+	docker compose run django bash

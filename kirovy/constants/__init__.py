@@ -119,7 +119,7 @@ class GameSlugs(enum.StrEnum):
     cnc_reloaded = "cncr"
     rise_of_the_east = "rote"
     red_resurrection = "rr"
-    dune_2000 = "d2k"
+    dune_2000 = "d2"
     generals = "gen"
     zero_hour = "zh"
     battle_for_middle_earth = "bfme"
@@ -128,6 +128,19 @@ class GameSlugs(enum.StrEnum):
     kanes_wrath = "kw"
     red_alert_3 = "ra3"
     red_alert_3_uprising = "ra3u"
+
+
+BACKWARDS_COMPATIBLE_GAMES = [
+    GameSlugs.tiberian_dawn,
+    GameSlugs.red_alert,
+    GameSlugs.tiberian_sun,
+    GameSlugs.dawn_of_the_tiberium_age,
+    GameSlugs.yuris_revenge,
+    GameSlugs.dune_2000,
+]
+"""attr: These are the games that MapDB 1.0 supported.
+We need to maintain backwards compatibility for clients we can't update.
+"""
 
 
 class GameEngines:

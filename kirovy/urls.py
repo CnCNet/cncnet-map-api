@@ -20,9 +20,9 @@ from django.contrib import admin
 from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
-import kirovy.views.map_upload_views
-from kirovy.views import test, cnc_map_views, permission_views, admin_views
-from kirovy import typing as t
+from kirovy.models import CncGame
+from kirovy.views import test, cnc_map_views, permission_views, admin_views, map_upload_views
+from kirovy import typing as t, constants
 
 
 def _get_url_patterns() -> list[path]:
@@ -39,6 +39,16 @@ def _get_url_patterns() -> list[path]:
             path("api/schema/swagger-ui/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
             path("api/schema/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
         ]
+
+    backwards_compatible_urls = [
+        path("upload", map_upload_views.CncNetBackwardsCompatibleUploadView.as_view()),
+        *(
+            # Make e.g. /yr/map_hash, /ra2/map_hash, etc
+            path(f"{g.slug}/<str:sha1_hash>", cnc_map_views.BackwardsCompatibleMapView.as_view(), {"game_id": g.id})
+            for g in CncGame.objects.filter(slug__in=constants.BACKWARDS_COMPATIBLE_GAMES)
+        ),
+    ]
+
     return (
         [
             path("admin/", include(admin_patterns)),
@@ -48,8 +58,9 @@ def _get_url_patterns() -> list[path]:
             # path("users/<uuid:cnc_user_id>/", ...),  # will show which files a user has uploaded.
             # path("games/", ...),  # get games.,
         ]
-        + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-        + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+        + backwards_compatible_urls
+        + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)  # static assets
+        + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)  # user uploads
         + dev_urls
     )
 
@@ -59,8 +70,8 @@ map_patterns = [
     # path("categories/", ...),  # return all categories
     # path("categories/game/<uuid:cnc_game_id>/", ...),
     path("categories/", cnc_map_views.MapCategoryListCreateView.as_view()),
-    path("upload/", kirovy.views.map_upload_views.MapFileUploadView.as_view()),
-    path("client/upload/", kirovy.views.map_upload_views.CncnetClientMapUploadView.as_view()),
+    path("upload/", map_upload_views.MapFileUploadView.as_view()),
+    path("client/upload/", map_upload_views.CncnetClientMapUploadView.as_view()),
     path("<uuid:pk>/", cnc_map_views.MapRetrieveUpdateView.as_view()),
     path("delete/<uuid:pk>/", cnc_map_views.MapDeleteView.as_view()),
     path("search/", cnc_map_views.MapListCreateView.as_view()),
@@ -76,6 +87,5 @@ user_patterns = [
 
 # /admin/
 admin_patterns = [path("ban/", admin_views.BanView.as_view())]
-
 
 urlpatterns = _get_url_patterns()

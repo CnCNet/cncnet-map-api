@@ -5,13 +5,16 @@ import zipfile
 from django.core.files import File
 from django.core.files.storage import FileSystemStorage
 
+from kirovy.utils import file_utils
+
 
 class ZipFileStorage(FileSystemStorage):
     def save(self, name: str, content: File, max_length: int | None = None):
         if is_zipfile(content):
             return super().save(name, content, max_length)
 
-        internal_filename = pathlib.Path(name).name
+        internal_extension = pathlib.Path(name).suffix
+        internal_filename = file_utils.hash_file_sha1(content) + internal_extension
         zip_buffer = io.BytesIO()
         with zipfile.ZipFile(zip_buffer, "w", allowZip64=False, compresslevel=4) as zf:
             content.seek(0)
