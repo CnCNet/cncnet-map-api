@@ -21,6 +21,7 @@ Follow this guide to set up the api locally for development.
 
 ### Prerequisites
 
+> [!note]
 > By default, we are using Docker for the sake of simplicity. If you want to run the API natively, you can check out the section [Native Guide](#native-guide).
 
 - Docker with compose
@@ -46,7 +47,10 @@ docker compose up nginx-server -d
 
 ## Native Guide
 
-You can use docker compose if you'd like, but here are the native OS instructions.
+You should use docker compose, but here are the native OS instructions in case you don't want to.
+
+> [!warning]
+> The native OS instructions will not be maintained going forward. If you notice an issue with them, please PR the fix.
 
 ### Linux and Mac
 
