@@ -13,19 +13,44 @@ The mascot for the backend API is Kirovy, by [Direct & Dominate](https://www.you
 
 ![Kirovy enjoying his job](docs/images/kirovy_direct_and_dominate.png)
 
-# Development
+# Getting started
 
-## Frontend devs
+## Development
 
-Just set up your environment file and run `docker compose up web -d`.
+Follow this guide to set up the api locally for development.
 
-This will launch the database, run the migrations, and start the django web server.
+### Prerequisites
 
-[Example env file](example.env)
+> [!note]
+> By default, we are using Docker for the sake of simplicity. If you want to run the API natively, you can check out the section [Native Guide](#native-guide).
 
-## Backend devs
+- Docker with compose
+- An IDE (PyCharm strongly recommended)
 
-You can use docker compose if you'd like, but here are the native OS instructions.
+### Set up environment variables
+
+You can copy `example.env` to `.env` and fill in the required values.
+
+- Set `POSTGRES_PASSWORD` to a secure password.
+- Set `SECRET_KEY` to a secure secret key. You can use `from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())` in a python shell to generate it.
+- Optionally you can set `DEBUG` to `1` if needed
+
+### Running the API
+
+Run the following command to start the API:
+
+```bash
+docker compose up nginx-server -d
+```
+
+> Now you can access the API at `http://localhost`
+
+## Native Guide
+
+You should use docker compose, but here are the native OS instructions in case you don't want to.
+
+> [!warning]
+> The native OS instructions will not be maintained going forward. If you notice an issue with them, please PR the fix.
 
 ### Linux and Mac
 
