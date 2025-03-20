@@ -135,6 +135,7 @@ class _BaseMapFileUploadView(APIView, metaclass=ABCMeta):
                     "cnc_map_file": new_map_file.file.url,
                     "cnc_map_id": new_map.id,
                     "extracted_preview_file": extracted_image_url,
+                    "sha1": new_map_file.hash_sha1,
                 },
             ),
             status=status.HTTP_201_CREATED,

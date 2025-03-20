@@ -12,6 +12,6 @@ How permission is determined:
 
 ```mermaid
 graph LR;
-	url[Found in `urls.py`, points to a view]
-	view_base[Views have an `authentication_classes` attribute to define an authenticator. It defaults to `kirovy.authentication.CncNetAuthentication`]
+	url[Found in *urls.py*, points to a view]
+	view_base[Views have an *authentication_classes* attribute to define an authenticator. It defaults to *kirovy.authentication.CncNetAuthentication*]
 ```

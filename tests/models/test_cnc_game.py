@@ -42,7 +42,8 @@ def test_cnc_extension_validator(db, extension, expect_error):
 
 
 def test_cnc_game_extensions_set(db):
-    extension_set = {"exe", "mp4", "mp3", "mp5", "zip"}
+    """Test that the allowed extension set only shows extensions linked to the game."""
+    extension_set = {"exe", "mp4", "mp3", "mp5"}
     cnc_extensions: t.List[CncFileExtension] = []
     for extension in extension_set:
         cnc_extension = CncFileExtension(extension=extension)
