@@ -34,7 +34,7 @@ You can copy `example.env` to `.env` and fill in the required values.
 - Set `POSTGRES_PASSWORD` to a secure password.
 - Set `SECRET_KEY` to a secure secret key. You can use `from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())` in a python shell to generate it.
 - Optionally you can set `DEBUG` to `1` if needed
-- `RUN_ENVIRONMENT` is already set to `dev` by default so you can omit it.
+- Set `RUN_ENVIRONMENT=dev` if you want to see the developer endpoints.
 
 ### Running the API
 

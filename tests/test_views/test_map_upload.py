@@ -41,7 +41,7 @@ def test_map_file_upload_happy_path(client_user, file_map_desert, game_yuri, ext
     map_filename = pathlib.Path(uploaded_file_url).name.replace(".zip", "")
     # Extract the map from the zipfile, and convert to something that the map parser understands
     _unzip_io = io.BytesIO()
-    _unzip_io.write(zipfile.ZipFile(uploaded_zipped_file).read(map_filename))
+    _unzip_io.write(zipfile.ZipFile(uploaded_zipped_file).read(response.data["result"]["sha1"] + ".map"))
     _unzip_io.seek(0)
     uploaded_file = UploadedFile(_unzip_io)
 

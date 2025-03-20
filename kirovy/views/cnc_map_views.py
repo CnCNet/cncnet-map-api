@@ -1,17 +1,23 @@
 import logging
+from uuid import UUID
 
 from django.db.models import Q, QuerySet
+from django.http import FileResponse
 from rest_framework import status
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters import rest_framework as filters
+from rest_framework.permissions import AllowAny
+from rest_framework.views import APIView
 
 from kirovy import permissions
 from kirovy.models import (
     MapCategory,
     CncGame,
     CncMap,
+    CncMapFile,
 )
+from kirovy.response import KirovyResponse
 from kirovy.serializers import cnc_map_serializers
 from kirovy.views import base_views
 
@@ -222,3 +228,17 @@ class MapDeleteView(base_views.KirovyDestroyView):
         if instance.is_legacy:
             raise PermissionDenied("cannot-delete-legacy-maps", status.HTTP_403_FORBIDDEN)
         return super().perform_destroy(instance)
+
+
+class BackwardsCompatibleMapView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, sha1_hash: str, game_id: UUID, format=None):
+        """
+        Return the map matching the hash, if it exists.
+        """
+        map_file = CncMapFile.objects.filter(hash_sha1=sha1_hash, cnc_game_id=game_id).first()
+        if not map_file:
+            return KirovyResponse(status=status.HTTP_404_NOT_FOUND)
+
+        return FileResponse(map_file.file.open("rb"), as_attachment=True, filename=f"{map_file.hash_sha1}.zip")

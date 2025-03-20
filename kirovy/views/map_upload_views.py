@@ -123,7 +123,27 @@ class _BaseMapFileUploadView(APIView, metaclass=ABCMeta):
             context={"request": self.request},
         )
         new_map_file_serializer.is_valid(raise_exception=True)
-        new_map_file = new_map_file_serializer.save()
+        new_map_file: cnc_map.CncMapFile = new_map_file_serializer.save()
+
+        extracted_image_url = self.extract_preview(new_map_file, map_parser)
+
+        return KirovyResponse(
+            ResultResponseData(
+                message="File uploaded successfully",
+                result={
+                    "cnc_map": new_map.map_name,
+                    "cnc_map_file": new_map_file.file.url,
+                    "cnc_map_id": new_map.id,
+                    "extracted_preview_file": extracted_image_url,
+                    "sha1": new_map_file.hash_sha1,
+                },
+            ),
+            status=status.HTTP_201_CREATED,
+        )
+
+    def extract_preview(self, new_map_file: cnc_map.CncMapFile, map_parser: CncGen2MapParser | None) -> str | None:
+        if not map_parser:
+            return None
 
         extracted_image = map_parser.extract_preview()
         extracted_image_url: str = ""
@@ -141,20 +161,7 @@ class _BaseMapFileUploadView(APIView, metaclass=ABCMeta):
             new_map_preview.save()
             extracted_image_url = new_map_preview.file.url
 
-        # TODO: Actually serialize the return data and include the link to the preview.
-        # TODO: Should probably convert this to DRF for that step.
-        return KirovyResponse(
-            ResultResponseData(
-                message="File uploaded successfully",
-                result={
-                    "cnc_map": new_map.map_name,
-                    "cnc_map_file": new_map_file.file.url,
-                    "cnc_map_id": new_map.id,
-                    "extracted_preview_file": extracted_image_url,
-                },
-            ),
-            status=status.HTTP_201_CREATED,
-        )
+        return extracted_image_url
 
     def get_map_parser(self, uploaded_file: UploadedFile) -> CncGen2MapParser:
         try:
@@ -341,3 +348,67 @@ class CncnetClientMapUploadView(_BaseMapFileUploadView):
             )
 
         return str(game.id)
+
+
+class CncNetBackwardsCompatibleUploadView(CncnetClientMapUploadView):
+    """An endpoint to support backwards compatible uploads for clients that we don't control, or haven't been updated.
+
+    Skips all post-processing and just drops the file in as-is.
+    """
+
+    permission_classes = [AllowAny]
+    upload_is_temporary = True
+
+    def post(self, request: KirovyRequest, format=None) -> KirovyResponse:
+        uploaded_file: UploadedFile = request.data["file"]
+
+        game_id = self.get_game_id_from_request(request)
+        extension_id = self.get_extension_id_for_upload(uploaded_file)
+        self.verify_file_size_is_allowed(uploaded_file)
+
+        map_hashes = self._get_file_hashes(uploaded_file)
+        self.verify_file_does_not_exist(map_hashes)
+
+        if uploaded_file.name != f"{map_hashes.sha1}.zip":
+            return KirovyResponse(status=status.HTTP_400_BAD_REQUEST)
+
+        # Make the map that we will attach the map file too.
+        new_map = cnc_map.CncMap(
+            map_name=f"backwards_compatible_{map_hashes.sha1}",
+            cnc_game_id=game_id,
+            is_published=False,
+            incomplete_upload=True,
+            cnc_user=request.user,
+            parent=None,
+        )
+        new_map.save()
+
+        new_map_file_serializer = cnc_map_serializers.CncMapFileSerializer(
+            data=dict(
+                width=-1,
+                height=-1,
+                cnc_map_id=new_map.id,
+                file=uploaded_file,
+                file_extension_id=extension_id,
+                cnc_game_id=new_map.cnc_game_id,
+                hash_md5=map_hashes.md5,
+                hash_sha512=map_hashes.sha512,
+                hash_sha1=map_hashes.sha1,
+            ),
+            context={"request": self.request},
+        )
+        new_map_file_serializer.is_valid(raise_exception=True)
+        new_map_file: cnc_map.CncMapFile = new_map_file_serializer.save()
+
+        return KirovyResponse(
+            ResultResponseData(
+                message="File uploaded successfully",
+                result={
+                    "cnc_map": new_map.map_name,
+                    "cnc_map_file": new_map_file.file.url,
+                    "cnc_map_id": new_map.id,
+                    "extracted_preview_file": None,
+                },
+            ),
+            status=status.HTTP_200_OK,
+        )
