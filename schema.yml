@@ -1,0 +1,547 @@
+openapi: 3.0.3
+info:
+  title: Kirovy
+  version: 0.1.0
+  description: CnCNet Map API
+paths:
+  /admin/ban/:
+    post:
+      operationId: admin_ban_create
+      description: |-
+        The view for banning things.
+
+        ``POST /admin/ban/``
+
+        Payload :attr:`kirovy.objects.ui_objects.BanData`.
+      tags:
+      - admin
+      responses:
+        '200':
+          description: No response body
+  /maps/{id}/:
+    get:
+      operationId: maps_retrieve
+      description: |-
+        Base view for detail views and editing.
+
+        We only allow partial updates because full updates always cause issues when two users are editing.
+
+        e.g. Bob and Alice both have the page open. Alice updates an object, Bob doesn't refresh his page and updates
+        the object. Bob's data doesn't have Alice's updates, so his stale data overwrites Alice's.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - maps
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CncMapBase'
+          description: ''
+    put:
+      operationId: maps_update
+      description: |-
+        Base view for detail views and editing.
+
+        We only allow partial updates because full updates always cause issues when two users are editing.
+
+        e.g. Bob and Alice both have the page open. Alice updates an object, Bob doesn't refresh his page and updates
+        the object. Bob's data doesn't have Alice's updates, so his stale data overwrites Alice's.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - maps
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CncMapBase'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CncMapBase'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CncMapBase'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CncMapBase'
+          description: ''
+    patch:
+      operationId: maps_partial_update
+      description: |-
+        Base view for detail views and editing.
+
+        We only allow partial updates because full updates always cause issues when two users are editing.
+
+        e.g. Bob and Alice both have the page open. Alice updates an object, Bob doesn't refresh his page and updates
+        the object. Bob's data doesn't have Alice's updates, so his stale data overwrites Alice's.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - maps
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCncMapBase'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCncMapBase'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCncMapBase'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CncMapBase'
+          description: ''
+    delete:
+      operationId: maps_destroy
+      description: |-
+        Base view for detail views and editing.
+
+        We only allow partial updates because full updates always cause issues when two users are editing.
+
+        e.g. Bob and Alice both have the page open. Alice updates an object, Bob doesn't refresh his page and updates
+        the object. Bob's data doesn't have Alice's updates, so his stale data overwrites Alice's.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - maps
+      responses:
+        '204':
+          description: No response body
+  /maps/categories/:
+    get:
+      operationId: maps_categories_list
+      description: |-
+        Base view for listing and creating objects.
+
+        It is up to subclasses to figure out how they want to filter large queries.
+      parameters:
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      tags:
+      - maps
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMapCategoryList'
+          description: ''
+    post:
+      operationId: maps_categories_create
+      description: |-
+        Base view for listing and creating objects.
+
+        It is up to subclasses to figure out how they want to filter large queries.
+      tags:
+      - maps
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MapCategory'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MapCategory'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MapCategory'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MapCategory'
+          description: ''
+  /maps/client/upload/:
+    post:
+      operationId: maps_client_upload_create
+      tags:
+      - maps
+      security:
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /maps/delete/{id}/:
+    delete:
+      operationId: maps_delete_destroy
+      description: |-
+        Base view for all delete endpoints in the app.
+
+        For now, only admins can delete stuff.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - maps
+      responses:
+        '204':
+          description: No response body
+  /maps/search/:
+    get:
+      operationId: maps_search_list
+      description: The view for maps.
+      parameters:
+      - in: query
+        name: categories
+        schema:
+          type: array
+          items:
+            type: string
+            format: uuid
+        explode: true
+        style: form
+      - in: query
+        name: cnc_game
+        schema:
+          type: array
+          items:
+            type: string
+            format: uuid
+        explode: true
+        style: form
+      - in: query
+        name: include_edits
+        schema:
+          type: boolean
+      - in: query
+        name: is_legacy
+        schema:
+          type: boolean
+      - in: query
+        name: is_reviewed
+        schema:
+          type: boolean
+      - name: limit
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: offset
+        required: false
+        in: query
+        description: The initial index from which to return the results.
+        schema:
+          type: integer
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: parent
+        schema:
+          type: string
+          format: uuid
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      tags:
+      - maps
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCncMapBaseList'
+          description: ''
+    post:
+      operationId: maps_search_create
+      description: The view for maps.
+      tags:
+      - maps
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CncMapBase'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CncMapBase'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CncMapBase'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CncMapBase'
+          description: ''
+  /maps/upload/:
+    post:
+      operationId: maps_upload_create
+      tags:
+      - maps
+      responses:
+        '200':
+          description: No response body
+  /test/jwt:
+    get:
+      operationId: test_jwt_retrieve
+      description: Test JWT tokens. Only for use in tests.
+      tags:
+      - test
+      responses:
+        '200':
+          description: No response body
+  /ui-permissions/:
+    get:
+      operationId: ui_permissions_retrieve
+      description: |-
+        End point to check which buttons / views the UI should show.
+
+        The UI showing the buttons / views will not guarantee access. The backend still checks permissions for all
+        requests. This just helps the UI know what to render. DO NOT use for permission checks within Kirovy.
+      tags:
+      - ui-permissions
+      responses:
+        '200':
+          description: No response body
+components:
+  schemas:
+    CncMapBase:
+      type: object
+      description: Base serializer for any model that mixes in :class:`~kirovy.models.cnc_user.CncNetUserOwnedModel`
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        modified:
+          type: string
+          format: date-time
+          readOnly: true
+        cnc_user_id:
+          type: string
+          format: uuid
+        map_name:
+          type: string
+          minLength: 3
+        description:
+          type: string
+          minLength: 10
+        cnc_game_id:
+          type: string
+          format: uuid
+        category_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        is_published:
+          type: boolean
+          default: false
+        is_temporary:
+          type: boolean
+          readOnly: true
+        is_reviewed:
+          type: boolean
+          readOnly: true
+        is_banned:
+          type: boolean
+          readOnly: true
+        is_legacy:
+          type: boolean
+          readOnly: true
+        legacy_upload_date:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - category_ids
+      - cnc_game_id
+      - cnc_user_id
+      - created
+      - description
+      - id
+      - is_banned
+      - is_legacy
+      - is_reviewed
+      - is_temporary
+      - legacy_upload_date
+      - map_name
+      - modified
+    MapCategory:
+      type: object
+      description: Base serializer for Kirovy models.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        modified:
+          type: string
+          format: date-time
+          readOnly: true
+        name:
+          type: string
+          minLength: 3
+        slug:
+          type: string
+          readOnly: true
+          minLength: 2
+      required:
+      - created
+      - id
+      - modified
+      - name
+      - slug
+    PaginatedCncMapBaseList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CncMapBase'
+    PaginatedMapCategoryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=400&limit=100
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?offset=200&limit=100
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/MapCategory'
+    PatchedCncMapBase:
+      type: object
+      description: Base serializer for any model that mixes in :class:`~kirovy.models.cnc_user.CncNetUserOwnedModel`
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        modified:
+          type: string
+          format: date-time
+          readOnly: true
+        cnc_user_id:
+          type: string
+          format: uuid
+        map_name:
+          type: string
+          minLength: 3
+        description:
+          type: string
+          minLength: 10
+        cnc_game_id:
+          type: string
+          format: uuid
+        category_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        is_published:
+          type: boolean
+          default: false
+        is_temporary:
+          type: boolean
+          readOnly: true
+        is_reviewed:
+          type: boolean
+          readOnly: true
+        is_banned:
+          type: boolean
+          readOnly: true
+        is_legacy:
+          type: boolean
+          readOnly: true
+        legacy_upload_date:
+          type: string
+          format: date-time
+          readOnly: true
