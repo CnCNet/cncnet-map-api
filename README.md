@@ -24,7 +24,7 @@ Follow this guide to set up the api locally for development.
 > [!note]
 > By default, we are using Docker for the sake of simplicity. If you want to run the API natively, you can check out the section [Native Guide](#native-guide).
 
-- Docker with compose
+- Docker
 - An IDE (PyCharm strongly recommended)
 
 ### Set up environment variables
@@ -34,16 +34,53 @@ You can copy `example.env` to `.env` and fill in the required values.
 - Set `POSTGRES_PASSWORD` to a secure password.
 - Set `SECRET_KEY` to a secure secret key. You can use `from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())` in a python shell to generate it.
 - Optionally you can set `DEBUG` to `1` if needed
+- `RUN_ENVIRONMENT` is already set to `dev` by default so you can omit it.
 
 ### Running the API
 
 Run the following command to start the API:
 
 ```bash
-docker compose up nginx-server -d
+docker compose up -d
 ```
 
 > Now you can access the API at `http://localhost`
+
+### Running the tests
+
+Once the api is started you can run the tests using the following command.
+
+Run tests
+```
+docker exec -it mapdb-django-dev pytest
+```
+
+## Production
+
+> This section is still a WIP...
+
+Follow this guide to set up the app for production.
+
+### Prerequisites
+
+- Docker
+
+### Set up environment variables
+
+You can copy `example.env` to `.env` and fill in the required values.
+
+- Set `POSTGRES_PASSWORD` to a secure password.
+- Set `SECRET_KEY` to a secure secret key. You can use `from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())` in a python shell to generate it.
+- You MUST set `DEBUG` to `0`
+- You MUST set `RUN_ENVIRONMENT` to `production`
+
+### Running the API
+
+Run the following command to start the API:
+
+```bash
+docker compose -f docker-compose.prod.yml up -d
+```
 
 ## Native Guide
 
