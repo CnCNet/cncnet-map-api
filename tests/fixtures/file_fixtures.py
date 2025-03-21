@@ -7,6 +7,13 @@ from kirovy import typing as t
 import pytest
 from django.core.files import File
 
+from kirovy.utils import file_utils
+
+
+class ReadOnlyFile(File):
+    def write(self, s, /):
+        raise Exception("Don't tamper with the test files.")
+
 
 @pytest.fixture
 def test_data_path() -> pathlib.Path:
@@ -28,7 +35,7 @@ def load_test_file(test_data_path):
         """
         full_path = test_data_path / relative_path
 
-        return File(open(full_path, read_mode))
+        return ReadOnlyFile(open(full_path, read_mode))
 
     return _inner
 
@@ -85,3 +92,24 @@ def file_map_unfair(load_test_file) -> Generator[File, Any, None]:
     file = load_test_file("totally_fair_map.map")
     yield file
     file.close()
+
+
+@pytest.fixture
+def file_map_dune2k(load_test_file) -> Generator[File, Any, None]:
+    """Return a valid zip file for a dune 2k mpa."""
+    file = load_test_file("valid_dune_map.zip")
+    yield file
+    file.close()
+
+
+@pytest.fixture
+def rename_file_for_legacy_upload():
+    """Returns a function to rename a file for upload to a legacy endpoint."""
+
+    def _inner(file: File) -> File:
+        assert file.name.endswith(".zip"), "Only zip files can be sent to legacy endpoints."
+        # Uploads to legacy endpoints need the hash name
+        file.name = file_utils.hash_file_sha1(file) + ".zip"
+        return file
+
+    return _inner

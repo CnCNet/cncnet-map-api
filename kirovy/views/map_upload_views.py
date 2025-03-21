@@ -15,7 +15,7 @@ from rest_framework.views import APIView
 from kirovy import typing as t, permissions, exceptions, constants, logging
 from kirovy.constants.api_codes import UploadApiCodes
 from kirovy.exceptions.view_exceptions import KirovyValidationError
-from kirovy.models import cnc_map, CncGame, CncFileExtension, MapCategory, map_preview
+from kirovy.models import cnc_map, CncGame, CncFileExtension, MapCategory, map_preview, CncUser
 from kirovy.objects.ui_objects import ResultResponseData
 from kirovy.request import KirovyRequest
 from kirovy.response import KirovyResponse
@@ -378,7 +378,7 @@ class CncNetBackwardsCompatibleUploadView(CncnetClientMapUploadView):
             cnc_game_id=game_id,
             is_published=False,
             incomplete_upload=True,
-            cnc_user=request.user,
+            cnc_user=CncUser.objects.get_or_create_legacy_upload_user(),
             parent=None,
         )
         new_map.save()
