@@ -90,8 +90,14 @@ class CncnetUserGroup:
 
 
 class MigrationUser:
-    ID = -1
+    CNCNET_ID = -1
     USERNAME = "MobileConstructionVehicle_Migrator"
+    GROUP = CncnetUserGroup.USER
+
+
+class LegacyUploadUser:
+    CNCNET_ID = -2
+    USERNAME = "Spy_ShapeShifting_LegacyUploader"
     GROUP = CncnetUserGroup.USER
 
 
