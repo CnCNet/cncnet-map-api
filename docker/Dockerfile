@@ -12,6 +12,8 @@ COPY requirements.txt /cncnet-map-api
 COPY requirements-dev.txt /cncnet-map-api
 COPY web_entry_point.sh /cncnet-map-api
 
+# liblzo2 is a compression library used by westwood.
+# libmagic1 is used for detecting file mime types by analyzing the file contents.
 RUN apt-get update && apt-get install -y liblzo2-dev libmagic1
 RUN pip install --upgrade pip
 RUN chmod +x /cncnet-map-api/web_entry_point.sh

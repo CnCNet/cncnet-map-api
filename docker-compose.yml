@@ -32,6 +32,7 @@ services:
       - db
 
   nginx-server:
+    # nginx proxies requests to django via gunicorn.
     container_name: mapdb-nginx-dev
     image: nginx:latest
     volumes:
