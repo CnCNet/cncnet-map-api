@@ -3,6 +3,7 @@ import enum
 
 class UploadApiCodes(enum.StrEnum):
     GAME_SLUG_DOES_NOT_EXIST = "game-slug-does-not-exist"
+    GAME_DOES_NOT_EXIST = "game-does-not-exist"
     MISSING_GAME_SLUG = "missing-game-slug"
     FILE_TO_LARGE = "file-too-large"
     EMPTY_UPLOAD = "where-file"
@@ -17,3 +18,4 @@ class LegacyUploadApiCodes(enum.StrEnum):
     NO_VALID_MAP_FILE = "no-valid-map-file"
     HASH_MISMATCH = "file-hash-does-not-match-zip-name"
     INVALID_FILE_TYPE = "invalid-file-type-in-zip"
+    GAME_NOT_SUPPORTED = "game-not-supported"

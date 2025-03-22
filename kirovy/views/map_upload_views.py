@@ -5,6 +5,7 @@ from abc import ABCMeta
 from cryptography.utils import cached_property
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.files.base import ContentFile, File
 from django.core.files.uploadedfile import UploadedFile, InMemoryUploadedFile
 from django.db.models import Q, QuerySet
 from rest_framework import status, serializers
@@ -20,6 +21,7 @@ from kirovy.objects.ui_objects import ResultResponseData
 from kirovy.request import KirovyRequest
 from kirovy.response import KirovyResponse
 from kirovy.serializers import cnc_map_serializers
+from kirovy.services import legacy_upload
 from kirovy.services.cnc_gen_2_services import CncGen2MapParser, CncGen2MapSections
 from kirovy.utils import file_utils
 
@@ -53,7 +55,9 @@ class _BaseMapFileUploadView(APIView, metaclass=ABCMeta):
         # todo: make validation less trash
         uploaded_file: UploadedFile = request.data["file"]
 
-        game_id = self.get_game_id_from_request(request)
+        game = self.get_game_from_request(request)
+        if not game:
+            raise KirovyValidationError(detail="Game doesnot exist", code=UploadApiCodes.GAME_DOES_NOT_EXIST)
         extension_id = self.get_extension_id_for_upload(uploaded_file)
         self.verify_file_size_is_allowed(uploaded_file)
 
@@ -65,7 +69,7 @@ class _BaseMapFileUploadView(APIView, metaclass=ABCMeta):
         # Make the map that we will attach the map file too.
         new_map = cnc_map.CncMap(
             map_name=map_parser.ini.map_name,
-            cnc_game_id=game_id,
+            cnc_game_id=game.id,
             is_published=False,
             incomplete_upload=True,
             cnc_user=request.user,
@@ -199,14 +203,14 @@ class _BaseMapFileUploadView(APIView, metaclass=ABCMeta):
         }
 
     @staticmethod
-    def _get_file_hashes(uploaded_file: UploadedFile) -> MapHashes:
+    def _get_file_hashes(uploaded_file: File) -> MapHashes:
         map_hash_sha512 = file_utils.hash_file_sha512(uploaded_file)
         map_hash_md5 = file_utils.hash_file_md5(uploaded_file)
         map_hash_sha1 = file_utils.hash_file_sha1(uploaded_file)  # legacy ban list support
 
         return MapHashes(md5=map_hash_md5, sha1=map_hash_sha1, sha512=map_hash_sha512)
 
-    def get_game_id_from_request(self, request: KirovyRequest) -> str | None:
+    def get_game_from_request(self, request: KirovyRequest) -> CncGame | None:
         """Get the game_id from the request.
 
         This is a method, rather than a direct lookup, so that the client can use ``game_slug``.
@@ -307,15 +311,18 @@ class MapFileUploadView(_BaseMapFileUploadView):
     permission_classes = [permissions.CanUpload]
     upload_is_temporary = False
 
-    def get_game_id_from_request(self, request: KirovyRequest) -> str | None:
-        return request.data.get("game_id")
+    def get_game_from_request(self, request: KirovyRequest) -> CncGame | None:
+        game_id = request.data.get("game_id")
+        return CncGame.objects.filter(id=game_id).first()
 
 
 class CncnetClientMapUploadView(_BaseMapFileUploadView):
+    """DO NOT USE THIS FOR NOW. Use"""
+
     permission_classes = [AllowAny]
     upload_is_temporary = True
 
-    def get_game_id_from_request(self, request: KirovyRequest) -> str | None:
+    def get_game_from_request(self, request: KirovyRequest) -> CncGame | None:
         """Get the game ID for a CnCNet client upload.
 
         The client currently sends a slug in ``request.data["game"]``. The game table has a unique constraint
@@ -347,7 +354,7 @@ class CncnetClientMapUploadView(_BaseMapFileUploadView):
                 additional={"attempted_slug": game_slug},
             )
 
-        return str(game.id)
+        return game
 
 
 class CncNetBackwardsCompatibleUploadView(CncnetClientMapUploadView):
@@ -362,20 +369,21 @@ class CncNetBackwardsCompatibleUploadView(CncnetClientMapUploadView):
     def post(self, request: KirovyRequest, format=None) -> KirovyResponse:
         uploaded_file: UploadedFile = request.data["file"]
 
-        game_id = self.get_game_id_from_request(request)
+        game = self.get_game_from_request(request)
         extension_id = self.get_extension_id_for_upload(uploaded_file)
         self.verify_file_size_is_allowed(uploaded_file)
 
-        map_hashes = self._get_file_hashes(uploaded_file)
+        # Will raise validation errors if the upload is invalid
+        legacy_map_service = legacy_upload.get_legacy_service_for_slug(game.slug.lower())(uploaded_file)
+
+        # These hashes are for the full zip file and won't match
+        map_hashes = self._get_file_hashes(ContentFile(legacy_map_service.file_contents_merged.read()))
         self.verify_file_does_not_exist(map_hashes)
 
-        if uploaded_file.name != f"{map_hashes.sha1}.zip":
-            return KirovyResponse(status=status.HTTP_400_BAD_REQUEST)
-
-        # Make the map that we will attach the map file too.
+        # Make the map that we will attach the map file to.
         new_map = cnc_map.CncMap(
-            map_name=f"backwards_compatible_{map_hashes.sha1}",
-            cnc_game_id=game_id,
+            map_name=legacy_map_service.map_name,
+            cnc_game=game,
             is_published=False,
             incomplete_upload=True,
             cnc_user=CncUser.objects.get_or_create_legacy_upload_user(),
@@ -388,9 +396,9 @@ class CncNetBackwardsCompatibleUploadView(CncnetClientMapUploadView):
                 width=-1,
                 height=-1,
                 cnc_map_id=new_map.id,
-                file=uploaded_file,
+                file=legacy_map_service.processed_zip_file(),
                 file_extension_id=extension_id,
-                cnc_game_id=new_map.cnc_game_id,
+                cnc_game_id=game.id,
                 hash_md5=map_hashes.md5,
                 hash_sha512=map_hashes.sha512,
                 hash_sha1=map_hashes.sha1,

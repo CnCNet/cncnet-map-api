@@ -101,7 +101,7 @@ class LegacyUploadUser:
     GROUP = CncnetUserGroup.USER
 
 
-class GameSlugs(enum.StrEnum):
+class GameSlugs(str, enum.Enum):
     """The slugs for each game / total conversion mod.
 
     These **must** be unique. They are in constants because we need them to determine which parser to use

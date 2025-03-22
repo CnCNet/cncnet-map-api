@@ -15,7 +15,8 @@ class CncUserManager(models.Manager):
     use_in_migrations = True
 
     _SYSTEM_CNCNET_IDS = {
-        constants.MigrationUser.ID,
+        constants.MigrationUser.CNCNET_ID,
+        constants.LegacyUploadUser.CNCNET_ID,
     }
 
     def find_by_cncnet_id(self, cncnet_id: int) -> t.Tuple["CncUser"]:
