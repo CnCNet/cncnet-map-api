@@ -189,7 +189,7 @@ class LegacyMapServiceBase:
 
 
 def default_map_file_validator(zip_file_name: str, file_content: ContentFile, zip_info: zipfile.ZipInfo):
-    """Legacy map file generator that works for most Westwood games.
+    """Legacy map file validator that works for most Westwood games.
 
     Won't work for Dune 2000, or Tiberian Dawn.
 
