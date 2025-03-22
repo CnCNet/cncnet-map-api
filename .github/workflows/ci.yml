@@ -20,5 +20,8 @@ jobs:
     - name: Build docker images
       run: docker compose build
 
+    - name: Run containers
+      run: docker compose up -d
+
     - name: Run PyTest
-      run: docker compose run test
+      run: docker exec mapdb-django-dev pytest
