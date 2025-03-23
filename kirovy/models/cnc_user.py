@@ -15,7 +15,8 @@ class CncUserManager(models.Manager):
     use_in_migrations = True
 
     _SYSTEM_CNCNET_IDS = {
-        constants.MigrationUser.ID,
+        constants.MigrationUser.CNCNET_ID,
+        constants.LegacyUploadUser.CNCNET_ID,
     }
 
     def find_by_cncnet_id(self, cncnet_id: int) -> t.Tuple["CncUser"]:
@@ -27,10 +28,10 @@ class CncUserManager(models.Manager):
         :return:
             The user for running migrations.
         """
-        mcv = self.find_by_cncnet_id(constants.MigrationUser.ID)
+        mcv = self.find_by_cncnet_id(constants.MigrationUser.CNCNET_ID)
         if not mcv:
             mcv = CncUser(
-                cncnet_id=constants.MigrationUser.ID,
+                cncnet_id=constants.MigrationUser.CNCNET_ID,
                 username=constants.MigrationUser.USERNAME,
                 group=constants.MigrationUser.GROUP,
             )
@@ -38,6 +39,30 @@ class CncUserManager(models.Manager):
             mcv.refresh_from_db()
 
         return mcv
+
+    def get_or_create_legacy_upload_user(self) -> "CncUser":
+        """Gets or creates a system-user to represent anonymous uploads from a CnCNet client.
+
+        .. warning::
+
+            This should **only** be used for the legacy upload URLs for clients
+            that CnCNet doesn't have the source for.
+
+        :return:
+            User for legacy uploads.
+        """
+        # If we copy and paste this again then it should be DRY'd up.
+        spy = self.find_by_cncnet_id(constants.LegacyUploadUser.CNCNET_ID)
+        if not spy:
+            spy = CncUser(
+                cncnet_id=constants.LegacyUploadUser.CNCNET_ID,
+                username=constants.LegacyUploadUser.USERNAME,
+                group=constants.LegacyUploadUser.GROUP,
+            )
+            spy.save()
+            spy.refresh_from_db()
+
+        return spy
 
     def get_queryset(self) -> models.QuerySet:
         """Makes ``CncUser.object.all()`` filter out the system users by default.
@@ -61,9 +86,7 @@ class CncUser(AbstractBaseUser):
         help_text=_("The user ID from the CNCNet ladder API."),
     )
 
-    username = models.CharField(
-        null=True, help_text=_("The name from the CNCNet ladder API."), blank=False
-    )
+    username = models.CharField(null=True, help_text=_("The name from the CNCNet ladder API."), blank=False)
     """:attr: The username for debugging purposes. Don't rely on this field for much else."""
 
     verified_map_uploader = models.BooleanField(null=False, default=False)
@@ -77,23 +100,15 @@ class CncUser(AbstractBaseUser):
         blank=False,
     )
 
-    is_banned = models.BooleanField(
-        default=False, help_text="If true, user was banned for some reason."
-    )
-    ban_reason = models.CharField(
-        default=None, null=True, help_text="If banned, the reason the user was banned."
-    )
-    ban_date = models.DateTimeField(
-        default=None, null=True, help_text="If banned, when the user was banned."
-    )
+    is_banned = models.BooleanField(default=False, help_text="If true, user was banned for some reason.")
+    ban_reason = models.CharField(default=None, null=True, help_text="If banned, the reason the user was banned.")
+    ban_date = models.DateTimeField(default=None, null=True, help_text="If banned, when the user was banned.")
     ban_expires = models.DateTimeField(
         default=None,
         null=True,
         help_text="If banned, when the ban expires, if temporary.",
     )
-    ban_count = models.IntegerField(
-        default=0, help_text="How many times this user has been banned."
-    )
+    ban_count = models.IntegerField(default=0, help_text="How many times this user has been banned.")
 
     USERNAME_FIELD = "cncnet_id"
     """:attr:
@@ -113,9 +128,7 @@ class CncUser(AbstractBaseUser):
         :return:
             True if user can upload maps / mixes / big, or edit their existing uploads.
         """
-        self.refresh_from_db(
-            fields=["verified_map_uploader", "verified_email", "is_banned"]
-        )
+        self.refresh_from_db(fields=["verified_map_uploader", "verified_email", "is_banned"])
         can_upload = self.verified_map_uploader or self.verified_email or self.is_staff
         return can_upload and not self.is_banned
 
@@ -142,9 +155,7 @@ class CncUser(AbstractBaseUser):
         :return:
             The user object in Kirovy's database, updated with the data from CnCNet.
         """
-        kirovy_user: t.Optional[CncUser] = CncUser.objects.filter(
-            cncnet_id=user_dto.id
-        ).first()
+        kirovy_user: t.Optional[CncUser] = CncUser.objects.filter(cncnet_id=user_dto.id).first()
         if not kirovy_user:
             kirovy_user = CncUser.objects.create(
                 cncnet_id=user_dto.id,

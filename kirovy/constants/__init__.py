@@ -90,12 +90,18 @@ class CncnetUserGroup:
 
 
 class MigrationUser:
-    ID = -1
+    CNCNET_ID = -1
     USERNAME = "MobileConstructionVehicle_Migrator"
     GROUP = CncnetUserGroup.USER
 
 
-class GameSlugs(enum.StrEnum):
+class LegacyUploadUser:
+    CNCNET_ID = -2
+    USERNAME = "Spy_ShapeShifting_LegacyUploader"
+    GROUP = CncnetUserGroup.USER
+
+
+class GameSlugs(str, enum.Enum):
     """The slugs for each game / total conversion mod.
 
     These **must** be unique. They are in constants because we need them to determine which parser to use

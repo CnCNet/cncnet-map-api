@@ -89,9 +89,12 @@ class CncNetFileBaseModel(CncNetBaseModel):
     def save(self, *args, **kwargs):
         self.validate_file_extension(self.file_extension)
 
-        self.hash_md5 = file_utils.hash_file_md5(self.file)
-        self.hash_sha512 = file_utils.hash_file_sha512(self.file)
-        self.hash_sha1 = file_utils.hash_file_sha1(self.file)
+        if not self.hash_md5:
+            self.hash_md5 = file_utils.hash_file_md5(self.file)
+        if not self.hash_sha512:
+            self.hash_sha512 = file_utils.hash_file_sha512(self.file)
+        if not self.hash_sha1:
+            self.hash_sha1 = file_utils.hash_file_sha1(self.file)
         super().save(*args, **kwargs)
 
     @staticmethod

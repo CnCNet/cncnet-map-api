@@ -1,6 +1,8 @@
 import collections
 import functools
 import hashlib
+import pathlib
+import zipfile
 
 from django.core.files import File
 
@@ -131,3 +133,21 @@ class ByteSized:
 
     def __eq__(self, other: "ByteSized") -> bool:
         return self.total_bytes == other.total_bytes
+
+
+def is_zipfile(file_or_path: File | pathlib.Path) -> bool:
+    """Checks if a file is a zip file.
+
+    :param file_or_path:
+        The path to a file, or the file itself, to check.
+    :returns:
+        ``True`` if the file is a zip file.
+    """
+    try:
+        with zipfile.ZipFile(file_or_path, "r") as zf:
+            # zf.getinfo("")  # check if zipfile is valid.
+            return True
+    except zipfile.BadZipfile:
+        return False
+    except Exception as e:
+        raise e
