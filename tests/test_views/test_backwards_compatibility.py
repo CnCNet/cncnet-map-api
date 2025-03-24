@@ -53,14 +53,17 @@ def test_map_upload_single_file_backwards_compatible(
     file_map_desert,
     file_map_ts_woodland_hills,
     file_map_ra_d_day,
+    file_map_dta_peace_and_war,
     game_yuri,
     game_tiberian_sun,
+    game_dawn_of_the_tiberium_age,
     game_red_alert,
 ):
     game_map_name = [
         (game_yuri, file_map_desert, "desert"),
         (game_tiberian_sun, file_map_ts_woodland_hills, "Woodland Hills"),
         (game_red_alert, file_map_ra_d_day, "D Day"),
+        (game_dawn_of_the_tiberium_age, file_map_dta_peace_and_war, "Peace And War"),
     ]
     url = "/upload"
     for game, file_map, map_name in game_map_name:

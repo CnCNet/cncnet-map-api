@@ -120,6 +120,19 @@ def file_map_ts_woodland_hills(load_test_file) -> Generator[File, Any, None]:
 
 
 @pytest.fixture
+def file_map_dta_peace_and_war(load_test_file) -> Generator[File, Any, None]:
+    """Return a valid Dawn Of The Tiberium Age map.
+
+    Map name is ``Peace And War``.
+
+    Original CnCNet hash is ``71b9f8a031827cccb3cdf2273dedc44a44e06706``.
+    """
+    file = load_test_file("tiberian_sun/dta_peace_and_war.map")
+    yield file
+    file.close()
+
+
+@pytest.fixture
 def file_map_ra_d_day(load_test_file) -> Generator[File, Any, None]:
     """Return a valid Red Alert map.
 

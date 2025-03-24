@@ -40,6 +40,18 @@ def game_tiberian_sun(db) -> CncGame:
 
 
 @pytest.fixture
+def game_dawn_of_the_tiberium_age(db) -> CncGame:
+    """Get the Dawn Of The Tiberium Age ``CncGame``.
+
+    This fixture depends on the game data migration being run.
+
+    :return:
+        The game object for Dawn Of The Tiberium Age.
+    """
+    return CncGame.objects.get(slug__iexact=constants.GameSlugs.dawn_of_the_tiberium_age)
+
+
+@pytest.fixture
 def game_red_alert(db) -> CncGame:
     """Get the Red Alert ``CncGame``.
 

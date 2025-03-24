@@ -30,6 +30,10 @@ class TiberianSunLegacyMapService(LegacyMapServiceBase):
         ]
 
 
+class DawnOfTheTiberiumAgeLegacyMapService(TiberianSunLegacyMapService):
+    game_slug = constants.GameSlugs.dawn_of_the_tiberium_age
+
+
 class RedAlertLegacyMapService(LegacyMapServiceBase):
     ini_extensions = {".ini", ".mpr"}
     game_slug = constants.GameSlugs.red_alert

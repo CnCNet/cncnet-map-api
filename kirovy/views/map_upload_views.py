@@ -263,13 +263,13 @@ class _BaseMapFileUploadView(APIView, metaclass=ABCMeta):
         if not matched_hashes:
             return None
 
-        is_banned = next(iter([x for x in matched_hashes if x.cnc_map.is_banned]))
+        is_banned = [x for x in matched_hashes if x.cnc_map.is_banned]
 
         if is_banned:
             log_attrs = {
                 **self.user_log_attrs,
-                "map_file_id": is_banned.id,
-                "map_id": is_banned.cnc_map.id,
+                "map_file_id": is_banned[0].id,
+                "map_id": is_banned[0].cnc_map.id,
             }
 
             _LOGGER.info("attempted_uploading_banned_map_file", **log_attrs)
