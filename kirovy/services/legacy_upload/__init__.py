@@ -10,6 +10,7 @@ _GAME_LEGACY_SERVICE_MAP: t.Dict[str, t.Type[LegacyMapServiceBase]] = {
     GameSlugs.yuris_revenge.value: westwood.YurisRevengeLegacyMapService,
     GameSlugs.dune_2000.value: dune_2000.Dune2000LegacyMapService,
     GameSlugs.tiberian_sun.value: westwood.TiberianSunLegacyMapService,
+    GameSlugs.red_alert.value: westwood.RedAlertLegacyMapService,
 }
 
 

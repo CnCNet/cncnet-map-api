@@ -37,3 +37,15 @@ def game_tiberian_sun(db) -> CncGame:
         The game object for Tiberian Sun.
     """
     return CncGame.objects.get(slug__iexact=constants.GameSlugs.tiberian_sun)
+
+
+@pytest.fixture
+def game_red_alert(db) -> CncGame:
+    """Get the Red Alert ``CncGame``.
+
+    This fixture depends on the game data migration being run.
+
+    :return:
+        The game object for Red Alert.
+    """
+    return CncGame.objects.get(slug__iexact=constants.GameSlugs.red_alert)

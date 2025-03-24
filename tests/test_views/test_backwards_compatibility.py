@@ -8,7 +8,7 @@ from django.core.files.base import ContentFile
 from django.http import FileResponse
 from rest_framework import status
 
-from kirovy.models import CncGame, CncMapFile
+from kirovy.models import CncGame, CncMapFile, CncMap
 from kirovy.response import KirovyResponse
 from kirovy.utils import file_utils
 
@@ -19,8 +19,8 @@ def test_map_download_backwards_compatible(
 ):
     """Test that we can properly fetch a map with the backwards compatible endpoints."""
     game = CncGame.objects.get(slug__iexact=game_slug)
-    cnc_map = create_cnc_map(is_temporary=True, cnc_game=game)
-    map_file = create_cnc_map_file(file_map_desert, cnc_map)
+    cnc_map: CncMap = create_cnc_map(is_temporary=True, cnc_game=game)
+    map_file = create_cnc_map_file(file_map_desert, cnc_map, zip_for_legacy=True)
 
     response: FileResponse = client_anonymous.get(f"/{game_slug}/{map_file.hash_sha1}")
 
@@ -29,7 +29,7 @@ def test_map_download_backwards_compatible(
     zip_file = zipfile.ZipFile(file_content_io)
     assert zip_file
 
-    map_from_zip = zip_file.read(f"{map_file.hash_sha1}.map")
+    map_from_zip = zip_file.read(zip_file.infolist()[0])
     downloaded_map_hash = hashlib.sha1(map_from_zip).hexdigest()
     assert downloaded_map_hash == map_file.hash_sha1
 
@@ -52,15 +52,19 @@ def test_map_upload_single_file_backwards_compatible(
     zip_map_for_legacy_upload,
     file_map_desert,
     file_map_ts_woodland_hills,
+    file_map_ra_d_day,
     game_yuri,
     game_tiberian_sun,
+    game_red_alert,
 ):
     game_map_name = [
         (game_yuri, file_map_desert, "desert"),
         (game_tiberian_sun, file_map_ts_woodland_hills, "Woodland Hills"),
+        (game_red_alert, file_map_ra_d_day, "D Day"),
     ]
     url = "/upload"
     for game, file_map, map_name in game_map_name:
+        original_extension = pathlib.Path(file_map.name).suffix
         upload_file, file_sha1 = zip_map_for_legacy_upload(file_map)
         upload_response: KirovyResponse = client_anonymous.post(
             url, {"file": upload_file, "game": game.slug}, format="multipart", content_type=None
@@ -75,7 +79,7 @@ def test_map_upload_single_file_backwards_compatible(
         zip_file = zipfile.ZipFile(file_content_io)
         assert zip_file
 
-        map_from_zip = zip_file.read(f"{file_sha1}.map")
+        map_from_zip = zip_file.read(f"{file_sha1}{original_extension}")
         downloaded_map_hash = hashlib.sha1(map_from_zip).hexdigest()
         assert downloaded_map_hash == file_sha1
 

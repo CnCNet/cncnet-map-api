@@ -119,6 +119,19 @@ def file_map_ts_woodland_hills(load_test_file) -> Generator[File, Any, None]:
     file.close()
 
 
+@pytest.fixture
+def file_map_ra_d_day(load_test_file) -> Generator[File, Any, None]:
+    """Return a valid Red Alert map.
+
+    Map name is ``D Day``.
+
+    Original CnCNet hash is ``1a4f34f61c90dbff5031e3fbd9780b3ed162a7cb``.
+    """
+    file = load_test_file("red_alert/ra_d_day.mpr")
+    yield file
+    file.close()
+
+
 ZipContentsSha1 = str
 
 

@@ -41,16 +41,20 @@ def cnc_map_category(create_cnc_map_category) -> MapCategory:
 
 
 @pytest.fixture
-def create_cnc_map_file(db, extension_map):
+def create_cnc_map_file(db, extension_map, zip_map_for_legacy_upload):
     def _inner(
         file: File,
         cnc_map: CncMap,
+        zip_for_legacy: bool = False,
     ) -> CncMapFile:
+        file_to_save = file
+        if zip_for_legacy:
+            file_to_save, _ = zip_map_for_legacy_upload(file_to_save)
         map_parser = CncGen2MapParser(file)
         map_file = CncMapFile(
             width=map_parser.ini.get(CncGen2MapSections.HEADER, "Width"),
             height=map_parser.ini.get(CncGen2MapSections.HEADER, "Height"),
-            file=file,
+            file=file_to_save,
             file_extension=extension_map,
             cnc_game_id=cnc_map.cnc_game_id,
             hash_md5=file_utils.hash_file_md5(file),
