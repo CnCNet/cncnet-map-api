@@ -43,3 +43,20 @@ services:
       - "80:80"
     depends_on:
       - django
+
+  debugger:
+    # Use this for launching via a debugger like PyCharm or VSCode.
+    # Just builds, and doesn't execute anything, your debugger will be in charge of executing.
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: debugger
+    volumes:
+      - .:/cncnet-map-api
+      - ./data/tmp:/tmp/pytest-of-root  # For inspecting files during pytests
+    env_file:
+      - .env
+    environment:
+      POSTGRES_TEST_HOST: mapdb-postgres-dev  # Necessary to connect to docker db. Overrides the .env setting.
+    depends_on:
+      - db

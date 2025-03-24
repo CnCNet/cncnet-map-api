@@ -22,6 +22,7 @@ from django.db import connection
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 from kirovy.models import CncGame
+from kirovy.settings import settings_constants
 from kirovy.views import test, cnc_map_views, permission_views, admin_views, map_upload_views
 from kirovy import typing as t, constants
 
@@ -60,7 +61,7 @@ def _get_url_patterns() -> list[path]:
     but I didn't want to have other url files.
     """
     dev_urls = []
-    if settings.RUN_ENVIRONMENT == "dev":
+    if settings.RUN_ENVIRONMENT == settings_constants.RunEnvironment.DEVELOPMENT:
         dev_urls = [
             path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
             # Optional UI:

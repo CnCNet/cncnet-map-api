@@ -31,3 +31,6 @@ COPY . /cncnet-map-api
 
 ENTRYPOINT "/cncnet-map-api/web_entry_point.sh"
 
+FROM base AS debugger
+# Just build, but don't run anything. Your debugger will run pytest, manage.py, etc for you.
+RUN CFLAGS=-I$(brew --prefix)/include LDFLAGS=-L$(brew --prefix)/lib pip install -r ./requirements-dev.txt
