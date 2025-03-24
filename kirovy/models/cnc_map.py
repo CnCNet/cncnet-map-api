@@ -117,6 +117,12 @@ class CncMap(cnc_user.CncNetUserOwnedModel):
     )
     """If set, then this map is a child of ``parent``. Used to track edits of other peoples' maps."""
 
+    is_mapdb1_compatible = models.BooleanField(default=False)
+    """If true, then this map was uploaded by a legacy CnCNet client and is backwards compatible with map db 1.0.
+
+    This should never be set for maps uploaded via the web UI.
+    """
+
     def next_version_number(self) -> int:
         """Generate the next version to use for a map file.
 
@@ -158,13 +164,20 @@ class CncMap(cnc_user.CncNetUserOwnedModel):
         self.save(update_fields=["is_banned"])
 
 
-class CncMapFile(file_base.CncNetZippedFileBaseModel):
+class CncMapFileManager(models.Manager["CncMapFile"]):
+    def find_legacy_map_by_sha1(self, sha1: str) -> t.Union["CncMapFile", None]:
+        return super().get_queryset().filter(hash_sha1=sha1, cnc_map__is_mapdb1_compatible=True).first()
+
+
+class CncMapFile(file_base.CncNetFileBaseModel):
     """Represents the actual map file that a Command & Conquer game reads.
 
     .. warning::
 
         ``name`` is auto-generated for this file subclass.
     """
+
+    objects = CncMapFileManager()
 
     width = models.IntegerField()
     height = models.IntegerField()

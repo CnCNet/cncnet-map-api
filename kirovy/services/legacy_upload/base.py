@@ -8,7 +8,7 @@ from cryptography.utils import cached_property
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import UploadedFile
 
-from kirovy import typing as t, constants
+from kirovy import typing as t, constants, exceptions
 from kirovy.constants.api_codes import LegacyUploadApiCodes
 from kirovy.exceptions import view_exceptions
 from kirovy.services.cnc_gen_2_services import CncGen2MapParser
@@ -111,7 +111,11 @@ class LegacyMapServiceBase:
         ini_file_info = self._find_file_info_by_extension(self.ini_extensions)
         fallback = f"legacy_client_upload_{self.map_sha1_from_filename}"
         ini_file = ContentFile(self._file.read(ini_file_info))
-        return CncGen2MapParser(ini_file).ini.get("Basic", "Name", fallback=fallback)
+        try:
+            return CncGen2MapParser(ini_file, ini_section_check=False).ini.get("Basic", "Name", fallback=fallback)
+        except exceptions.InvalidMapFile:
+            # Having a bad map name for a temporary upload is better than a 500 error.
+            return fallback
 
     def _find_file_info_by_extension(self, extensions: t.Set[str]) -> zipfile.ZipInfo:
         """Find the zipinfo object for a file by a set of possible file extensions.

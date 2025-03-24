@@ -15,3 +15,16 @@ class YurisRevengeLegacyMapService(LegacyMapServiceBase):
                 possible_extensions=self.ini_extensions, file_validator=default_map_file_validator, required=True
             )
         ]
+
+
+class TiberianSunLegacyMapService(LegacyMapServiceBase):
+    ini_extensions = {".map", ".mpr"}
+    game_slug = constants.GameSlugs.tiberian_sun
+
+    @cached_property
+    def expected_files(self) -> t.List[ExpectedFile]:
+        return [
+            ExpectedFile(
+                possible_extensions=self.ini_extensions, file_validator=default_map_file_validator, required=True
+            )
+        ]

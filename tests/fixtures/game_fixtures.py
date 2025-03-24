@@ -1,9 +1,10 @@
 import pytest
-from kirovy import typing as t, models as k_models, constants
+from kirovy import typing as t, constants
+from kirovy.models.cnc_game import CncGame
 
 
 @pytest.fixture
-def game_yuri(db) -> k_models.CncGame:
+def game_yuri(db) -> CncGame:
     """Get the Yuri's Revenge ``CncGame``.
 
     This fixture depends on the game data migration being run.
@@ -11,11 +12,11 @@ def game_yuri(db) -> k_models.CncGame:
     :return:
         The game object for Yuri's revenge.
     """
-    return k_models.CncGame.objects.get(slug=constants.GameSlugs.yuris_revenge)
+    return CncGame.objects.get(slug=constants.GameSlugs.yuris_revenge)
 
 
 @pytest.fixture
-def game_dune2k(db) -> k_models.CncGame:
+def game_dune2k(db) -> CncGame:
     """Get the Dune 2000 ``CncGame``.
 
     This fixture depends on the game data migration being run.
@@ -23,4 +24,16 @@ def game_dune2k(db) -> k_models.CncGame:
     :return:
         The game object for Dune 2000.
     """
-    return k_models.CncGame.objects.get(slug__iexact=constants.GameSlugs.dune_2000)
+    return CncGame.objects.get(slug__iexact=constants.GameSlugs.dune_2000)
+
+
+@pytest.fixture
+def game_tiberian_sun(db) -> CncGame:
+    """Get the Tiberian Sun ``CncGame``.
+
+    This fixture depends on the game data migration being run.
+
+    :return:
+        The game object for Tiberian Sun.
+    """
+    return CncGame.objects.get(slug__iexact=constants.GameSlugs.tiberian_sun)

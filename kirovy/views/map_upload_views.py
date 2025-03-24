@@ -388,6 +388,7 @@ class CncNetBackwardsCompatibleUploadView(CncnetClientMapUploadView):
             incomplete_upload=True,
             cnc_user=CncUser.objects.get_or_create_legacy_upload_user(),
             parent=None,
+            is_mapdb1_compatible=True,
         )
         new_map.save()
 
