@@ -26,11 +26,19 @@ from kirovy.views import test, cnc_map_views, permission_views, admin_views, map
 from kirovy import typing as t, constants
 
 def _get_games_url_patterns() -> list[path]:
-    """Return games related url patterns
+    """Return URLs compatible with legacy CnCNet clients.
 
-    I added this because games are retried from database, and it would crash the app
-    when migrations are not run.
-    @author rohsyl aka wu-shaolin
+    - URLs are loaded when the :mod:`kirovy.urls` module is loaded, which happens when Django starts.
+    - Checking the game slugs requires migration ``0002`` to have been run.
+    
+    These conditions caused a crash when running migrations for the first time, so now we return
+    nothing if we detect that migrations haven't been run yet.
+    
+    .. codeauthor:: rohsyl aka wu-shaolin
+    
+    :return:
+        A list of URLs that are backwards compatible with MapDB 1.0. Returns an empty list if migrations
+        haven't been run yet.
     """
 
     if 'CncGame' not in connection.introspection.table_names():
