@@ -240,7 +240,7 @@ class BackwardsCompatibleMapView(APIView):
         """
         sha1_hash = pathlib.Path(sha1_hash_filename).stem
         _LOGGER.debug("Attempted backwards compatible download", av={"sha1": sha1_hash, "game": str(game_id)})
-        map_file = CncMapFile.objects.filter(hash_sha1=sha1_hash, cnc_game_id=game_id).first()
+        map_file = CncMapFile.objects.find_legacy_map_by_sha1(sha1_hash, game_id)
         if not map_file:
             return KirovyResponse(status=status.HTTP_404_NOT_FOUND)
 

@@ -19,10 +19,10 @@ def test_map_download_backwards_compatible(
 ):
     """Test that we can properly fetch a map with the backwards compatible endpoints."""
     game = CncGame.objects.get(slug__iexact=game_slug)
-    cnc_map: CncMap = create_cnc_map(is_temporary=True, cnc_game=game)
+    cnc_map: CncMap = create_cnc_map(is_temporary=True, cnc_game=game, is_mapdb1_compatible=True)
     map_file = create_cnc_map_file(file_map_desert, cnc_map, zip_for_legacy=True)
 
-    response: FileResponse = client_anonymous.get(f"/{game_slug}/{map_file.hash_sha1}")
+    response: FileResponse = client_anonymous.get(f"/{game_slug}/{map_file.hash_sha1}.zip")
 
     assert response.status_code == status.HTTP_200_OK
     file_content_io = io.BytesIO(response.getvalue())
@@ -74,7 +74,7 @@ def test_map_upload_single_file_backwards_compatible(
 
         assert upload_response.status_code == status.HTTP_200_OK
 
-        response: FileResponse = client_anonymous.get(f"/{game.slug}/{file_sha1}")
+        response: FileResponse = client_anonymous.get(f"/{game.slug}/{file_sha1}.zip")
         assert response.status_code == status.HTTP_200_OK
 
         file_content_io = io.BytesIO(response.getvalue())
@@ -85,7 +85,7 @@ def test_map_upload_single_file_backwards_compatible(
         downloaded_map_hash = hashlib.sha1(map_from_zip).hexdigest()
         assert downloaded_map_hash == file_sha1
 
-        cnc_map_file: CncMapFile = CncMapFile.objects.find_legacy_map_by_sha1(file_sha1)
+        cnc_map_file: CncMapFile = CncMapFile.objects.find_legacy_map_by_sha1(file_sha1, game.id)
 
         assert cnc_map_file
         assert cnc_map_file.cnc_game_id == game.id

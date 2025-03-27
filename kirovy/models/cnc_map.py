@@ -1,4 +1,5 @@
 import pathlib
+from uuid import UUID
 
 from django.conf import settings
 from django.db import models
@@ -165,8 +166,13 @@ class CncMap(cnc_user.CncNetUserOwnedModel):
 
 
 class CncMapFileManager(models.Manager["CncMapFile"]):
-    def find_legacy_map_by_sha1(self, sha1: str) -> t.Union["CncMapFile", None]:
-        return super().get_queryset().filter(hash_sha1=sha1, cnc_map__is_mapdb1_compatible=True).first()
+    def find_legacy_map_by_sha1(self, sha1: str, game_id: UUID) -> t.Union["CncMapFile", None]:
+        return (
+            super()
+            .get_queryset()
+            .filter(hash_sha1=sha1, cnc_game_id=game_id, cnc_map__is_mapdb1_compatible=True)
+            .first()
+        )
 
 
 class CncMapFile(file_base.CncNetFileBaseModel):

@@ -100,8 +100,11 @@ class LegacyMapServiceBase:
         """
         output = io.BytesIO()
         for expected_file in self.expected_files:
-            file_info = self._find_file_info_by_extension(expected_file.possible_extensions)
-            output.write(self._file.read(file_info))
+            file_info = self._find_file_info_by_extension(
+                expected_file.possible_extensions, is_required=expected_file.required
+            )
+            if file_info:
+                output.write(self._file.read(file_info))
         output.seek(0)
         return output
 
@@ -116,7 +119,7 @@ class LegacyMapServiceBase:
             # Having a bad map name for a temporary upload is better than a 500 error.
             return fallback
 
-    def _find_file_info_by_extension(self, extensions: t.Set[str]) -> zipfile.ZipInfo:
+    def _find_file_info_by_extension(self, extensions: t.Set[str], is_required: bool = True) -> zipfile.ZipInfo | None:
         """Find the zipinfo object for a file by a set of possible file extensions.
 
         This is meant to be used to find specific files in the zip.
@@ -135,11 +138,12 @@ class LegacyMapServiceBase:
         for file in self._file.infolist():
             if pathlib.Path(file.filename).suffix in extensions:
                 return file
-        raise view_exceptions.KirovyValidationError(
-            "No file matching the expected extensions was found",
-            LegacyUploadApiCodes.NO_VALID_MAP_FILE,
-            {"expected": extensions},
-        )
+        if is_required:
+            raise view_exceptions.KirovyValidationError(
+                "No file matching the expected extensions was found",
+                LegacyUploadApiCodes.NO_VALID_MAP_FILE,
+                {"expected": extensions},
+            )
 
     def _get_expected_file_for_extension(self, zip_info: zipfile.ZipInfo) -> ExpectedFile:
         """Get the ``expected_file`` class instance corresponding to the file in the zipfile.

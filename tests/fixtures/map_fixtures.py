@@ -89,6 +89,7 @@ def create_cnc_map(db, cnc_map_category, game_yuri, client_user, create_cnc_map_
         is_reviewed: bool = False,
         is_temporary: bool = False,
         file: File | None = None,
+        is_mapdb1_compatible: bool = False,
     ) -> CncMap:
         """Create a CncMap object.
 
@@ -117,6 +118,8 @@ def create_cnc_map(db, cnc_map_category, game_yuri, client_user, create_cnc_map_
             Will only be available through direct links for a limited time.
         :param file:
             A map file to include. Defaults to ``None`` for the sake of speed.
+        :param is_mapdb1_compatible:
+            If true, then this map is compatible with map db 1.0 and can be downloaded via ``/{game_slug}/{sha1}.zip``
         :return:
             A ``CncMap`` object that can be used to create :class:`kirovy.models.cnc_map.CncMapFile` objects in tests.
         """
@@ -137,6 +140,7 @@ def create_cnc_map(db, cnc_map_category, game_yuri, client_user, create_cnc_map_
             is_banned=is_banned,
             is_reviewed=is_reviewed,
             is_temporary=is_temporary,
+            is_mapdb1_compatible=is_mapdb1_compatible,
         )
         cnc_map.save()
         cnc_map.categories.add(*map_categories)
