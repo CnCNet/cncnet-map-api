@@ -1,4 +1,4 @@
-import logging
+import pathlib
 from uuid import UUID
 
 from django.db.models import Q, QuerySet
@@ -20,9 +20,10 @@ from kirovy.models import (
 from kirovy.response import KirovyResponse
 from kirovy.serializers import cnc_map_serializers
 from kirovy.views import base_views
+from structlog import get_logger
 
 
-_LOGGER = logging.getLogger(__name__)
+_LOGGER = get_logger(__name__)
 
 
 class MapCategoryListCreateView(base_views.KirovyListCreateView):
@@ -233,10 +234,12 @@ class MapDeleteView(base_views.KirovyDestroyView):
 class BackwardsCompatibleMapView(APIView):
     permission_classes = [AllowAny]
 
-    def get(self, request, sha1_hash: str, game_id: UUID, format=None):
+    def get(self, request, sha1_hash_filename: str, game_id: UUID, format=None):
         """
         Return the map matching the hash, if it exists.
         """
+        sha1_hash = pathlib.Path(sha1_hash_filename).stem
+        _LOGGER.debug("Attempted backwards compatible download", av={"sha1": sha1_hash, "game": str(game_id)})
         map_file = CncMapFile.objects.filter(hash_sha1=sha1_hash, cnc_game_id=game_id).first()
         if not map_file:
             return KirovyResponse(status=status.HTTP_404_NOT_FOUND)

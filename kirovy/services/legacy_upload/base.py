@@ -18,7 +18,7 @@ from kirovy.utils.file_utils import ByteSized
 @dataclasses.dataclass
 class ExpectedFile:
     possible_extensions: t.Set[str]
-    file_validator: t.Callable[[str, ContentFile, zipfile.ZipInfo], bool]
+    file_validator: t.Callable[[str, ContentFile, zipfile.ZipInfo], None]
     required: bool = True
     """attr: If false, this file is not required to be present."""
 

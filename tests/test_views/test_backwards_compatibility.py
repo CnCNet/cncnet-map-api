@@ -34,17 +34,16 @@ def test_map_download_backwards_compatible(
     assert downloaded_map_hash == map_file.hash_sha1
 
 
-# def test_map_upload_dune2k_backwards_compatible(
-#     client_anonymous, rename_file_for_legacy_upload, file_map_dune2k_valid, game_dune2k
-# ):
-#     url = "/upload"
-#     file = rename_file_for_legacy_upload(file_map_dune2k_valid)
-#
-#     response: KirovyResponse = client_anonymous.post(
-#         url, {"file": file, "game": game_dune2k.slug}, format="multipart", content_type=None
-#     )
-#
-#     assert response.status_code == status.HTTP_200_OK
+def test_map_upload_dune2k_backwards_compatible(client_anonymous, file_map_dune2k, game_dune2k):
+    url = "/upload"
+    sha1 = "f9270d1e17e832a694dcd8c07e3acbb96a578a18"
+    name = "Ornithopter Fringe"
+
+    response: KirovyResponse = client_anonymous.post(
+        url, {"file": file_map_dune2k, "game": game_dune2k.slug}, format="multipart", content_type=None
+    )
+
+    assert response.status_code == status.HTTP_200_OK
 
 
 def test_map_upload_single_file_backwards_compatible(

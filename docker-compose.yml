@@ -58,5 +58,7 @@ services:
       - .env
     environment:
       POSTGRES_TEST_HOST: mapdb-postgres-dev  # Necessary to connect to docker db. Overrides the .env setting.
+#    ports:
+#      - "80:80"
     depends_on:
       - db

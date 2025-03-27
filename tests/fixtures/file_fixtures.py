@@ -100,8 +100,13 @@ def file_map_unfair(load_test_file) -> Generator[File, Any, None]:
 
 @pytest.fixture
 def file_map_dune2k(load_test_file) -> Generator[File, Any, None]:
-    """Return a valid zip file for a dune 2k mpa."""
-    file = load_test_file("valid_dune_map.zip")
+    """Return a valid zip file for a dune 2k mpa.
+
+    Map name is ``Ornithopter Fringe``.
+
+    Original CnCNet hash is ``f9270d1e17e832a694dcd8c07e3acbb96a578a18``
+    """
+    file = load_test_file("dune2000/f9270d1e17e832a694dcd8c07e3acbb96a578a18.zip")
     yield file
     file.close()
 
