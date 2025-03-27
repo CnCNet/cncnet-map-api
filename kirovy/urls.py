@@ -18,12 +18,32 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import path, include
+from django.db import connection
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 from kirovy.models import CncGame
 from kirovy.views import test, cnc_map_views, permission_views, admin_views, map_upload_views
 from kirovy import typing as t, constants
 
+def _get_games_url_patterns() -> list[path]:
+    """Return games related url patterns
+
+    I added this because games are retried from database, and it would crash the app
+    when migrations are not run.
+    @author rohsyl aka wu-shaolin
+    """
+
+    if 'CncGame' not in connection.introspection.table_names():
+        return []
+
+    return [
+        path("upload", map_upload_views.CncNetBackwardsCompatibleUploadView.as_view()),
+        *(
+            # Make e.g. /yr/map_hash, /ra2/map_hash, etc
+            path(f"{g.slug}/<str:sha1_hash>", cnc_map_views.BackwardsCompatibleMapView.as_view(), {"game_id": g.id})
+            for g in CncGame.objects.filter(slug__in=constants.BACKWARDS_COMPATIBLE_GAMES)
+        ),
+    ]
 
 def _get_url_patterns() -> list[path]:
     """Return the root level url patterns.
@@ -40,14 +60,7 @@ def _get_url_patterns() -> list[path]:
             path("api/schema/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
         ]
 
-    backwards_compatible_urls = [
-        path("upload", map_upload_views.CncNetBackwardsCompatibleUploadView.as_view()),
-        *(
-            # Make e.g. /yr/map_hash, /ra2/map_hash, etc
-            path(f"{g.slug}/<str:sha1_hash>", cnc_map_views.BackwardsCompatibleMapView.as_view(), {"game_id": g.id})
-            for g in CncGame.objects.filter(slug__in=constants.BACKWARDS_COMPATIBLE_GAMES)
-        ),
-    ]
+    backwards_compatible_urls = _get_games_url_patterns()
 
     return (
         [
