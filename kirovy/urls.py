@@ -43,7 +43,8 @@ def _get_games_url_patterns() -> list[path]:
         haven't been run yet.
     """
 
-    if "CncGame" not in connection.introspection.table_names():
+    if "kirovy_cncgame" not in connection.introspection.table_names():
+        # This should only ever happen the first time ``manage.py migrate kirovy`` is run.
         return []
 
     return [
