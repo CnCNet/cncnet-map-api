@@ -4,13 +4,15 @@ import zipfile
 import io
 
 import pytest
-from django.core.files.base import ContentFile
 from django.http import FileResponse
 from rest_framework import status
 
+from kirovy import typing as t
 from kirovy.models import CncGame, CncMapFile, CncMap
 from kirovy.response import KirovyResponse
-from kirovy.utils import file_utils
+
+if t.TYPE_CHECKING:
+    from tests.fixtures.common_fixtures import KirovyClient
 
 
 @pytest.mark.parametrize("game_slug", ["td", "ra", "ts", "dta", "yr", "d2"])
@@ -45,6 +47,8 @@ def test_map_upload_dune2k_backwards_compatible(client_anonymous, file_map_dune2
 
     assert response.status_code == status.HTTP_200_OK
 
+    _download_and_check_hash(client_anonymous, sha1, game_dune2k, name, [".map", ".ini"])
+
 
 def test_map_upload_single_file_backwards_compatible(
     client_anonymous,
@@ -74,19 +78,22 @@ def test_map_upload_single_file_backwards_compatible(
 
         assert upload_response.status_code == status.HTTP_200_OK
 
-        response: FileResponse = client_anonymous.get(f"/{game.slug}/{file_sha1}.zip")
-        assert response.status_code == status.HTTP_200_OK
+        _download_and_check_hash(client_anonymous, file_sha1, game, map_name, [original_extension])
 
-        file_content_io = io.BytesIO(response.getvalue())
-        zip_file = zipfile.ZipFile(file_content_io)
-        assert zip_file
 
-        map_from_zip = zip_file.read(f"{file_sha1}{original_extension}")
-        downloaded_map_hash = hashlib.sha1(map_from_zip).hexdigest()
-        assert downloaded_map_hash == file_sha1
+def _download_and_check_hash(
+    client: "KirovyClient", file_sha1: str, game: CncGame, expected_map_name: str, extensions_to_check: t.List[str]
+):
+    response: FileResponse = client.get(f"/{game.slug}/{file_sha1}.zip")
+    assert response.status_code == status.HTTP_200_OK
+    file_content_io = io.BytesIO(response.getvalue())
+    zip_file = zipfile.ZipFile(file_content_io)
+    assert zip_file
+    for extension in extensions_to_check:
+        map_from_zip = zip_file.read(f"{file_sha1}{extension}")
+        assert map_from_zip
 
-        cnc_map_file: CncMapFile = CncMapFile.objects.find_legacy_map_by_sha1(file_sha1, game.id)
-
-        assert cnc_map_file
-        assert cnc_map_file.cnc_game_id == game.id
-        assert cnc_map_file.cnc_map.map_name == map_name
+    cnc_map_file: CncMapFile = CncMapFile.objects.find_legacy_map_by_sha1(file_sha1, game.id)
+    assert cnc_map_file
+    assert cnc_map_file.cnc_game_id == game.id
+    assert cnc_map_file.cnc_map.map_name == expected_map_name
