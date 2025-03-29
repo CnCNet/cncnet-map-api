@@ -41,16 +41,20 @@ def cnc_map_category(create_cnc_map_category) -> MapCategory:
 
 
 @pytest.fixture
-def create_cnc_map_file(db, extension_map):
+def create_cnc_map_file(db, extension_map, zip_map_for_legacy_upload):
     def _inner(
         file: File,
         cnc_map: CncMap,
+        zip_for_legacy: bool = False,
     ) -> CncMapFile:
+        file_to_save = file
+        if zip_for_legacy:
+            file_to_save, _ = zip_map_for_legacy_upload(file_to_save)
         map_parser = CncGen2MapParser(file)
         map_file = CncMapFile(
             width=map_parser.ini.get(CncGen2MapSections.HEADER, "Width"),
             height=map_parser.ini.get(CncGen2MapSections.HEADER, "Height"),
-            file=file,
+            file=file_to_save,
             file_extension=extension_map,
             cnc_game_id=cnc_map.cnc_game_id,
             hash_md5=file_utils.hash_file_md5(file),
@@ -85,6 +89,7 @@ def create_cnc_map(db, cnc_map_category, game_yuri, client_user, create_cnc_map_
         is_reviewed: bool = False,
         is_temporary: bool = False,
         file: File | None = None,
+        is_mapdb1_compatible: bool = False,
     ) -> CncMap:
         """Create a CncMap object.
 
@@ -113,6 +118,8 @@ def create_cnc_map(db, cnc_map_category, game_yuri, client_user, create_cnc_map_
             Will only be available through direct links for a limited time.
         :param file:
             A map file to include. Defaults to ``None`` for the sake of speed.
+        :param is_mapdb1_compatible:
+            If true, then this map is compatible with map db 1.0 and can be downloaded via ``/{game_slug}/{sha1}.zip``
         :return:
             A ``CncMap`` object that can be used to create :class:`kirovy.models.cnc_map.CncMapFile` objects in tests.
         """
@@ -133,6 +140,7 @@ def create_cnc_map(db, cnc_map_category, game_yuri, client_user, create_cnc_map_
             is_banned=is_banned,
             is_reviewed=is_reviewed,
             is_temporary=is_temporary,
+            is_mapdb1_compatible=is_mapdb1_compatible,
         )
         cnc_map.save()
         cnc_map.categories.add(*map_categories)

@@ -7,8 +7,10 @@ import jwt
 from django.conf import settings as test_settings
 from rest_framework import status
 
+from kirovy.settings import settings_constants
+
 needs_cncnet_auth = pytest.mark.skipif(
-    test_settings.RUN_ENVIRONMENT == "ci",
+    test_settings.RUN_ENVIRONMENT == settings_constants.RunEnvironment.CI,
     reason="Need to provide CnCNet credentials to call CnCNet endpoints in tests. "
     "Set TESTING_API_USERNAME/PASSWORD in .env. Do NOT commit your env.",
 )
@@ -40,9 +42,7 @@ def test_jwt():
     user_id = test.get("sub")
 
     header = {"Authorization": f"Bearer {token}"}
-    response = requests.get(
-        "https://ladder.cncnet.org/api/v1/user/info", headers=header
-    )
+    response = requests.get("https://ladder.cncnet.org/api/v1/user/info", headers=header)
     info_data = json.loads(response.content)
 
     assert response.status_code == 200

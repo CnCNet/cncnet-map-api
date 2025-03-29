@@ -12,11 +12,13 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 
 from pathlib import Path
 
+from kirovy.settings import settings_constants
 from kirovy.utils import file_utils
 from kirovy.utils.settings_utils import (
     get_env_var,
     secret_key_validator,
     not_allowed_on_prod,
+    run_environment_valid,
 )
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -222,5 +224,5 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH_USER_MODEL = "kirovy.CncUser"
 
 
-RUN_ENVIRONMENT = get_env_var("RUN_ENVIRONMENT", "prod")
+RUN_ENVIRONMENT = get_env_var("RUN_ENVIRONMENT", settings_constants.RunEnvironment.PRODUCTION, run_environment_valid)
 """attr: Defines which type of environment we are running on. Useful for debug logic."""

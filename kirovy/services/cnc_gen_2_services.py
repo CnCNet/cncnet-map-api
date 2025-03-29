@@ -98,13 +98,13 @@ class CncGen2MapParser:
         CORRUPT_MAP = _("Could not parse map file.")
         MISSING_INI = _("Missing necessary INI sections.")
 
-    def __init__(self, uploaded_file: UploadedFile | File):
+    def __init__(self, uploaded_file: UploadedFile | File, *, ini_section_check: bool = True):
         self.validate_file_type(uploaded_file)
         self.file = uploaded_file
         self.ini = MapConfigParser()
-        self._parse_file()
+        self._parse_file(ini_section_check=ini_section_check)
 
-    def _parse_file(self) -> None:
+    def _parse_file(self, *, ini_section_check: bool = True) -> None:
         """Parse ``self.file`` with ``self.parser``.
 
         2d C&C game maps are just INI files. This function parses the INI into data structure.
@@ -129,14 +129,15 @@ class CncGen2MapParser:
                 params={"e": e},
             )
 
-        sections: t.Set[str] = set(self.ini.sections())
-        missing_sections = self.required_sections - sections
-        if missing_sections:
-            raise exceptions.InvalidMapFile(
-                self.ErrorMsg.MISSING_INI,
-                code=self.ErrorMsg.MISSING_INI.name,
-                params={"missing": missing_sections},
-            )
+        if ini_section_check:
+            sections: t.Set[str] = set(self.ini.sections())
+            missing_sections = self.required_sections - sections
+            if missing_sections:
+                raise exceptions.InvalidMapFile(
+                    self.ErrorMsg.MISSING_INI,
+                    code=self.ErrorMsg.MISSING_INI.name,
+                    params={"missing": missing_sections},
+                )
 
     @property
     def python_file(self) -> t.IO:
