@@ -52,15 +52,15 @@ class LegacyMapServiceBase:
         raise NotImplementedError("This Game's map validator hasn't implemented the expectd file structure.")
 
     def multi_file_validator(self):
-        file_list = self._file.infolist()
+        zip_file_list = self._file.infolist()
         min_files = len([x for x in self.expected_files if x.required])
         max_files = len(self.expected_files)
-        if min_files > len(file_list) > max_files:
+        if min_files > len(zip_file_list) > max_files:
             raise view_exceptions.KirovyValidationError(
                 "Incorrect file count", code=LegacyUploadApiCodes.BAD_ZIP_STRUCTURE
             )
 
-        for file_info in file_list:
+        for file_info in zip_file_list:
             expected_file = self._get_expected_file_for_extension(file_info)
             expected_file.file_validator(self._file.filename, ContentFile(self._file.read(file_info)), file_info)
 
