@@ -16,7 +16,7 @@ services:
 
   django:
     container_name: mapdb-django
-    image: ghcr.io/cncnet/cncnet-map-db:latest
+    image: ghcr.io/cncnet/cncnet-map-api:latest
     volumes:
       - ${HOST_MEDIA_ROOT}:/data/cncnet_silo  # django will save user-uploaded files here. MEDIA_ROOT
       - ${HOST_STATIC_ROOT}:/data/cncnet_static  # django will gather static files here. STATIC_ROOT
