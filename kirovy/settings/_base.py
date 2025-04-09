@@ -31,7 +31,7 @@ SECRET_KEY = get_env_var("SECRET_KEY", validation_callback=secret_key_validator)
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = get_env_var("DEBUG", False, validation_callback=not_allowed_on_prod)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = get_env_var("ALLOWED_HOSTS", "localhost,mapdb-nginx").split(",")
 
 MAX_UPLOADED_FILE_SIZE_MAP = file_utils.ByteSized(mega=25)
 
