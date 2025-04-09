@@ -5,11 +5,13 @@ on:
   push:
     branches:
       - 'main'
+      - 'staging'
     tags:
       - 'v*'
   pull_request:
     branches:
       - 'main'
+      - 'staging'
 
 jobs:
   build:
@@ -50,21 +52,41 @@ jobs:
 
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
     needs: build
-    if: github.ref == 'refs/heads/main'
+    strategy:
+      matrix:
+        include:
+          - environment: staging
+            branch: staging
+            target_path: "~/staging.mapdb.cncnet.org"
+            compose_file: "docker-compose.prod.yml"
+            nginx_conf: "docker/nginx.prod.conf"
+# disabled for now
+#          - environment: production
+#            branch: main
+#            target_path: "~/prod2.mapdb.cncnet.org"
+#            compose_file: "docker-compose.prod.yml"
+#            nginx_conf: "docker/nginx.prod.conf"
 
     steps:
+      - name: "Exit if not matching branch"
+        if: github.ref != format('refs/heads/{0}', matrix.branch)
+        run: echo "Not target branch for this deployment. Skipping..." && exit 0
+
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Copy docker-compose file over ssh
+      - name: Copy docker-compose and nginx config over ssh
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          source: "docker-compose.prod.yml"
-          target: "~/staging.mapdb.cncnet.org"
+          source: "${{ matrix.compose_file }},${{ matrix.nginx_conf }}"
+          target: "${{ matrix.target_path }}"
 
       - name: SSH into server and deploy
         uses: appleboy/ssh-action@v1.2.1
@@ -73,8 +95,8 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
-            cd ~/staging.mapdb.cncnet.org
+            cd ${{ matrix.target_path }}
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            docker compose -f docker-compose.prod.yml pull
-            docker compose -f docker-compose.prod.yml down
-            docker compose -f docker-compose.prod.yml up -d
+            docker compose -f ${{ matrix.compose_file }} pull
+            docker compose -f ${{ matrix.compose_file }} down
+            docker compose -f ${{ matrix.compose_file }} up -d
