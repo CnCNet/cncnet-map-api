@@ -32,7 +32,7 @@ services:
     container_name: mapdb-nginx
     image: nginx:latest
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx.prod.conf:/etc/nginx/nginx.conf:ro
       - ${HOST_STATIC_ROOT}:/usr/share/nginx/html/static  # website static assets.
       - ${HOST_MEDIA_ROOT}:/usr/share/nginx/html/silo  # website user-uploaded files.
     ports:
