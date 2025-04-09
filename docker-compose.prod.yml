@@ -10,9 +10,9 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     env_file:
       - .env
-    ports:
-      - "127.0.0.1:${POSTGRES_PORT}:${POSTGRES_PORT}"
     command: -p ${POSTGRES_PORT}
+    networks:
+        - mapdb-network
 
   django:
     container_name: mapdb-django
@@ -20,12 +20,12 @@ services:
     volumes:
       - ${HOST_MEDIA_ROOT}:/data/cncnet_silo  # django will save user-uploaded files here. MEDIA_ROOT
       - ${HOST_STATIC_ROOT}:/data/cncnet_static  # django will gather static files here. STATIC_ROOT
-    ports:
-      - "8000:8000"
     env_file:
       - .env
     depends_on:
       - db
+    networks:
+        - mapdb-network
 
   nginx-server:
     # nginx proxies requests to django via gunicorn.
@@ -39,3 +39,9 @@ services:
       - "${EXPOSED_PORT}:80"
     depends_on:
       - django
+    networks:
+        - mapdb-network
+
+networks:
+    mapdb-network:
+        driver: bridge
