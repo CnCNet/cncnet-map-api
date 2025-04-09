@@ -20,7 +20,6 @@ RUN useradd -m -u ${UID} ${USER}
 COPY requirements.txt /cncnet-map-api
 COPY requirements-dev.txt /cncnet-map-api
 COPY web_entry_point.sh /cncnet-map-api
-COPY .env /cncnet-map-api/
 
 # Set permissions and make script executable
 RUN chmod +x /cncnet-map-api/web_entry_point.sh && \
