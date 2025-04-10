@@ -1,12 +1,12 @@
 from django.core.files import File
 from django.db.models import UUIDField
 
-from kirovy.models import CncGame, CncUser
+from kirovy.models import CncGame
 from kirovy.models.cnc_map import CncMap, CncMapFile, MapCategory
 from kirovy import typing as t
 import pytest
 
-from kirovy.services.cnc_gen_2_services import CncGen2MapParser, CncGen2MapSections
+from kirovy.services.cnc_gen_2_services import CncGen2MapSections, MapConfigParser
 from kirovy.utils import file_utils
 
 
@@ -50,10 +50,10 @@ def create_cnc_map_file(db, extension_map, zip_map_for_legacy_upload):
         file_to_save = file
         if zip_for_legacy:
             file_to_save, _ = zip_map_for_legacy_upload(file_to_save)
-        map_parser = CncGen2MapParser(file)
+        map_parser = MapConfigParser.from_file(file)
         map_file = CncMapFile(
-            width=map_parser.ini.get(CncGen2MapSections.HEADER, "Width"),
-            height=map_parser.ini.get(CncGen2MapSections.HEADER, "Height"),
+            width=map_parser.get(CncGen2MapSections.HEADER, "Width"),
+            height=map_parser.get(CncGen2MapSections.HEADER, "Height"),
             file=file_to_save,
             file_extension=extension_map,
             cnc_game_id=cnc_map.cnc_game_id,

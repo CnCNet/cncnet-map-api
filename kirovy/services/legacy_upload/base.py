@@ -10,7 +10,7 @@ from django.core.files.uploadedfile import UploadedFile
 from kirovy import typing as t, constants, exceptions
 from kirovy.constants.api_codes import LegacyUploadApiCodes
 from kirovy.exceptions import view_exceptions
-from kirovy.services.cnc_gen_2_services import CncGen2MapParser
+from kirovy.services.cnc_gen_2_services import MapConfigParser, CncGen2MapParser
 from kirovy.utils import file_utils
 from kirovy.utils.file_utils import ByteSized
 
@@ -114,7 +114,7 @@ class LegacyMapServiceBase:
         fallback = f"legacy_client_upload_{self.map_sha1_from_filename}"
         ini_file = ContentFile(self._file.read(ini_file_info))
         try:
-            return CncGen2MapParser(ini_file, ini_section_check=False).ini.get("Basic", "Name", fallback=fallback)
+            return MapConfigParser.from_file(ini_file).get("Basic", "Name", fallback=fallback)
         except exceptions.InvalidMapFile:
             # Having a bad map name for a temporary upload is better than a 500 error.
             return fallback
