@@ -2,11 +2,13 @@
 Utils for the settings file, so don't import or use settings
 in any function in this module.
 """
+
 import os
-from typing import Any, Optional, Callable, NoReturn
+from typing import Any, Optional, NoReturn
 
 from kirovy import exceptions
 from kirovy.typing import SettingsValidationCallback
+from kirovy.settings import settings_constants
 
 MINIMUM_SECRET_KEY_LENGTH = 32
 
@@ -49,9 +51,7 @@ def get_env_var(
         value = default
 
     if value is None:
-        raise exceptions.ConfigurationException(
-            key, "Env var is required and cannot be None."
-        )
+        raise exceptions.ConfigurationException(key, "Env var is required and cannot be None.")
 
     if validation_callback is not None:
         validation_callback(key, value)
@@ -78,5 +78,13 @@ def secret_key_validator(key: str, value: str) -> NoReturn:
 
 
 def not_allowed_on_prod(key: str, value: bool) -> None:
-    if value and "prod" in get_env_var("RUN_ENVIRONMENT", "dev").lower():
+    if value and settings_constants.RunEnvironment.PRODUCTION in get_env_var("RUN_ENVIRONMENT", "").lower():
         raise exceptions.ConfigurationException(key, "Cannot be enabled on prod.")
+
+
+def run_environment_valid(key: str, value: str) -> None:
+    if value not in settings_constants.RunEnvironment:
+        raise exceptions.ConfigurationException(
+            key,
+            f"Not a valid run environment: options={[x.value for x in settings_constants.RunEnvironment]}, {value=}",
+        )

@@ -1,6 +1,10 @@
+import io
 import pathlib
+import zipfile
 from collections.abc import Generator
 from typing import Any
+
+from django.core.files.base import ContentFile
 
 from kirovy import typing as t
 
@@ -96,20 +100,91 @@ def file_map_unfair(load_test_file) -> Generator[File, Any, None]:
 
 @pytest.fixture
 def file_map_dune2k(load_test_file) -> Generator[File, Any, None]:
-    """Return a valid zip file for a dune 2k mpa."""
-    file = load_test_file("valid_dune_map.zip")
+    """Return a valid zip file for a dune 2k mpa.
+
+    Map name is ``Ornithopter Fringe``.
+
+    Original CnCNet hash is ``f9270d1e17e832a694dcd8c07e3acbb96a578a18``
+    """
+    file = load_test_file("dune2000/f9270d1e17e832a694dcd8c07e3acbb96a578a18.zip")
     yield file
     file.close()
 
 
 @pytest.fixture
-def rename_file_for_legacy_upload():
-    """Returns a function to rename a file for upload to a legacy endpoint."""
+def file_map_tiberian_dawn(load_test_file) -> Generator[File, Any, None]:
+    """Return a valid zip file for a dune 2k mpa.
 
-    def _inner(file: File) -> File:
-        assert file.name.endswith(".zip"), "Only zip files can be sent to legacy endpoints."
-        # Uploads to legacy endpoints need the hash name
-        file.name = file_utils.hash_file_sha1(file) + ".zip"
-        return file
+    Map name is ``[CHEM] Red Zone Rampage test map``.
+
+    Original CnCNet hash is ``18972a7372424bb456684f6e45119a5579042898``
+    """
+    file = load_test_file("tiberian_dawn/18972a7372424bb456684f6e45119a5579042898.zip")
+    yield file
+    file.close()
+
+
+@pytest.fixture
+def file_map_ts_woodland_hills(load_test_file) -> Generator[File, Any, None]:
+    """Return a valid Tiberian Sun map.
+
+    Map name is ``Woodland Hills``.
+
+    Original CnCNet hash is ``309fb5d6e2042e48b22f4ced910c0c174a53597f``.
+    """
+    file = load_test_file("tiberian_sun/ts_woodland_hills.map")
+    yield file
+    file.close()
+
+
+@pytest.fixture
+def file_map_dta_peace_and_war(load_test_file) -> Generator[File, Any, None]:
+    """Return a valid Dawn Of The Tiberium Age map.
+
+    Map name is ``Peace And War``.
+
+    Original CnCNet hash is ``71b9f8a031827cccb3cdf2273dedc44a44e06706``.
+    """
+    file = load_test_file("tiberian_sun/dta_peace_and_war.map")
+    yield file
+    file.close()
+
+
+@pytest.fixture
+def file_map_ra_d_day(load_test_file) -> Generator[File, Any, None]:
+    """Return a valid Red Alert map.
+
+    Map name is ``D Day``.
+
+    Original CnCNet hash is ``1a4f34f61c90dbff5031e3fbd9780b3ed162a7cb``.
+    """
+    file = load_test_file("red_alert/ra_d_day.mpr")
+    yield file
+    file.close()
+
+
+ZipContentsSha1 = str
+
+
+@pytest.fixture
+def zip_map_for_legacy_upload():
+    """Returns a function to zip a map in the same way as legacy CnCNet clients.
+
+    Use this for testing endpoints that are backwards compatible with map db 1.0.
+    """
+
+    def _inner(file: File | io.BytesIO) -> t.Tuple[ContentFile, ZipContentsSha1]:
+        # The legacy map db required zip files to be the sha1 of the zip file's contents.
+        file_sha1 = file_utils.hash_file_sha1(file)
+        # Create a zip file in memory, and write the map file to it.
+        zip_bytes = io.BytesIO()
+        zip_file = zipfile.ZipFile(zip_bytes, mode="w")
+        zip_file.writestr(file.name, file.read())
+        # ``.close`` writes all zip metadata to the stream.
+        zip_file.close()
+        zip_bytes.seek(0)
+
+        # We need a django-friendly file handler, so read the byte-stream into a django file.
+        return ContentFile(zip_bytes.read(), f"{file_sha1}.zip"), file_sha1
 
     return _inner

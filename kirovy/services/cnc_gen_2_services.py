@@ -35,10 +35,38 @@ class CncGen2MapSections(enum.StrEnum):
     DIGEST = "Digest"
 
 
+class ParseErrorMsg(enum.StrEnum):
+    NO_BINARY = _("Binary files not allowed.")
+    CORRUPT_MAP = _("Could not parse map file.")
+    MISSING_INI = _("Missing necessary INI sections.")
+
+
 class MapConfigParser(configparser.ConfigParser):
     """Config parser with some helpers."""
 
     NAME_NOT_FOUND: str = "Map name not found in file"
+
+    @classmethod
+    def from_file(cls, file: File) -> "MapConfigParser":
+        parser = cls()
+        parser.read_django_file(file)
+        return parser
+
+    def read_django_file(self, file: File):
+        if file.closed:
+            file.open("r")
+        file.seek(0)
+        try:
+            # We can't use ConfigParser.read_file because parser expects the file to be read as a string,
+            # but django uploaded files are read as bytes. So we need to convert to string first.
+            # If `decode` is crashing in a test, make sure your test file is read in read-mode "rb".
+            self.read_string(file.read().decode())
+        except configparser.ParsingError as e:
+            raise exceptions.InvalidMapFile(
+                ParseErrorMsg.CORRUPT_MAP,
+                code=ParseErrorMsg.CORRUPT_MAP.name,
+                params={"e": e},
+            )
 
     def optionxform(self, optionstr: str) -> str:
         """Overwrite the base class to prevent lower-casing keys."""
@@ -93,11 +121,6 @@ class CncGen2MapParser:
         CncGen2MapSections.DIGEST.value,
     }
 
-    class ErrorMsg(enum.StrEnum):
-        NO_BINARY = _("Binary files not allowed.")
-        CORRUPT_MAP = _("Could not parse map file.")
-        MISSING_INI = _("Missing necessary INI sections.")
-
     def __init__(self, uploaded_file: UploadedFile | File):
         self.validate_file_type(uploaded_file)
         self.file = uploaded_file
@@ -114,27 +137,13 @@ class CncGen2MapParser:
         :return:
             Nothing, but :attr:`~kirovy.services.MapParserService.parser` will be modified.
         """
-        if self.file.closed:
-            self.file.open("r")
-
-        try:
-            # We can't use read_file because parser expects the file to be read as a string,
-            # but django uploaded files are read as bytes. So we need to convert to string first.
-            # If `decode` is crashing in a test, make sure your test file is read in read-mode "rb".
-            self.ini.read_string(self.file.read().decode())
-        except configparser.ParsingError as e:
-            raise exceptions.InvalidMapFile(
-                self.ErrorMsg.CORRUPT_MAP,
-                code=self.ErrorMsg.CORRUPT_MAP.name,
-                params={"e": e},
-            )
-
+        self.ini.read_django_file(self.file)
         sections: t.Set[str] = set(self.ini.sections())
         missing_sections = self.required_sections - sections
         if missing_sections:
             raise exceptions.InvalidMapFile(
-                self.ErrorMsg.MISSING_INI,
-                code=self.ErrorMsg.MISSING_INI.name,
+                ParseErrorMsg.MISSING_INI,
+                code=ParseErrorMsg.MISSING_INI.name,
                 params={"missing": missing_sections},
             )
 
@@ -156,7 +165,7 @@ class CncGen2MapParser:
             Raised if file is binary.
         """
         if self.is_binary(uploaded_file):
-            raise exceptions.InvalidMimeType(self.ErrorMsg.NO_BINARY)
+            raise exceptions.InvalidMimeType(ParseErrorMsg.NO_BINARY)
 
     @classmethod
     def is_binary(cls, uploaded_file: File) -> bool:
