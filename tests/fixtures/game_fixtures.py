@@ -28,6 +28,18 @@ def game_dune2k(db) -> CncGame:
 
 
 @pytest.fixture
+def game_tiberian_dawn(db) -> CncGame:
+    """Get the Tiberian Dawn ``CncGame``.
+
+    This fixture depends on the game data migration being run.
+
+    :return:
+        The game object for Tiberian Dawn.
+    """
+    return CncGame.objects.get(slug__iexact=constants.GameSlugs.tiberian_dawn)
+
+
+@pytest.fixture
 def game_tiberian_sun(db) -> CncGame:
     """Get the Tiberian Sun ``CncGame``.
 

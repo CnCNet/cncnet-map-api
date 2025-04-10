@@ -112,6 +112,19 @@ def file_map_dune2k(load_test_file) -> Generator[File, Any, None]:
 
 
 @pytest.fixture
+def file_map_tiberian_dawn(load_test_file) -> Generator[File, Any, None]:
+    """Return a valid zip file for a dune 2k mpa.
+
+    Map name is ``[CHEM] Red Zone Rampage test map``.
+
+    Original CnCNet hash is ``18972a7372424bb456684f6e45119a5579042898``
+    """
+    file = load_test_file("tiberian_dawn/18972a7372424bb456684f6e45119a5579042898.zip")
+    yield file
+    file.close()
+
+
+@pytest.fixture
 def file_map_ts_woodland_hills(load_test_file) -> Generator[File, Any, None]:
     """Return a valid Tiberian Sun map.
 

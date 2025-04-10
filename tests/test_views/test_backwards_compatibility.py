@@ -50,6 +50,20 @@ def test_map_upload_dune2k_backwards_compatible(client_anonymous, file_map_dune2
     _download_and_check_hash(client_anonymous, sha1, game_dune2k, name, [".map", ".ini"])
 
 
+def test_map_upload_tiberian_dawn_backwards_compatible(client_anonymous, file_map_tiberian_dawn, game_tiberian_dawn):
+    url = "/upload"
+    sha1 = "18972a7372424bb456684f6e45119a5579042898"
+    name = "[CHEM] Red Zone Rampage test map"
+
+    response: KirovyResponse = client_anonymous.post(
+        url, {"file": file_map_tiberian_dawn, "game": game_tiberian_dawn.slug}, format="multipart", content_type=None
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+
+    _download_and_check_hash(client_anonymous, sha1, game_tiberian_dawn, name, [".ini", ".bin"])
+
+
 def test_map_upload_single_file_backwards_compatible(
     client_anonymous,
     zip_map_for_legacy_upload,

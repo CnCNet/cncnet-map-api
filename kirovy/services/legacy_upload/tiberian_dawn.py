@@ -7,8 +7,7 @@ from kirovy import constants, typing as t
 from kirovy.constants.api_codes import LegacyUploadApiCodes
 from kirovy.exceptions.view_exceptions import KirovyValidationError
 from kirovy.services.cnc_gen_2_services import CncGen2MapParser
-from kirovy.services.legacy_upload import LegacyMapServiceBase
-from kirovy.services.legacy_upload.base import ExpectedFile
+from kirovy.services.legacy_upload.base import ExpectedFile, LegacyMapServiceBase
 from kirovy.utils.file_utils import ByteSized
 
 __all__ = ["TiberianDawnLegacyMapService"]
