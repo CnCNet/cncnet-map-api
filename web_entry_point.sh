@@ -1,3 +1,4 @@
+#!/bin/sh
 # Don't run this file manually. It's the entry point for the dockerfile.
 python manage.py collectstatic --noinput
 python manage.py migrate
