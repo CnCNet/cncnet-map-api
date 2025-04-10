@@ -1,5 +1,4 @@
 import dataclasses
-import functools
 import io
 import pathlib
 import zipfile
@@ -8,10 +7,10 @@ from cryptography.utils import cached_property
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import UploadedFile
 
-from kirovy import typing as t, constants
+from kirovy import typing as t, constants, exceptions
 from kirovy.constants.api_codes import LegacyUploadApiCodes
 from kirovy.exceptions import view_exceptions
-from kirovy.services.cnc_gen_2_services import CncGen2MapParser
+from kirovy.services.cnc_gen_2_services import MapConfigParser, CncGen2MapParser
 from kirovy.utils import file_utils
 from kirovy.utils.file_utils import ByteSized
 
@@ -19,7 +18,7 @@ from kirovy.utils.file_utils import ByteSized
 @dataclasses.dataclass
 class ExpectedFile:
     possible_extensions: t.Set[str]
-    file_validator: t.Callable[[str, ContentFile, zipfile.ZipInfo], bool]
+    file_validator: t.Callable[[str, ContentFile, zipfile.ZipInfo], None]
     required: bool = True
     """attr: If false, this file is not required to be present."""
 
@@ -53,15 +52,15 @@ class LegacyMapServiceBase:
         raise NotImplementedError("This Game's map validator hasn't implemented the expectd file structure.")
 
     def multi_file_validator(self):
-        file_list = self._file.infolist()
+        zip_file_list = self._file.infolist()
         min_files = len([x for x in self.expected_files if x.required])
         max_files = len(self.expected_files)
-        if min_files > len(file_list) > max_files:
+        if min_files > len(zip_file_list) > max_files:
             raise view_exceptions.KirovyValidationError(
                 "Incorrect file count", code=LegacyUploadApiCodes.BAD_ZIP_STRUCTURE
             )
 
-        for file_info in file_list:
+        for file_info in zip_file_list:
             expected_file = self._get_expected_file_for_extension(file_info)
             expected_file.file_validator(self._file.filename, ContentFile(self._file.read(file_info)), file_info)
 
@@ -101,8 +100,11 @@ class LegacyMapServiceBase:
         """
         output = io.BytesIO()
         for expected_file in self.expected_files:
-            file_info = self._find_file_info_by_extension(expected_file.possible_extensions)
-            output.write(self._file.read(file_info))
+            file_info = self._find_file_info_by_extension(
+                expected_file.possible_extensions, is_required=expected_file.required
+            )
+            if file_info:
+                output.write(self._file.read(file_info))
         output.seek(0)
         return output
 
@@ -111,9 +113,13 @@ class LegacyMapServiceBase:
         ini_file_info = self._find_file_info_by_extension(self.ini_extensions)
         fallback = f"legacy_client_upload_{self.map_sha1_from_filename}"
         ini_file = ContentFile(self._file.read(ini_file_info))
-        return CncGen2MapParser(ini_file).ini.get("Basic", "Name", fallback=fallback)
+        try:
+            return MapConfigParser.from_file(ini_file).get("Basic", "Name", fallback=fallback)
+        except exceptions.InvalidMapFile:
+            # Having a bad map name for a temporary upload is better than a 500 error.
+            return fallback
 
-    def _find_file_info_by_extension(self, extensions: t.Set[str]) -> zipfile.ZipInfo:
+    def _find_file_info_by_extension(self, extensions: t.Set[str], is_required: bool = True) -> zipfile.ZipInfo | None:
         """Find the zipinfo object for a file by a set of possible file extensions.
 
         This is meant to be used to find specific files in the zip.
@@ -132,11 +138,12 @@ class LegacyMapServiceBase:
         for file in self._file.infolist():
             if pathlib.Path(file.filename).suffix in extensions:
                 return file
-        raise view_exceptions.KirovyValidationError(
-            "No file matching the expected extensions was found",
-            LegacyUploadApiCodes.NO_VALID_MAP_FILE,
-            {"expected": extensions},
-        )
+        if is_required:
+            raise view_exceptions.KirovyValidationError(
+                "No file matching the expected extensions was found",
+                LegacyUploadApiCodes.NO_VALID_MAP_FILE,
+                {"expected": extensions},
+            )
 
     def _get_expected_file_for_extension(self, zip_info: zipfile.ZipInfo) -> ExpectedFile:
         """Get the ``expected_file`` class instance corresponding to the file in the zipfile.

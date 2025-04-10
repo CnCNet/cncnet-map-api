@@ -15,3 +15,33 @@ class YurisRevengeLegacyMapService(LegacyMapServiceBase):
                 possible_extensions=self.ini_extensions, file_validator=default_map_file_validator, required=True
             )
         ]
+
+
+class TiberianSunLegacyMapService(LegacyMapServiceBase):
+    ini_extensions = {".map", ".mpr"}
+    game_slug = constants.GameSlugs.tiberian_sun
+
+    @cached_property
+    def expected_files(self) -> t.List[ExpectedFile]:
+        return [
+            ExpectedFile(
+                possible_extensions=self.ini_extensions, file_validator=default_map_file_validator, required=True
+            )
+        ]
+
+
+class DawnOfTheTiberiumAgeLegacyMapService(TiberianSunLegacyMapService):
+    game_slug = constants.GameSlugs.dawn_of_the_tiberium_age
+
+
+class RedAlertLegacyMapService(LegacyMapServiceBase):
+    ini_extensions = {".ini", ".mpr"}
+    game_slug = constants.GameSlugs.red_alert
+
+    @cached_property
+    def expected_files(self) -> t.List[ExpectedFile]:
+        return [
+            ExpectedFile(
+                possible_extensions=self.ini_extensions, file_validator=default_map_file_validator, required=True
+            )
+        ]

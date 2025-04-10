@@ -17,41 +17,49 @@ Including another URLconf
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
-from django.urls import path, include
 from django.db import connection
+from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 from kirovy.models import CncGame
+from kirovy.settings import settings_constants
 from kirovy.views import test, cnc_map_views, permission_views, admin_views, map_upload_views
 from kirovy import typing as t, constants
+
 
 def _get_games_url_patterns() -> list[path]:
     """Return URLs compatible with legacy CnCNet clients.
 
     - URLs are loaded when the :mod:`kirovy.urls` module is loaded, which happens when Django starts.
     - Checking the game slugs requires migration ``0002`` to have been run.
-    
+
     These conditions caused a crash when running migrations for the first time, so now we return
     nothing if we detect that migrations haven't been run yet.
-    
+
     .. codeauthor:: rohsyl aka wu-shaolin
-    
+
     :return:
         A list of URLs that are backwards compatible with MapDB 1.0. Returns an empty list if migrations
         haven't been run yet.
     """
 
-    if 'CncGame' not in connection.introspection.table_names():
+    if "kirovy_cncgame" not in connection.introspection.table_names():
+        # This should only ever happen the first time ``manage.py migrate kirovy`` is run.
         return []
 
     return [
         path("upload", map_upload_views.CncNetBackwardsCompatibleUploadView.as_view()),
         *(
             # Make e.g. /yr/map_hash, /ra2/map_hash, etc
-            path(f"{g.slug}/<str:sha1_hash>", cnc_map_views.BackwardsCompatibleMapView.as_view(), {"game_id": g.id})
+            path(
+                f"{g.slug}/<str:sha1_hash_filename>",
+                cnc_map_views.BackwardsCompatibleMapView.as_view(),
+                {"game_id": g.id},
+            )
             for g in CncGame.objects.filter(slug__in=constants.BACKWARDS_COMPATIBLE_GAMES)
         ),
     ]
+
 
 def _get_url_patterns() -> list[path]:
     """Return the root level url patterns.
@@ -60,7 +68,7 @@ def _get_url_patterns() -> list[path]:
     but I didn't want to have other url files.
     """
     dev_urls = []
-    if settings.RUN_ENVIRONMENT == "dev":
+    if settings.RUN_ENVIRONMENT == settings_constants.RunEnvironment.DEVELOPMENT:
         dev_urls = [
             path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
             # Optional UI:

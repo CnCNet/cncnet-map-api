@@ -19,7 +19,7 @@ class CncUserManager(models.Manager):
         constants.LegacyUploadUser.CNCNET_ID,
     }
 
-    def find_by_cncnet_id(self, cncnet_id: int) -> t.Tuple["CncUser"]:
+    def find_by_cncnet_id(self, cncnet_id: int) -> t.Union["CncUser", None]:
         return super().get_queryset().filter(cncnet_id=cncnet_id).first()
 
     def get_or_create_migration_user(self) -> "CncUser":

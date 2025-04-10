@@ -2,7 +2,9 @@ import collections
 import functools
 import hashlib
 import pathlib
+import struct
 import zipfile
+from collections.abc import Buffer
 
 from django.core.files import File
 
@@ -151,3 +153,18 @@ def is_zipfile(file_or_path: File | pathlib.Path) -> bool:
         return False
     except Exception as e:
         raise e
+
+
+def flat_unpack(format: str, data: Buffer) -> t.List[t.Any]:
+    """Unpack a buffer iteratively.
+
+    :param format:
+        See `Format docs <https://docs.python.org/3.12/library/struct.html#format-strings>`_
+    :param data:
+        The data to unpack.
+    :return:
+        A list of objects of the type specified by ``format``.
+    :raises struct.error:
+        This will be raised if ``data`` cannot be unpacked to the expected ``format``.
+    """
+    return [x[0] for x in struct.iter_unpack(format, data)]

@@ -19,3 +19,4 @@ class LegacyUploadApiCodes(enum.StrEnum):
     HASH_MISMATCH = "file-hash-does-not-match-zip-name"
     INVALID_FILE_TYPE = "invalid-file-type-in-zip"
     GAME_NOT_SUPPORTED = "game-not-supported"
+    MAP_FAILED_TO_PARSE = "map-failed-to-parse"
