@@ -30,7 +30,7 @@ class KirovySerializer(serializers.Serializer):
         """
         fields = super().get_fields()
         request: t.Optional[KirovyRequest] = self.context.get("request")
-        if not all([request, request.user.is_authenticated, request.user.is_staff]):
+        if not (request and request.user.is_authenticated and request.user.is_staff):
             fields.pop("last_modified_by_id", None)
         return fields
 

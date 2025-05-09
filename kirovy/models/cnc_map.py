@@ -227,3 +227,49 @@ class CncMapFile(file_base.CncNetFileBaseModel):
 
         # e.g. "yr/maps/CNC_NET_MAP_ID_HEX/ra2_CNC_NET_MAP_ID_HEX_v1.map
         return pathlib.Path(instance.cnc_map.get_map_directory_path(), final_file_name)
+
+
+class CncMapImageFile(file_base.CncNetFileBaseModel):
+    """Represents an image file to display on the website for a map.
+
+    .. warning::
+
+        ``name`` is auto-generated for this file subclass.
+    """
+
+    objects = CncMapFileManager()
+
+    width = models.IntegerField()
+    height = models.IntegerField()
+    version = models.IntegerField(editable=False)
+
+    cnc_map = models.ForeignKey(CncMap, on_delete=models.CASCADE, null=False)
+
+    ALLOWED_EXTENSION_TYPES = {game_models.CncFileExtension.ExtensionTypes.IMAGE.value}
+
+    UPLOAD_TYPE = settings.CNC_MAP_DIRECTORY
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+    @staticmethod
+    def generate_upload_to(instance: "CncMapFile", filename: str) -> pathlib.Path:
+        """Generate the path to upload map files to.
+
+        Gets called by :func:`kirovy.models.file_base._generate_upload_to` when ``CncMapImageFile.save`` is called.
+        See [the django docs for file fields](https://docs.djangoproject.com/en/5.0/ref/models/fields/#filefield).
+        ``upload_to`` is set in :attr:`kirovy.models.file_base.CncNetFileBaseModel.file`, which calls
+        ``_generate_upload_to``, which calls this function.
+
+        :param instance:
+            Acts as ``self``. The image file object that we are creating an upload path for.
+        :param filename:
+            The filename of the uploaded image file.
+        :return:
+            Path to upload map to relative to :attr:`~kirovy.settings.base.MEDIA_ROOT`.
+        """
+        filename = pathlib.Path(filename)
+        final_file_name = f"{instance.name}{filename.suffix}"
+
+        # e.g. "yr/maps/CNC_NET_MAP_ID_HEX/screenshot_of_map.jpg
+        return pathlib.Path(instance.cnc_map.get_map_directory_path(), final_file_name)

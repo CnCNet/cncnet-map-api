@@ -9,6 +9,7 @@ class UploadApiCodes(enum.StrEnum):
     EMPTY_UPLOAD = "where-file"
     DUPLICATE_MAP = "duplicate-map"
     FILE_EXTENSION_NOT_SUPPORTED = "file-extension-not-supported"
+    INVALID = "invalid-data-upload"
 
 
 class LegacyUploadApiCodes(enum.StrEnum):

@@ -21,6 +21,7 @@ from kirovy.objects.ui_objects import ResultResponseData
 from kirovy.request import KirovyRequest
 from kirovy.response import KirovyResponse
 from kirovy.serializers import cnc_map_serializers
+from kirovy.serializers.cnc_map_serializers import CncMapBaseSerializer
 from kirovy.services import legacy_upload
 from kirovy.services.cnc_gen_2_services import CncGen2MapParser, CncGen2MapSections
 from kirovy.utils import file_utils
@@ -67,15 +68,24 @@ class _BaseMapFileUploadView(APIView, metaclass=ABCMeta):
         parent_map = self.get_map_parent(map_parser)
 
         # Make the map that we will attach the map file too.
-        new_map = cnc_map.CncMap(
-            map_name=map_parser.ini.map_name,
-            cnc_game_id=game.id,
-            is_published=False,
-            incomplete_upload=True,
-            cnc_user=request.user,
-            parent=parent_map,
+        map_serializer = CncMapBaseSerializer(
+            data=dict(
+                map_name=map_parser.ini.map_name,
+                description="",
+                cnc_game_id=game.id,
+                is_published=False,
+                incomplete_upload=True,
+                cnc_user_id=request.user.id,
+                parent_id=parent_map.id if parent_map else None,
+            ),
+            context={"request": self.request},
         )
-        new_map.save()
+        if not map_serializer.is_valid():
+            raise KirovyValidationError(
+                "Map failed validation", code=UploadApiCodes.INVALID, additional=map_serializer.errors
+            )
+
+        new_map = map_serializer.save()
 
         # Set the cncnet map ID in the map file ini.
         cnc_net_ini = {constants.CNCNET_INI_MAP_ID_KEY: str(new_map.id)}
