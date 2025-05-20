@@ -8,6 +8,7 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters import rest_framework as filters
 from rest_framework.permissions import AllowAny
+from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.views import APIView
 
 from kirovy import permissions
@@ -17,6 +18,7 @@ from kirovy.models import (
     CncMap,
     CncMapFile,
 )
+from kirovy.request import KirovyRequest
 from kirovy.response import KirovyResponse
 from kirovy.serializers import cnc_map_serializers
 from kirovy.views import base_views
@@ -232,6 +234,16 @@ class MapDeleteView(base_views.KirovyDestroyView):
 
 
 class BackwardsCompatibleMapView(APIView):
+    """Match the legacy mapdb download endpoints.
+
+    This is needed until the new UI is running for the clients CnCNet owns.
+
+    This will need to be kept around so that we maintain support for the clients that
+    we don't have the source code for.
+
+    The backwards compatible URL is ``/{game_slug}/{map_hash_sha1}``
+    """
+
     permission_classes = [AllowAny]
 
     def get(self, request, sha1_hash_filename: str, game_id: UUID, format=None):
@@ -245,3 +257,23 @@ class BackwardsCompatibleMapView(APIView):
             return KirovyResponse(status=status.HTTP_404_NOT_FOUND)
 
         return FileResponse(map_file.file.open("rb"), as_attachment=True, filename=f"{map_file.hash_sha1}.zip")
+
+
+class MapLegacyStaticUI(APIView):
+    """Temporary upload page for backwards compatible upload testing.
+
+    Map authors need an easy way to upload their maps to the database so that they
+    can debug a failed client upload.
+
+    This should be deprecated once the new UI is fully up and running.
+    (Or move it to a more django-friendly endpoint and give it space in the nw UI.)
+
+    Emulates `the legacy uploader <https://mapdb.cncnet.org/upload-manual.html>`_
+    """
+
+    permission_classes = [AllowAny]
+    renderer_classes = [TemplateHTMLRenderer]
+    template_name = "map_legacy_upload_ui.html"
+
+    def get(self, request: KirovyRequest) -> KirovyResponse:
+        return KirovyResponse()

@@ -1,9 +1,11 @@
+# A copy of the docker compose, specifically for debuggers.
+# Will not run django by default, your debugger needs to run ``manage.py``.
 services:
   db:
-    container_name: mapdb-postgres-dev
+    container_name: mapdb-postgres-debugger
     image: postgres
     volumes:
-      - ${POSTGRES_DATA_DIR}:/var/lib/postgresql/data
+      - ${POSTGRES_DATA_DIR}/debugger-db/:/var/lib/postgresql/data
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
@@ -14,32 +16,22 @@ services:
       - "127.0.0.1:${POSTGRES_PORT}:${POSTGRES_PORT}"
     command: -p ${POSTGRES_PORT}
 
-  django:
-    container_name: mapdb-django-dev
+  debugger-django:
+    container_name: mapdb-django-debugger
     build:
       context: .
       dockerfile: docker/Dockerfile
-      target: dev
+      target: debugger
     volumes:
       - .:/cncnet-map-api
       - ${HOST_MEDIA_ROOT}:/data/cncnet_silo  # django will save user-uploaded files here. MEDIA_ROOT
       - ${HOST_STATIC_ROOT}:/data/cncnet_static  # django will gather static files here. STATIC_ROOT
+      - ./data/tmp:/tmp/pytest-of-root  # For inspecting files during pytests
     ports:
       - "8000:8000"
     env_file:
       - .env
+    environment:
+      POSTGRES_TEST_HOST: db  # Necessary to connect to docker db. Overrides the .env setting.
     depends_on:
       - db
-
-  nginx-server:
-    # nginx proxies requests to django via gunicorn.
-    container_name: mapdb-nginx-dev
-    image: nginx:latest
-    volumes:
-      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ${HOST_STATIC_ROOT}:/usr/share/nginx/html/static  # website static assets.
-      - ${HOST_MEDIA_ROOT}:/usr/share/nginx/html/silo  # website user-uploaded files.
-    ports:
-      - "80:80"
-    depends_on:
-      - django

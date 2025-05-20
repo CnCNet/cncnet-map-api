@@ -386,7 +386,6 @@ class CncNetBackwardsCompatibleUploadView(CncnetClientMapUploadView):
         # Will raise validation errors if the upload is invalid
         legacy_map_service = legacy_upload.get_legacy_service_for_slug(game.slug.lower())(uploaded_file)
 
-        # These hashes are for the full zip file and won't match
         map_hashes = self._get_file_hashes(ContentFile(legacy_map_service.file_contents_merged.read()))
         self.verify_file_does_not_exist(map_hashes)
 
@@ -427,6 +426,7 @@ class CncNetBackwardsCompatibleUploadView(CncnetClientMapUploadView):
                     "cnc_map_file": new_map_file.file.url,
                     "cnc_map_id": new_map.id,
                     "extracted_preview_file": None,
+                    "download_url": f"/{game.slug}/{new_map_file.hash_sha1}.zip",
                 },
             ),
             status=status.HTTP_200_OK,

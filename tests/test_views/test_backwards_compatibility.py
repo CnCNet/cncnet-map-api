@@ -91,6 +91,7 @@ def test_map_upload_single_file_backwards_compatible(
         )
 
         assert upload_response.status_code == status.HTTP_200_OK
+        assert upload_response.data["result"]["download_url"] == f"/{game.slug}/{file_sha1}.zip"
 
         _download_and_check_hash(client_anonymous, file_sha1, game, map_name, [original_extension])
 

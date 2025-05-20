@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CncNet Test Map Upload</title>
+    {% load static %}
+    <link rel="stylesheet" type="text/css" href="{% static 'bc-assets/bc-main.css' %}">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" sizes="32x32" href="https://cncnet.org/favicon-32x32.png">
+</head>
+<body>
+<div id="flex-main">
+<div id="flex-container">
+    <div id="header">
+        <a class="navbar-brand" href="http://cncnet.org" title="CnCNet Home">
+            <img src="https://cncnet.org/build/assets/logo-ad41e578.svg" alt="CnCNet logo" loading="lazy" class="logo-full">
+            <span class="logo-tagline">
+                Keeping C&amp;C Alive Since 2009
+            </span>
+        </a>
+        <h1>CnCNet 5 client upload test form</h1>
+    </div>
+    <div id="content">
+        <p>
+            Select a <span class="inline-code"><span class="it">&lt;sha1&gt;</span>.zip</span> from your file system.
+            It should contain the <span class="inline-code">.mpr</span> file for
+            Red Alert or <span class="inline-code">.ini</span> and
+            <span class="inline-code">.bin</span> for Tiberian Dawn.
+        </p>
+        <p>
+            The archive will then be extracted, validated and rebuilt for storage.
+            You will receive a <span class="inline-code">200 OK</span> status code if your
+            uploaded file was valid.
+        </p>
+        <form action="/upload" method="post" enctype="multipart/form-data">
+            <label hidden="hidden" for="game-slug">Game</label>
+            <select id="game-slug" name="game">
+                <option value="td" selected="selected">Command &amp; Conquer (Tiberian Dawn)</option>
+                <option value="ra" selected="selected">Red Alert 1</option>
+                <option value="d2" selected="selected">Dune 2000</option>
+                <option value="ts" selected="selected">Tiberian Sun</option>
+                <option value="yr" selected="selected">Yuri's Revenge</option>
+            </select>
+            <label hidden="hidden" for="map-file-input">Map zip file</label>
+            <input id="map-file-input" type="file" name="file" accept="application/zip">
+            <button type="submit">Upload</button>
+        </form>
+        <p>The CnCNet client will function <strong>exactly</strong> like this form.</p>
+    </div>
+    <div id="footer">
+        <a href="https://www.digitalocean.com/?refcode=337544e2ec7b&amp;utm_campaign=Referral_Invite&amp;utm_medium=opensource&amp;utm_source=CnCNet" title="Powered by Digital Ocean" target="_blank">
+            <img src="https://opensource.nyc3.cdn.digitaloceanspaces.com/attribution/assets/PoweredByDO/DO_Powered_by_Badge_blue.svg" width="201px" alt="Powered By Digital Ocean">
+        </a>
+    </div>
+</div>
+</div>
+</body>
+</html>

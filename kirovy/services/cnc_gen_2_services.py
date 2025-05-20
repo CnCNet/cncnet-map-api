@@ -60,7 +60,7 @@ class MapConfigParser(configparser.ConfigParser):
             # We can't use ConfigParser.read_file because parser expects the file to be read as a string,
             # but django uploaded files are read as bytes. So we need to convert to string first.
             # If `decode` is crashing in a test, make sure your test file is read in read-mode "rb".
-            self.read_string(file.read().decode())
+            self.read_string(file.read().decode(errors="ignore"))
         except configparser.ParsingError as e:
             raise exceptions.InvalidMapFile(
                 ParseErrorMsg.CORRUPT_MAP,
