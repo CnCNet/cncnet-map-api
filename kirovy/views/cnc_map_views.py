@@ -143,7 +143,9 @@ class MapListCreateView(base_views.KirovyListCreateView):
         """
         base_query = (
             CncMap.objects.filter(
-                Q(is_banned=False, is_published=True, incomplete_upload=False, is_temporary=False) | Q(is_legacy=True)
+                Q(is_banned=False, is_published=True, incomplete_upload=False, is_temporary=False)
+                | Q(is_legacy=True)
+                | Q(is_mapdb1_compatible=True)
             ).filter(cnc_game__is_visible=True)
             # Prefetch data necessary to the map grid. Pre-fetching avoids hitting the database in a loop.
             .select_related("cnc_user", "cnc_game", "parent", "parent__cnc_user")
