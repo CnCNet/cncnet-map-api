@@ -169,6 +169,10 @@ CNC_GAME_IMAGE_DIRECTORY = "game_images/"
 """
 str: The directory inside of :attr:`~kirovy.settings._base.STATIC_URL` where we store game-specific and mod-specific
 logos and backgrounds. So a Red Alert 2 icon would be in e.g. ``URL/static/game_images/ra2/icons/allies.png``
+
+.. warning::
+
+    This is **not** where we store user-uploaded images. Do not store them here.
 """
 
 

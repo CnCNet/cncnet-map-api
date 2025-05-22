@@ -18,7 +18,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.db import connection
-from django.urls import path, include
+from django.urls import path, include, URLPattern, URLResolver
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 from kirovy.models import CncGame
@@ -26,8 +26,10 @@ from kirovy.settings import settings_constants
 from kirovy.views import test, cnc_map_views, permission_views, admin_views, map_upload_views
 from kirovy import typing as t, constants
 
+_DjangoPath = URLPattern | URLResolver
 
-def _get_games_url_patterns() -> list[path]:
+
+def _get_games_url_patterns() -> list[_DjangoPath]:
     """Return URLs compatible with legacy CnCNet clients.
 
     - URLs are loaded when the :mod:`kirovy.urls` module is loaded, which happens when Django starts.
@@ -48,6 +50,7 @@ def _get_games_url_patterns() -> list[path]:
         return []
 
     return [
+        path("upload-manual", cnc_map_views.MapLegacyStaticUI.as_view()),
         path("upload", map_upload_views.CncNetBackwardsCompatibleUploadView.as_view()),
         *(
             # Make e.g. /yr/map_hash, /ra2/map_hash, etc
@@ -61,7 +64,7 @@ def _get_games_url_patterns() -> list[path]:
     ]
 
 
-def _get_url_patterns() -> list[path]:
+def _get_url_patterns() -> list[_DjangoPath]:
     """Return the root level url patterns.
 
     I added this because I wanted to have the root URLs at the top of the file,

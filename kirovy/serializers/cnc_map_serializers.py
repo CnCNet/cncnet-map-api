@@ -81,7 +81,7 @@ class CncMapFileSerializer(KirovySerializer):
     hash_sha512 = serializers.CharField(required=True, allow_blank=False)
     hash_sha1 = serializers.CharField(required=True, allow_blank=False)
 
-    def create(self, validated_data: t) -> cnc_map.CncMapFile:
+    def create(self, validated_data: t.DictStrAny) -> cnc_map.CncMapFile:
         map_file = cnc_map.CncMapFile(**validated_data)
         map_file.save()
         return map_file
@@ -106,7 +106,7 @@ class CncMapBaseSerializer(CncNetUserOwnedModelSerializer):
     description = serializers.CharField(
         required=True,
         allow_null=False,
-        allow_blank=False,
+        allow_blank=True,
         trim_whitespace=True,
         min_length=10,
     )
@@ -117,11 +117,9 @@ class CncMapBaseSerializer(CncNetUserOwnedModelSerializer):
     )
     category_ids = serializers.PrimaryKeyRelatedField(
         source="categories",
-        queryset=cnc_map.MapCategory.objects.all(),
         pk_field=serializers.UUIDField(),
         many=True,
-        allow_null=False,
-        allow_empty=False,
+        read_only=True,  # Set it manually.
     )
     is_published = serializers.BooleanField(
         default=False,
@@ -139,9 +137,27 @@ class CncMapBaseSerializer(CncNetUserOwnedModelSerializer):
     legacy_upload_date = serializers.DateTimeField(
         read_only=True,
     )
+    incomplete_upload = serializers.BooleanField(
+        default=False,
+    )
+
+    parent_id = serializers.PrimaryKeyRelatedField(
+        source="parent",
+        queryset=cnc_map.CncMap.objects.all(),
+        pk_field=serializers.UUIDField(),
+        many=False,
+        allow_null=True,
+        allow_empty=False,
+        default=None,
+    )
 
     class Meta:
         model = cnc_map.CncMap
         # We return the ID instead of the whole object.
-        exclude = ["cnc_game", "categories"]
+        exclude = ["cnc_game", "categories", "parent"]
         fields = "__all__"
+
+    def create(self, validated_data: t.DictStrAny) -> cnc_map.CncMap:
+        cnc_map_instance = cnc_map.CncMap(**validated_data)
+        cnc_map_instance.save()
+        return cnc_map_instance
