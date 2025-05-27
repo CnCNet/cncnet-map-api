@@ -1,0 +1,29 @@
+{% extends "legacy_outer.html" %}
+
+{% block title %}Search CnCNet Maps{% endblock %}
+
+{% block header_text %}CnCNet Map Search{% endblock %}
+
+{% block wrapped_content %}
+    <!-- CONTENT -->
+    <div class="use-width"></div>
+    <div class="form-wrapper">
+        <h2>Search Options</h2>
+        <form action="/search" method="post" enctype="multipart/form-data" class="row-form">
+            <div>
+                <label for="game-slug">Game</label>
+                <select id="game-slug" name="game">
+                    <option value="td" selected="selected">Command &amp; Conquer (Tiberian Dawn)</option>
+                    <option value="ra" selected="selected">Red Alert 1</option>
+                    <option value="d2" selected="selected">Dune 2000</option>
+                    <option value="ts" selected="selected">Tiberian Sun</option>
+                    <option value="yr" selected="selected">Yuri's Revenge</option>
+                </select>
+            </div>
+            <div>
+                <label for="map-name-or-description">Search text</label>
+                <input type="text" id="map-name-or-description" name="map-name-or-description">
+            </div>
+        </form>
+    </div>
+{% endblock %}

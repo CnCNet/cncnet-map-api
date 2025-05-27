@@ -84,21 +84,53 @@ span.inline-code {
     font-style: italic;
 }
 
-form > * {
+form:not(.row-form) > *:not(label) {
     margin: 1rem 0;
     padding: .3rem;
+}
+
+form > label {
+    margin-top: 1rem;
+}
+
+.form-wrapper {
+    padding: 1.5rem;
+    border-radius: 4px;
+    border: 1px solid #00fe89;
+}
+
+.form-wrapper > h2 {
+
 }
 
 form {
     display: flex;
     flex-direction: column;
-    padding: 1.5rem;
-    border-radius: 4px;
-    border: 1px solid #00fe89;
 }
 
 #footer {
     display: flex;
     flex-direction: row-reverse;
     padding: 3.5rem 0;
+}
+
+.use-width {
+    width: 1400px;
+}
+
+form.row-form {
+    flex-direction: row;
+}
+
+form.row-form > div {
+    display: flex;
+    flex-direction: column;
+}
+
+form.row-form > div > *:not(label) {
+    padding: .6rem .5rem;
+}
+
+form.row-form > div:last-of-type {
+    flex-grow: 2;
 }

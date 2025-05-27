@@ -123,6 +123,8 @@ class MapListCreateView(base_views.KirovyListCreateView):
     The view for maps.
     """
 
+    http_method_names = ["get"]
+
     def get_queryset(self):
         """The default query from which all other map list queries are built.
 
@@ -279,3 +281,10 @@ class MapLegacyStaticUI(APIView):
 
     def get(self, request: KirovyRequest) -> KirovyResponse:
         return KirovyResponse()
+
+
+class MapLegacySearchUI(MapListCreateView):
+
+    permission_classes = [AllowAny]
+    renderer_classes = [TemplateHTMLRenderer]
+    template_name = "legacy_search.html"
