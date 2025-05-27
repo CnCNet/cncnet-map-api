@@ -22,7 +22,6 @@ body {
 
 #header {
     flex-direction: row;
-    flex-grow: 1;
     display: flex;
     align-items: center;
     height: 65px;
@@ -36,8 +35,8 @@ body {
     text-align-last: right;
 }
 
-#header > * {
-    flex: 1 1 auto;
+#header > :last-child {
+    flex-grow: 1;
 }
 
 .navbar-brand {
@@ -48,6 +47,21 @@ body {
     position: relative;
     margin-right: 2.5rem;
     font-size: 1.25rem;
+}
+
+.navbar > a {
+    color: #ffffff;
+    text-transform: uppercase;
+    font-weight: bold;
+    font-size: 1.2rem;
+    transition: all ease .35s;
+    text-decoration: none;
+    padding: 1rem;
+    margin: 0 .5rem;
+}
+
+.navbar > a:hover {
+    color: #33ffa1;
 }
 
 .navbar-brand img {
@@ -116,6 +130,12 @@ form {
 
 .use-width {
     width: 1400px;
+}
+
+.limit-w-1000 {
+    max-width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 

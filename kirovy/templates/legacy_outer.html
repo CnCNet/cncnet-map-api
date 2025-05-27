@@ -13,13 +13,17 @@
 <body>
 <div id="flex-main">
 <div id="flex-container">
-    <div id="header">
+    <div id="header" class="use-width">
         <a class="navbar-brand" href="http://cncnet.org" title="CnCNet Home">
             <img src="https://cncnet.org/build/assets/logo-ad41e578.svg" alt="CnCNet logo" loading="lazy" class="logo-full">
             <span class="logo-tagline">
                 Keeping C&amp;C Alive Since 2009
             </span>
         </a>
+        <div class="navbar">
+            <a href="/search" title="CnCNet Legacy Map Search">Search</a>
+            <a href="/upload-manual" title="CnCNet Legacy Map Upload">Upload</a>
+        </div>
         <h1>{% block header_text %}404{% endblock %}</h1>
     </div>
     <div id="content">
