@@ -84,7 +84,7 @@ span.inline-code {
     font-style: italic;
 }
 
-form:not(.row-form) > *:not(label) {
+form > *:not(div, button, label) {
     margin: 1rem 0;
     padding: .3rem;
 }
@@ -100,7 +100,7 @@ form > label {
 }
 
 .form-wrapper > h2 {
-
+  margin: 0 0 2rem 0;
 }
 
 form {
@@ -118,19 +118,56 @@ form {
     width: 1400px;
 }
 
-form.row-form {
+
+form > div {
+    display: flex;
     flex-direction: row;
 }
 
-form.row-form > div {
+form > div:not(:last-child) {
+    margin-bottom: 2rem;
+}
+
+form > div > div {
     display: flex;
     flex-direction: column;
 }
 
-form.row-form > div > *:not(label) {
+form > div > div > *:not(label) {
     padding: .6rem .5rem;
 }
 
-form.row-form > div:last-of-type {
+form > div label {
+    margin-bottom: .5rem;
+}
+
+form > div > div:last-of-type {
     flex-grow: 2;
+}
+
+.btn {
+    padding: 1rem 0;
+    color: #33ffa1;
+    background: rgba(0, 255, 208, 0);
+    border-color: #33ffa1;
+    border-radius: 5px;
+    font-weight: bold;
+    font-size: 1.5rem;
+    transition: all ease .35s;
+    backdrop-filter: blur(15px);
+}
+
+.btn:hover {
+    background: rgba(0,255,208,.1450980392);
+    cursor: pointer;
+}
+
+.full-width-flex-row {
+    flex: 1 100%;
+}
+
+html {
+    /* unFOUC */
+    visibility: visible;
+    opacity: 1;
 }

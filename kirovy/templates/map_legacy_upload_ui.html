@@ -18,17 +18,27 @@
     </p>
     <div class="form-wrapper">
         <form action="/upload" method="post" enctype="multipart/form-data">
-            <label hidden="hidden" for="game-slug">Game</label>
-            <select id="game-slug" name="game">
-                <option value="td" selected="selected">Command &amp; Conquer (Tiberian Dawn)</option>
-                <option value="ra" selected="selected">Red Alert 1</option>
-                <option value="d2" selected="selected">Dune 2000</option>
-                <option value="ts" selected="selected">Tiberian Sun</option>
-                <option value="yr" selected="selected">Yuri's Revenge</option>
-            </select>
-            <label hidden="hidden" for="map-file-input">Map zip file</label>
-            <input id="map-file-input" type="file" name="file" accept="application/zip">
-            <button type="submit">Upload</button>
+            <div>
+                <div>
+                    <label hidden="hidden" for="game-slug">Game</label>
+                    <select id="game-slug" name="game">
+                        <option value="td" selected="selected">Command &amp; Conquer (Tiberian Dawn)</option>
+                        <option value="ra" selected="selected">Red Alert 1</option>
+                        <option value="d2" selected="selected">Dune 2000</option>
+                        <option value="ts" selected="selected">Tiberian Sun</option>
+                        <option value="yr" selected="selected">Yuri's Revenge</option>
+                    </select>
+                </div>
+            </div>
+            <div>
+                <div>
+                    <label hidden="hidden" for="map-file-input">Map zip file</label>
+                    <input id="map-file-input" type="file" name="file" accept="application/zip">
+                </div>
+            </div>
+            <div>
+                <button class="btn full-width-flex-row" type="submit">Upload</button>
+            </div>
         </form>
     </div>
     <p>The CnCNet client will function <strong>exactly</strong> like this form.</p>
