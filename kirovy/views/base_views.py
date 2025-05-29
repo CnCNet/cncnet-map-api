@@ -48,7 +48,7 @@ class KirovyListCreateView(_g.ListCreateAPIView):
     """
 
     permission_classes = [permissions.CanUpload | permissions.ReadOnly]
-    pagination_class: t.Type[KirovyDefaultPagination] = KirovyDefaultPagination
+    pagination_class: t.Optional[t.Type[KirovyDefaultPagination]] = KirovyDefaultPagination
     _paginator: t.Optional[KirovyDefaultPagination]
     request: KirovyRequest  # Added for type hinting. Populated by DRF ``.setup()``
 

@@ -18,6 +18,7 @@ from kirovy.models import (
     CncMap,
     CncMapFile,
 )
+from kirovy.objects.ui_objects import ResultResponseData, ListResponseData, BaseResponseData
 from kirovy.request import KirovyRequest
 from kirovy.response import KirovyResponse
 from kirovy.serializers import cnc_map_serializers
@@ -54,7 +55,7 @@ class MapListFilters(filters.FilterSet):
     cnc_game = filters.ModelMultipleChoiceFilter(
         field_name="cnc_game__id", to_field_name="id", queryset=CncGame.objects.filter(is_visible=True)
     )
-    # categories = filters.ModelMultipleChoiceFilter(queryset=MapCategory.objects.filter())
+    game_slug = filters.CharFilter(field_name="cnc_game__slug")
 
     class Meta:
         model = CncMap
@@ -154,16 +155,22 @@ class MapListCreateView(base_views.KirovyListCreateView):
             # Prefetch the categories because they're displayed like tags.
             # TODO: Since the category list is going to be somewhat small,
             #  maybe the UI should just cache them and I return IDs instead of objects?
-            .prefetch_related("categories")
+            .prefetch_related("categories", "cncmapfile_set")
         )
         return base_query
 
     filter_backends = [
+        filters.DjangoFilterBackend,  # filter first to reduce the count of rows that we full text search on.
         SearchFilter,
         OrderingFilter,
-        filters.DjangoFilterBackend,
     ]
     filterset_class = MapListFilters
+
+    search_param = "search"
+    """attr: The query param to use in the URL
+
+     Searches the fields defined in :attr:`~kirovy.views.cnc_map_views.MapListCreateView`
+     """
 
     search_fields = [
         "@map_name",
@@ -288,3 +295,11 @@ class MapLegacySearchUI(MapListCreateView):
     permission_classes = [AllowAny]
     renderer_classes = [TemplateHTMLRenderer]
     template_name = "legacy_search.html"
+    pagination_class = None
+
+    # TODO: Require filters.
+    def get(self, request, *args, **kwargs) -> KirovyResponse[ListResponseData | None]:
+        if not request.query_params.get("game_slug"):
+            return KirovyResponse[None](status=status.HTTP_200_OK)
+        response = super().get(request, *args, **kwargs)
+        return response

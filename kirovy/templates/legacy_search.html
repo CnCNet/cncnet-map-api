@@ -7,24 +7,56 @@
 {% block wrapped_content %}
 <div class="form-wrapper limit-w-1000">
     <h2>Search Options</h2>
-    <form action="/search" method="post" enctype="multipart/form-data">
+    <form action="/search" method="get" enctype="multipart/form-data">
         <div>
             <div>
                 <label for="game-slug">Game</label>
-                <select id="game-slug" name="game">
-                    <option value="td" selected="selected">Command &amp; Conquer (Tiberian Dawn)</option>
-                    <option value="ra" selected="selected">Red Alert 1</option>
-                    <option value="d2" selected="selected">Dune 2000</option>
-                    <option value="ts" selected="selected">Tiberian Sun</option>
-                    <option value="yr" selected="selected">Yuri's Revenge</option>
+                <select id="game-slug" name="game_slug" required="required">
+                    <option disabled selected="selected" value=""> -- Select a game -- </option>
+                    <option value="td">Command &amp; Conquer (Tiberian Dawn)</option>
+                    <option value="ra">Red Alert 1</option>
+                    <option value="d2">Dune 2000</option>
+                    <option value="ts">Tiberian Sun</option>
+                    <option value="yr">Yuri's Revenge</option>
                 </select>
             </div>
             <div>
-                <label for="map-name-or-description">Search text</label>
-                <input type="text" id="map-name-or-description" name="map-name-or-description">
+                <label for="search">Search text</label>
+                <input type="text" id="search" name="search" required="required">
             </div>
         </div>
         <button class="full-width-flex-row btn" type="submit">Search</button>
     </form>
+</div>
+<div id="search-results">
+    <div class="callout-note limit-w-1000" {% if results == '' or results|length == 0 %}style="display: none"{% endif %}>
+        You can download the map files and place in your game directory,
+        or you can use the <span class="inline-code">/downloadmap {MAP_HASH}</span> in a CnCNet multiplayer lobby.
+    </div>
+    <div class="callout-note limit-w-1000" {% if results is None or results|length > 0 %}style="display: none"{% endif %}>
+        No maps found. Try altering your search.
+    </div>
+    <div class="flex-grid">
+    {% for cnc_map in results %}
+        <div class="map-result">
+        {% autoescape on %}
+            <div>
+                {{ cnc_map.created_date }}
+            </div>
+            <div>
+                {{ cnc_map.latest_map_file_hash }}
+            </div>
+            <div style="flex-grow: 2; text-align: right">
+                {{ cnc_map.map_name }}
+            </div>
+            <div style="flex-grow: 0">
+                <a href="/{{ cnc_map.game_slug }}/{{ cnc_map.latest_map_file_hash }}">
+                    <i class="bi bi-floppy btn-smol"></i>
+                </a>
+            </div>
+        {% endautoescape %}
+        </div>
+    {% endfor %}
+    </div>
 </div>
 {% endblock %}
