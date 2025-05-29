@@ -173,7 +173,7 @@ class MapListCreateView(base_views.KirovyListCreateView):
      """
 
     search_fields = [
-        "@map_name",
+        "map_name",
         "^description",
     ]
     """
