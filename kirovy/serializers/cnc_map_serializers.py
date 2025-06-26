@@ -155,7 +155,7 @@ class CncMapBaseSerializer(CncNetUserOwnedModelSerializer):
     # TODO: Make sure queries are optimized in the views for listing maps.
     latest_map_file_hash = serializers.SerializerMethodField()
     game_slug = serializers.SerializerMethodField()
-    created_date = serializers.DateTimeField("%Y-%m-%d", source="created")
+    created_date = serializers.DateTimeField("%Y-%m-%d", source="created", read_only=True)
 
     class Meta:
         model = cnc_map.CncMap
@@ -163,8 +163,10 @@ class CncMapBaseSerializer(CncNetUserOwnedModelSerializer):
         exclude = ["cnc_game", "categories", "parent"]
         fields = "__all__"
 
-    def get_latest_map_file_hash(self, obj: cnc_map.CncMap) -> str:
-        return obj.cncmapfile_set.order_by("-version").first().hash_sha1
+    def get_latest_map_file_hash(self, obj: cnc_map.CncMap) -> t.Optional[str]:
+        if latest := obj.cncmapfile_set.order_by("-version").first():
+            return latest.hash_sha1
+        return None
 
     def get_game_slug(self, obj: cnc_map.CncMap) -> str:
         return obj.cnc_game.slug
