@@ -52,6 +52,7 @@ def _get_games_url_patterns() -> list[_DjangoPath]:
     return [
         path("upload-manual", cnc_map_views.MapLegacyStaticUI.as_view()),
         path("upload", map_upload_views.CncNetBackwardsCompatibleUploadView.as_view()),
+        path("search", cnc_map_views.MapLegacySearchUI.as_view()),
         *(
             # Make e.g. /yr/map_hash, /ra2/map_hash, etc
             path(
