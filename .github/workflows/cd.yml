@@ -64,12 +64,11 @@ jobs:
             target_path: "~/staging.mapdb.cncnet.org"
             compose_file: "docker-compose.prod.yml"
             nginx_conf: "docker/nginx.prod.conf"
-# disabled for now
-#          - environment: production
-#            branch: main
-#            target_path: "~/prod2.mapdb.cncnet.org"
-#            compose_file: "docker-compose.prod.yml"
-#            nginx_conf: "docker/nginx.prod.conf"
+          - environment: production
+            branch: main
+            target_path: "~/new.mapdb.cncnet.org"
+            compose_file: "docker-compose.prod.yml"
+            nginx_conf: "docker/nginx.prod.conf"
 
     steps:
       - name: "Exit if not matching branch"
