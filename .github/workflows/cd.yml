@@ -64,11 +64,13 @@ jobs:
             target_path: "~/staging.mapdb.cncnet.org"
             compose_file: "docker-compose.prod.yml"
             nginx_conf: "docker/nginx.prod.conf"
+            host: ${{ secrets.STAGING_SSH_HOST }}
           - environment: production
             branch: main
-            target_path: "~/new.mapdb.cncnet.org"
+            target_path: "~/mapdb.cncnet.org"
             compose_file: "docker-compose.prod.yml"
             nginx_conf: "docker/nginx.prod.conf"
+            host: ${{ secrets.PROD_SSH_HOST }}
 
     steps:
       - name: "Exit if not matching branch"
@@ -81,7 +83,7 @@ jobs:
       - name: Copy docker-compose and nginx config over ssh
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.SSH_HOST }}
+          host: ${{ matrix.host }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: "${{ matrix.compose_file }},${{ matrix.nginx_conf }}"
@@ -90,7 +92,7 @@ jobs:
       - name: SSH into server and deploy
         uses: appleboy/ssh-action@v1.2.1
         with:
-          host: ${{ secrets.SSH_HOST }}
+          host: ${{ matrix.host }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
