@@ -98,7 +98,8 @@ jobs:
           script: |
             cd ${{ matrix.target_path }}
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            echo "${{ secrets.PROD_FULL_ENV_FILE }}" > .env
+            envstr='${{ secrets.PROD_ENV_FILE }}'
+            echo -e $envstr > .env
             docker compose -f ${{ matrix.compose_file }} pull
             docker compose -f ${{ matrix.compose_file }} down
             docker compose -f ${{ matrix.compose_file }} up -d
