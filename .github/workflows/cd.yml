@@ -59,12 +59,12 @@ jobs:
     strategy:
       matrix:
         include:
-          - environment: staging
-            branch: staging
-            target_path: "~/staging.mapdb.cncnet.org"
-            compose_file: "docker-compose.prod.yml"
-            nginx_conf: "docker/nginx.prod.conf"
-            host-s-name: "STAGING_SSH_HOST"
+#          - environment: staging
+#            branch: staging
+#            target_path: "~/staging.mapdb.cncnet.org"
+#            compose_file: "docker-compose.prod.yml"
+#            nginx_conf: "docker/nginx.prod.conf"
+#            host-s-name: "STAGING_SSH_HOST"
           - environment: production
             branch: main
             target_path: "~/mapdb.cncnet.org"
