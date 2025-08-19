@@ -111,6 +111,17 @@ def run_environment_valid(key: str, value: str) -> None:
 
 @lru_cache()
 def strtobool(value: str) -> bool:
+    """Convert a string to a boolean.
+
+    Replicates `<https://docs.python.org/3.9/distutils/apiref.html#distutils.util.strtobool>`_
+
+    :param value:
+        A string, likely from the environment variables.
+    :return:
+        A bool matching the ``value`` string, if found.
+    :raise ValueError:
+        Raised when the ``value`` string doesn't represent a boolean.
+    """
     truthy = {"y", "yes", "t", "true", "on", "1"}
     falsey = {"n", "no", "f", "false", "off", "0"}
     value = value.strip().lower()
