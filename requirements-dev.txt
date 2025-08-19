@@ -5,5 +5,4 @@ black==24.*
 pre-commit==3.*
 pytest-django==4.*
 markdown>=3.4.4, <=4.0
-setuptools
 drf-spectacular[sidecar]

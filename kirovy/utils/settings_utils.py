@@ -5,8 +5,8 @@ in any function in this module.
 
 import os
 from collections.abc import Callable
+from functools import lru_cache
 
-from distutils.util import strtobool
 from typing import Any, Type
 
 from kirovy import exceptions
@@ -107,3 +107,28 @@ def run_environment_valid(key: str, value: str) -> None:
             key,
             f"Not a valid run environment: options={[x.value for x in settings_constants.RunEnvironment]}, {value=}",
         )
+
+
+@lru_cache()
+def strtobool(value: str) -> bool:
+    """Convert a string to a boolean.
+
+    Replicates `<https://docs.python.org/3.9/distutils/apiref.html#distutils.util.strtobool>`_
+
+    :param value:
+        A string, likely from the environment variables.
+    :return:
+        A bool matching the ``value`` string, if found.
+    :raise ValueError:
+        Raised when the ``value`` string doesn't represent a boolean.
+    """
+    truthy = {"y", "yes", "t", "true", "on", "1"}
+    falsey = {"n", "no", "f", "false", "off", "0"}
+    value = value.strip().lower()
+
+    if value in truthy:
+        return True
+    if value in falsey:
+        return False
+
+    raise ValueError(f'"{value}" does not represent a bool')
