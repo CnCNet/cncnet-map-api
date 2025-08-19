@@ -35,14 +35,14 @@ def get_env_var(
 
     Do not provide defaults for e.g. passwords.
 
-    :param str key:
+    :param key:
         The env var key to search for.
-    :param Optional[Any] default:
+    :param default:
         The default value. Use to make an env var not raise an error if
         no env var is found. Never use for secrets.
         If you use with ``validation_callback`` then make sure your default value will
         pass your validation check.
-    :param Optional[SettingsValidationCallback] validation_callback:
+    :param validation_callback:
         A function to call on a value to make sure it's valid.
         Raises an exception if invalid.
     :param value_type:
