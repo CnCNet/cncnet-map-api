@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from kirovy import exceptions
+from kirovy import exceptions, typing as t
 from kirovy.utils import settings_utils
 
 
@@ -59,3 +59,24 @@ def test_run_environment_valid(run_environment: str, expect_error: bool):
         assert e
     else:
         settings_utils.get_env_var("meh", run_environment, settings_utils.run_environment_valid)
+
+
+@pytest.mark.parametrize(
+    "value,expected,value_type",
+    [
+        ("1", 1, int),
+        ("1.1", 1.1, float),
+        ("1", "1", str),
+        ("1", True, bool),
+        ("true", True, bool),
+        ("0", False, bool),
+        ("false", False, bool),
+    ],
+)
+def test_get_env_var_value(mocker, value: str, expected: t.Any, value_type: t.Type[t.Any]):
+    """Test the strings can be properly cast using the environment loader.
+
+    Necessary because ``environ.get`` always returns ``str | None``.
+    """
+    mocker.patch.dict(os.environ, {"test_get_env_var_value": value})
+    assert settings_utils.get_env_var("test_get_env_var_value", value_type=value_type) == expected

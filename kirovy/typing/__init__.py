@@ -1,6 +1,7 @@
 """
 Any types specific to our application should live in this package.
 """
+
 import uuid
 
 # import typing for re-export. This avoids having two different typing imports.
@@ -10,7 +11,7 @@ from typing import *
 # arg[0]: The key of the env var for the exception.
 # arg[1]: The value we fetched from the env var
 # No return, raise an error.
-SettingsValidationCallback = Callable[[str, Any], NoReturn]
+SettingsValidationCallback = Callable[[str, Any], None]
 
 
 FileExtension = str
