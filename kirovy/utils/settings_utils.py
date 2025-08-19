@@ -4,7 +4,10 @@ in any function in this module.
 """
 
 import os
-from typing import Any, Optional, NoReturn
+from collections.abc import Callable
+
+from distutils.util import strtobool
+from typing import Any, Optional, NoReturn, Type
 
 from kirovy import exceptions
 from kirovy.typing import SettingsValidationCallback
@@ -17,6 +20,8 @@ def get_env_var(
     key: str,
     default: Optional[Any] = None,
     validation_callback: Optional[SettingsValidationCallback] = None,
+    *,
+    value_type: Type[Callable[[object], Any]] = str,
 ) -> Any:
     """Get an env var and validate it.
 
@@ -35,6 +40,13 @@ def get_env_var(
     :param Optional[SettingsValidationCallback] validation_callback:
         A function to call on a value to make sure it's valid.
         Raises an exception if invalid.
+    :param value_type:
+        Convert the value to this type. The type must be callable.
+        No validation is performed so you're responsible for handling errors from casting.
+
+        .. note::
+
+            If you provide ``bool`` then we will use ``distutils.util.strtobool``.
     :return Any:
         The env var value
 
@@ -56,7 +68,10 @@ def get_env_var(
     if validation_callback is not None:
         validation_callback(key, value)
 
-    return value
+    if value_type == bool:
+        value_type = strtobool
+
+    return value_type(value)
 
 
 def secret_key_validator(key: str, value: str) -> NoReturn:
