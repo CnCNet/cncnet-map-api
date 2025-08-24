@@ -92,6 +92,7 @@ REST_FRAMEWORK = {
     ],
     "EXCEPTION_HANDLER": "kirovy.exception_handler.kirovy_exception_handler",
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_RENDERER_CLASSES": ("rest_framework.renderers.JSONRenderer",),
 }
 """
 attr: Define the default authentication backend for endpoints.
@@ -178,6 +179,14 @@ logos and backgrounds. So a Red Alert 2 icon would be in e.g. ``URL/static/game_
 
 CNC_MAP_DIRECTORY = "maps"
 """attr: The directory, beneath the game slug, where map files will be stored."""
+
+CNC_MAP_IMAGE_DIRECTORY = "map_images"
+"""att: The directory, beneath the game slug, where map images will be stored.
+
+.. note::
+
+    Example: ``/data/cncnet_silo/yr/map_images/
+"""
 
 
 ### --------------- SERVING FILES ---------------

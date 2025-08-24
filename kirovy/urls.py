@@ -107,7 +107,7 @@ map_patterns = [
     path("client/upload/", map_upload_views.CncnetClientMapUploadView.as_view()),
     path("<uuid:pk>/", cnc_map_views.MapRetrieveUpdateView.as_view()),
     path("delete/<uuid:pk>/", cnc_map_views.MapDeleteView.as_view()),
-    path("search/", cnc_map_views.MapListCreateView.as_view()),
+    path("search/", cnc_map_views.MapListView.as_view()),
     # path("img/<uuid:map_id>/"),
     # path("img/<uuid:map_id>/", ...),
     # path("search/")

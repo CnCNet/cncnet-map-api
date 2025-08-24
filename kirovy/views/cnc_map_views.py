@@ -11,7 +11,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.views import APIView
 
-from kirovy import permissions
+from kirovy import permissions, typing as t
 from kirovy.models import (
     MapCategory,
     CncGame,
@@ -119,7 +119,7 @@ class MapListFilters(filters.FilterSet):
     #     return queryset | CncMap.objects.filter(cnc_game__parent_game__in=)
 
 
-class MapListCreateView(base_views.KirovyListCreateView):
+class MapListView(base_views.KirovyListCreateView):
     """
     The view for maps.
     """
@@ -169,7 +169,7 @@ class MapListCreateView(base_views.KirovyListCreateView):
     search_param = "search"
     """attr: The query param to use in the URL
 
-     Searches the fields defined in :attr:`~kirovy.views.cnc_map_views.MapListCreateView`
+     Searches the fields defined in :attr:`~kirovy.views.cnc_map_views.MapListView`
      """
 
     search_fields = [
@@ -199,7 +199,7 @@ class MapListCreateView(base_views.KirovyListCreateView):
 class MapRetrieveUpdateView(base_views.KirovyRetrieveUpdateView):
     serializer_class = cnc_map_serializers.CncMapBaseSerializer
 
-    def get_queryset(self):
+    def get_queryset(self) -> QuerySet[CncMap]:
         """Get the queryset for map detail views.
 
         Who can view what:
@@ -208,7 +208,7 @@ class MapRetrieveUpdateView(base_views.KirovyRetrieveUpdateView):
             -   Anyone: Can view published, legacy, or temporary (cncnet client uploaded) maps.
                 Banned maps will be excluded.
             -   Registered Users: Can edit their own maps if the map isn't banned.
-                Can view their own maps even if the map banned.
+                Can view their own maps even if the map is banned.
                 The queryset will return a user's banned map, but :class:`kirovy.permissions.CanEdit` will block
                 any modification attempts.
 
@@ -223,7 +223,7 @@ class MapRetrieveUpdateView(base_views.KirovyRetrieveUpdateView):
             return CncMap.objects.filter()
 
         # Anyone can view legacy maps, temporary maps (for the cncnet client,) and published maps that aren't banned.
-        queryset = CncMap.objects.filter(
+        queryset: QuerySet[CncMap] = CncMap.objects.filter(
             Q(Q(is_published=True) | Q(is_legacy=True) | Q(is_temporary=True)) & Q(is_banned=False)
         )
 
@@ -290,7 +290,7 @@ class MapLegacyStaticUI(APIView):
         return KirovyResponse()
 
 
-class MapLegacySearchUI(MapListCreateView):
+class MapLegacySearchUI(MapListView):
 
     permission_classes = [AllowAny]
     renderer_classes = [TemplateHTMLRenderer]

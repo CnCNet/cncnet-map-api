@@ -56,6 +56,9 @@ class CncFileExtension(CncNetBaseModel):
         blank=False,
     )
 
+    class Meta:
+        indexes = [models.Index(fields=["extension_type"])]
+
     def save(self, *args, **kwargs):
         self.extension = self.extension.lower()  # Force lowercase
         is_valid_extension(self.extension)  # force validator on save instead from a view.
