@@ -7,6 +7,7 @@ from rest_framework import status
 
 from kirovy import settings, typing as t
 from kirovy.constants.api_codes import UploadApiCodes
+from kirovy.models.cnc_map import CncMapImageFile
 from kirovy.utils import file_utils
 from kirovy.models import CncMap, CncMapFile, MapCategory
 from kirovy.response import KirovyResponse
@@ -49,6 +50,7 @@ def test_map_file_upload_happy_path(client_user, file_map_desert, game_yuri, ext
 
     map_object = CncMap.objects.get(id=response.data["result"]["cnc_map_id"])
     file_object = CncMapFile.objects.get(cnc_map_id=map_object.id)
+    image_object = CncMapImageFile.objects.get(cnc_map_id=map_object.id)
 
     assert map_object
 
@@ -75,6 +77,18 @@ def test_map_file_upload_happy_path(client_user, file_map_desert, game_yuri, ext
     assert not response_map["is_banned"], "Happy path maps should not be banned on upload."
     assert response_map["legacy_upload_date"] is None, "Non legacy maps should never have this field."
     assert response_map["id"] == str(map_object.id)
+
+    # Check the get endpoint returns the files.
+    assert len(response_map["files"]) == 1
+    assert response_map["files"][0]["id"] == str(file_object.id)
+    assert response_map["files"][0]["file"].endswith(uploaded_file_url)
+
+    # Check that the image was included
+    assert len(response_map["images"]) == 1
+    assert response_map["images"][0]["id"] == str(image_object.id)
+    assert response_map["images"][0]["name"] == map_object.map_name
+    assert response_map["images"][0]["file"].endswith(uploaded_image_url)
+    assert response_map["images"][0]["is_extracted"] is True
 
 
 def test_map_file_upload_banned_user(file_map_desert, game_yuri, client_banned):

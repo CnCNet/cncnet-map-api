@@ -155,7 +155,7 @@ class MapListView(base_views.KirovyListCreateView):
             # Prefetch the categories because they're displayed like tags.
             # TODO: Since the category list is going to be somewhat small,
             #  maybe the UI should just cache them and I return IDs instead of objects?
-            .prefetch_related("categories", "cncmapfile_set")
+            .prefetch_related("categories", "cncmapfile_set", "cncmapimagefile_set")
         )
         return base_query
 

@@ -238,8 +238,6 @@ class CncMapImageFile(file_base.CncNetFileBaseModel):
         ``name`` is auto-generated for this file subclass.
     """
 
-    objects = CncMapFileManager()
-
     width = models.IntegerField()
     height = models.IntegerField()
 
@@ -267,7 +265,8 @@ class CncMapImageFile(file_base.CncNetFileBaseModel):
         indexes = [models.Index(fields=["cnc_map"])]
 
     def save(self, *args, **kwargs):
-        self.name = self.cnc_map.map_name
+        if not self.name:
+            self.name = self.cnc_map.map_name
         self.cnc_game = self.cnc_map.cnc_game
         super().save(*args, **kwargs)
 

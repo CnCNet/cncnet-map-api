@@ -18,7 +18,6 @@ def test_cnc_map_generate_upload_to(game_yuri, extension_map, file_map_desert, c
 
     This test will fail if you alter the initial migrations.
     """
-    settings.CNC_MAP_DIRECTORY = "worlds"  # Change default to check that the settings control the upload path.
     expected_path = pathlib.Path(
         settings.MEDIA_ROOT,
         "yr",
@@ -35,6 +34,7 @@ def test_cnc_map_generate_upload_to(game_yuri, extension_map, file_map_desert, c
         cnc_game=game_yuri,
         name=cnc_map.generate_versioned_name_for_file(),
     )
+    CncMapFile.UPLOAD_TYPE = "worlds"
     saved_map.save()
     saved_map.refresh_from_db()
 

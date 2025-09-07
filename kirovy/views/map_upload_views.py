@@ -166,14 +166,22 @@ class _BaseMapFileUploadView(APIView, metaclass=ABCMeta):
             image_extension = CncFileExtension.objects.get(extension="jpg")
             extracted_image.save(image_io, format="JPEG", quality=95)
             django_image = InMemoryUploadedFile(image_io, None, "temp.jpg", "image/jpeg", image_io.tell(), None)
-            new_map_preview = map_preview.MapPreview(
-                is_extracted=True,
-                cnc_map_file=new_map_file,
-                file=django_image,
-                file_extension=image_extension,
+            image_serializer = cnc_map_serializers.CncMapImageFileSerializer(
+                data=dict(
+                    name=None,  # will default to map name.
+                    width=extracted_image.width,
+                    height=extracted_image.height,
+                    is_extracted=True,
+                    cnc_map_id=new_map_file.cnc_map_id,
+                    cnc_game_id=new_map_file.cnc_game_id,
+                    file=django_image,
+                    file_extension_id=image_extension.id,
+                    image_order=999,
+                )
             )
-            new_map_preview.save()
-            extracted_image_url = new_map_preview.file.url
+            image_serializer.is_valid(raise_exception=True)
+            image_serializer.save()
+            extracted_image_url = image_serializer.instance.file.url
 
         return extracted_image_url
 

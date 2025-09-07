@@ -95,6 +95,76 @@ class CncMapFileSerializer(KirovySerializer):
         )
 
 
+class CncMapImageFileSerializer(KirovySerializer):
+
+    class Meta:
+        model = cnc_map.CncMapImageFile
+        # We return the ID instead of the whole object.
+        exclude = ["cnc_game", "cnc_map", "file_extension", "hash_md5", "hash_sha512", "hash_sha1"]
+        fields = "__all__"
+
+    width = serializers.IntegerField()
+    """attr: The map height.
+
+    Extracted using :class:`kirovy.services.cnc_gen_2_services.CncGen2MapParser`
+    """
+
+    height = serializers.IntegerField()
+    """attr: The map height.
+
+    Extracted using :class:`kirovy.services.cnc_gen_2_services.CncGen2MapParser`
+    """
+
+    is_extracted = serializers.BooleanField()
+    """attr: Whether the image was automatically extracted from the map file.
+
+    Extracted using :class:`kirovy.services.cnc_gen_2_services.CncGen2MapParser`
+    """
+
+    cnc_map_id = serializers.PrimaryKeyRelatedField(
+        source="cnc_map",
+        queryset=cnc_map.CncMap.objects.all(),
+        pk_field=serializers.UUIDField(),
+    )
+
+    name = serializers.CharField(max_length=100, allow_null=True)
+    """attr: The filename.
+
+    If blank, uses map name in :func:`kirovy.models.cnc_map.CncMapImageFile.save`.
+    """
+
+    image_order = serializers.IntegerField(min_value=0)
+    """attr: The order in which the image will appear.
+
+    If there are collsions, we fallback to the created date.
+    """
+
+    file = serializers.FileField(use_url=True)
+
+    file_extension_id = serializers.PrimaryKeyRelatedField(
+        source="file_extension",
+        queryset=CncFileExtension.objects.filter(extension_type__in=cnc_map.CncMapImageFile.ALLOWED_EXTENSION_TYPES),
+        pk_field=serializers.UUIDField(),
+    )
+
+    cnc_game_id = serializers.PrimaryKeyRelatedField(
+        source="cnc_game",
+        queryset=CncGame.objects.all(),
+        pk_field=serializers.UUIDField(),
+    )
+
+    def create(self, validated_data: t.DictStrAny) -> cnc_map.CncMapImageFile:
+        image_file = cnc_map.CncMapImageFile(**validated_data)
+        image_file.save()
+        return image_file
+
+    def update(self, instance: cnc_map.CncMapImageFile, validated_data: t.DictStrAny) -> cnc_map.CncMapImageFile:
+        instance.name = validated_data.get("name", instance.name)
+        instance.image_order = validated_data.get("image_order", instance.image_order)
+        instance.save(update_fields=["name", "image_order"])
+        return instance
+
+
 class CncMapBaseSerializer(CncNetUserOwnedModelSerializer):
     map_name = serializers.CharField(
         required=True,
@@ -151,6 +221,9 @@ class CncMapBaseSerializer(CncNetUserOwnedModelSerializer):
         default=None,
     )
 
+    files = CncMapFileSerializer(many=True, read_only=True, source="cncmapfile_set")
+    images = CncMapImageFileSerializer(many=True, read_only=True, source="cncmapimagefile_set")
+
     # TODO: These serializer method fields really ought to be sub serializers
     # TODO: Make sure queries are optimized in the views for listing maps.
     latest_map_file_hash = serializers.SerializerMethodField()
@@ -160,7 +233,7 @@ class CncMapBaseSerializer(CncNetUserOwnedModelSerializer):
     class Meta:
         model = cnc_map.CncMap
         # We return the ID instead of the whole object.
-        exclude = ["cnc_game", "categories", "parent"]
+        exclude = ["cnc_game", "categories", "parent", "cnc_map_files"]
         fields = "__all__"
 
     def get_latest_map_file_hash(self, obj: cnc_map.CncMap) -> t.Optional[str]:
