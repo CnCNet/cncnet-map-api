@@ -1,13 +1,18 @@
+import pathlib
 from functools import cached_property
 
 from django.conf import settings
+from django.core.files.uploadedfile import UploadedFile
 from django.db import models
+from structlog import BoundLogger
 
 from kirovy import exceptions, typing as t
 
 from kirovy.models.cnc_base_model import CncNetBaseModel
 
-__all__ = ["CncFileExtension", "CncGame"]
+__all__ = ["CncFileExtension", "CncGame", "GameScopedUserOwnedModel"]
+
+from kirovy.models.cnc_user import CncNetUserOwnedModel
 
 
 def is_valid_extension(extension: str) -> None:
@@ -72,6 +77,40 @@ class CncFileExtension(CncNetBaseModel):
             Extensions with a ``.`` prefix.
         """
         return f".{self.extension}"
+
+    @classmethod
+    def get_extension_id_for_upload(
+        cls,
+        uploaded_file: UploadedFile,
+        allowed_types: t.Set[str],
+        *,
+        logger: BoundLogger,
+        error_detail_upload_type: str,
+        extra_log_attrs: t.Dict[str, t.Any] | None = None,
+    ) -> str:
+        # TODO: Get rid of relative import after model import is removed from ui_objects.py
+        from kirovy.constants.api_codes import UploadApiCodes
+        from kirovy.exceptions.view_exceptions import KirovyValidationError
+
+        uploaded_extension = pathlib.Path(uploaded_file.name).suffix.lstrip(".").lower()
+        # iexact is case insensitive
+        kirovy_extension = cls.objects.filter(
+            extension__iexact=uploaded_extension,
+            extension_type__in=allowed_types,
+        ).first()
+
+        if kirovy_extension:
+            return str(kirovy_extension.id)
+
+        logger.warning(
+            "User attempted uploading unknown filetype",
+            uploaded_extension=uploaded_extension,
+            **(extra_log_attrs or {}),  # todo: the userattrs should be a context tag for structlog.
+        )
+        raise KirovyValidationError(
+            detail=f"'{uploaded_extension}' is not a valid {error_detail_upload_type.strip()} file extension.",
+            code=UploadApiCodes.FILE_EXTENSION_NOT_SUPPORTED,
+        )
 
 
 class CncGame(CncNetBaseModel):
@@ -140,3 +179,10 @@ class CncGame(CncNetBaseModel):
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__} Object: ({self.slug}) '{self.full_name}' [{self.id}]>"
+
+
+class GameScopedUserOwnedModel(CncNetUserOwnedModel):
+    cnc_game = models.ForeignKey(CncGame, models.PROTECT, null=False, blank=False)
+
+    class Meta:
+        abstract = True

@@ -52,13 +52,13 @@ class _BaseMapFileUploadView(APIView, metaclass=ABCMeta):
             raise NotImplementedError("Must define what this endpoint sets for ``map_file.is_temporary``.")
 
     def post(self, request: KirovyRequest, format=None) -> KirovyResponse:
-        # todo: add file version support.
-        # todo: make validation less trash
+        # todo: add support for uploading new version of maps.
+        # todo: make validation less trash. This should probably all be in serializers.
         uploaded_file: UploadedFile = request.data["file"]
 
         game = self.get_game_from_request(request)
         if not game:
-            raise KirovyValidationError(detail="Game doesnot exist", code=UploadApiCodes.GAME_DOES_NOT_EXIST)
+            raise KirovyValidationError(detail="Game does not exist", code=UploadApiCodes.GAME_DOES_NOT_EXIST)
         extension_id = self.get_extension_id_for_upload(uploaded_file)
         self.verify_file_size_is_allowed(uploaded_file)
 
@@ -236,24 +236,12 @@ class _BaseMapFileUploadView(APIView, metaclass=ABCMeta):
         raise NotImplementedError()
 
     def get_extension_id_for_upload(self, uploaded_file: UploadedFile) -> str:
-        uploaded_extension = pathlib.Path(uploaded_file.name).suffix.lstrip(".").lower()
-        # iexact is case insensitive
-        kirovy_extension = CncFileExtension.objects.filter(
-            extension__iexact=uploaded_extension,
-            extension_type__in=cnc_map.CncMapFile.ALLOWED_EXTENSION_TYPES,
-        ).first()
-
-        if kirovy_extension:
-            return str(kirovy_extension.id)
-
-        _LOGGER.warning(
-            "User attempted uploading unknown filetype",
-            uploaded_extension=uploaded_extension,
-            **self.user_log_attrs,  # todo: the userattrs should be a context tag for structlog.
-        )
-        raise serializers.ValidationError(
-            detail=f"'{uploaded_extension}' is not a valid map file extension.",
-            code=UploadApiCodes.FILE_EXTENSION_NOT_SUPPORTED,
+        return CncFileExtension.get_extension_id_for_upload(
+            uploaded_file,
+            cnc_map.CncMapFile.ALLOWED_EXTENSION_TYPES,
+            logger=_LOGGER,
+            error_detail_upload_type="map",
+            extra_log_attrs=self.user_log_attrs,
         )
 
     def verify_file_does_not_exist(self, hashes: MapHashes) -> None:

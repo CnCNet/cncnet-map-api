@@ -21,3 +21,7 @@ class LegacyUploadApiCodes(enum.StrEnum):
     INVALID_FILE_TYPE = "invalid-file-type-in-zip"
     GAME_NOT_SUPPORTED = "game-not-supported"
     MAP_FAILED_TO_PARSE = "map-failed-to-parse"
+
+
+class FileUploadApiCodes(enum.StrEnum):
+    MISSING_FOREIGN_ID = "missing-foreign-id"

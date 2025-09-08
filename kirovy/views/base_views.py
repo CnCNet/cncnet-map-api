@@ -2,6 +2,10 @@
 Base views with common functionality for all API views in Kirovy
 """
 
+from abc import ABCMeta
+
+import magic, mimetypes
+from django.core.files.uploadedfile import UploadedFile
 from rest_framework import (
     exceptions as _e,
     generics as _g,
@@ -9,14 +13,24 @@ from rest_framework import (
     pagination as _pagination,
     status,
 )
+from rest_framework.generics import get_object_or_404
+from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 import kirovy.objects.ui_objects
-from kirovy import permissions, typing as t
+from kirovy import permissions, typing as t, logging
+from kirovy.constants import api_codes
+from kirovy.exceptions.view_exceptions import KirovyValidationError
+from kirovy.models import CncNetFileBaseModel
+from kirovy.models.cnc_game import GameScopedUserOwnedModel, CncFileExtension
 from kirovy.objects import ui_objects
+from kirovy.permissions import CanUpload, CanEdit
 from kirovy.request import KirovyRequest
 from kirovy.response import KirovyResponse
-from kirovy.serializers import KirovySerializer
+from kirovy.serializers import KirovySerializer, CncNetUserOwnedModelSerializer
+from kirovy.serializers.cnc_map_serializers import CncMapImageFileSerializer
+from kirovy.utils import file_utils
 
 
 class KirovyDefaultPagination(_pagination.LimitOffsetPagination):
@@ -136,3 +150,73 @@ class KirovyDestroyView(_g.DestroyAPIView):
 
     request: KirovyRequest  # Added for type hinting. Populated by DRF ``.setup()``
     permission_classes = [permissions.CanDelete | _p.IsAdminUser]
+
+
+class FileUploadBaseView(APIView, metaclass=ABCMeta):
+    parser_classes = [MultiPartParser]
+    permission_classes: [CanUpload, CanEdit]
+    request: KirovyRequest
+    file_class: t.ClassVar[t.Type[CncNetFileBaseModel]]
+    """attr: The class for the file."""
+    file_parent_class: t.ClassVar[t.Type[GameScopedUserOwnedModel]]
+    """attr: The class that the file will be linked to."""
+
+    file_parent_attr_name: t.ClassVar[str]
+    """attr: The name of the foreign key to the parent object.
+
+    e.g. ``cnc_game_id``.
+    """
+
+    serializer_class = t.ClassVar[t.Type[CncNetUserOwnedModelSerializer]]
+
+    def get_parent_object(self, request: KirovyRequest) -> GameScopedUserOwnedModel:
+
+        parent_object_id = request.data.get(self.file_parent_attr_name)
+        if not parent_object_id:
+            raise KirovyValidationError(
+                detail="Must specify foreign key to parent object",
+                code=api_codes.FileUploadApiCodes.MISSING_FOREIGN_ID,
+                additional={"expected_field": self.file_parent_attr_name},
+            )
+
+        parent_object: GameScopedUserOwnedModel = get_object_or_404(self.file_parent_class.objects, id=parent_object_id)
+        self.check_object_permissions(request, parent_object)
+
+        return parent_object
+
+    def post(self, request: KirovyRequest, format=None) -> KirovyResponse:
+        uploaded_file: UploadedFile = request.data["file"]
+        parent_object = self.get_parent_object(request)
+
+        # TODO BEFORE MEGE: Move to helper and 400 instead of 500
+        # TODO: maybe DRY mr mime.
+        magic_parser = magic.Magic(mime=True)
+        uploaded_file.seek(0)
+        mr_mime = magic_parser.from_buffer(uploaded_file.read())
+        uploaded_file.seek(0)
+        extension_id = file_utils.get_extension_id_for_upload(
+            uploaded_file,
+            self.file_class.ALLOWED_EXTENSION_TYPES,
+            logger=logging.get_logger(),
+            error_detail_upload_type="image",
+        )
+        serializer = self.serializer_class(
+            data={
+                "cnc_game_id": parent_object.cnc_game_id,
+                self.file_parent_attr_name: parent_object.id,
+                "name": request.get("name"),
+                "file": uploaded_file,
+                "file_extension_id": extension_id,
+                **self.extra_serializer_data(request),
+            }
+        )
+
+    def extra_serializer_data(self, request: KirovyRequest) -> t.Dict[str, t.Any]:
+        raise NotImplementedError()
+
+
+class MapImageFileUploadView(FileUploadBaseView):
+    permission_classes = [permissions.CanEdit]
+    serializer = CncMapImageFileSerializer
+
+    # TODO: Finish writing the subclass

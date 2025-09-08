@@ -19,7 +19,19 @@ class KirovyValidationError(_DRFAPIException):
     default_code = "invalid"
     additional: _t.DictStrAny | None = None
     code: str | None
+    """attr: Some kind of string that the UI will recognize. e.g. ``file-too-large``.
+
+    Maps to the UI object attr :attr:`kirovy.objects.ui_objects.ErrorResponseData.code`.
+
+    .. warning::
+
+        This is **not** the HTTP code. The HTTP code will always be ``400`` for validation errors.
+    """
     detail: str | None
+    """attr: Extra detail in plain language. Think of this as a message for the user.
+
+    Maps to the UI object attr :attr:`kirovy.objects.ui_objects.ErrorResponseData.message`.
+    """
 
     def __init__(self, detail: str | None = None, code: str | None = None, additional: _t.DictStrAny | None = None):
         super().__init__(detail=detail, code=code)

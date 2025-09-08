@@ -22,6 +22,8 @@ class BanData(BaseModel):
 
     - View: :class:`kirovy.views.admin_views.BanView`
     - URL: ``/admin/ban``
+
+    # TODO: Make a "bannable object" model and "get_model" to the same file to help with circular imports
     """
 
     class Meta:

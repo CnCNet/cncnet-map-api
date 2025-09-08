@@ -9,6 +9,7 @@ from kirovy.models import file_base
 from kirovy.models import cnc_game as game_models, cnc_user
 from kirovy.models.cnc_base_model import CncNetBaseModel
 from kirovy import typing as t, exceptions
+from kirovy.models.cnc_game import GameScopedUserOwnedModel
 
 
 class MapCategory(CncNetBaseModel):
@@ -46,7 +47,7 @@ class MapCategory(CncNetBaseModel):
         super().save(force_insert, force_update, using, update_fields)
 
 
-class CncMap(cnc_user.CncNetUserOwnedModel):
+class CncMap(GameScopedUserOwnedModel):
     """The Logical representation of a map for a Command & Conquer game.
 
     We have this as a separate model from the file model because later C&C's allow for various files
@@ -108,7 +109,6 @@ class CncMap(cnc_user.CncNetUserOwnedModel):
         help_text="If true, then the map file has been uploaded, but the map info has not been set yet.",
     )
 
-    cnc_game = models.ForeignKey(game_models.CncGame, models.PROTECT, null=False)
     categories = models.ManyToManyField(MapCategory)
     parent = models.ForeignKey(
         "CncMap",
