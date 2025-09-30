@@ -262,7 +262,12 @@ class CncMapImageFile(file_base.CncNetFileBaseModel):
     """
 
     class Meta:
-        indexes = [models.Index(fields=["cnc_map"])]
+        indexes = [
+            models.Index(fields=["cnc_map"]),
+            models.Index(fields=["is_extracted"]),
+            models.Index(fields=["cnc_user_id"]),
+            models.Index(fields=["cnc_game_id"]),
+        ]
 
     def save(self, *args, **kwargs):
         if not self.name:

@@ -25,3 +25,4 @@ class LegacyUploadApiCodes(enum.StrEnum):
 
 class FileUploadApiCodes(enum.StrEnum):
     MISSING_FOREIGN_ID = "missing-foreign-id"
+    INVALID = "file-failed-validation"

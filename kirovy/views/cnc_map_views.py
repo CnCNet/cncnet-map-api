@@ -1,6 +1,9 @@
 import pathlib
 from uuid import UUID
 
+from PIL import Image, UnidentifiedImageError
+from PIL.Image import DecompressionBombError
+from django.core.files.uploadedfile import UploadedFile
 from django.db.models import Q, QuerySet
 from django.http import FileResponse
 from rest_framework import status
@@ -12,13 +15,17 @@ from rest_framework.renderers import TemplateHTMLRenderer
 from rest_framework.views import APIView
 
 from kirovy import permissions, typing as t
+from kirovy.constants import api_codes
+from kirovy.exceptions.view_exceptions import KirovyValidationError
 from kirovy.models import (
     MapCategory,
     CncGame,
     CncMap,
     CncMapFile,
 )
-from kirovy.objects.ui_objects import ResultResponseData, ListResponseData, BaseResponseData
+from kirovy.models.cnc_game import GameScopedUserOwnedModel
+from kirovy.models.cnc_map import CncMapImageFile
+from kirovy.objects import ui_objects
 from kirovy.request import KirovyRequest
 from kirovy.response import KirovyResponse
 from kirovy.serializers import cnc_map_serializers
@@ -30,6 +37,8 @@ _LOGGER = get_logger(__name__)
 
 
 class MapCategoryListCreateView(base_views.KirovyListCreateView):
+    """Endpoint to list available map categories, or create a new category."""
+
     permission_classes = [permissions.IsAdmin | permissions.ReadOnly]
     serializer_class = cnc_map_serializers.MapCategorySerializer
     queryset = MapCategory.objects.all()
@@ -298,8 +307,37 @@ class MapLegacySearchUI(MapListView):
     pagination_class = None
 
     # TODO: Require filters.
-    def get(self, request, *args, **kwargs) -> KirovyResponse[ListResponseData | None]:
+    def get(self, request, *args, **kwargs) -> KirovyResponse[ui_objects.ListResponseData | None]:
         if not request.query_params.get("game_slug"):
             return KirovyResponse[None](status=status.HTTP_200_OK)
         response = super().get(request, *args, **kwargs)
         return response
+
+
+class MapImageFileUploadView(base_views.FileUploadBaseView):
+    """Endpoint for uploading map images.
+
+    The map ID that this image belongs to must be in the POST data with the attr ``cnc_map_id``.
+    """
+
+    permission_classes = [permissions.CanEdit]
+    serializer_class = cnc_map_serializers.CncMapImageFileSerializer
+    file_class = CncMapImageFile
+    file_parent_class = CncMap
+    file_parent_attr_name = "cnc_map_id"
+    success_message = "Map image uploaded successfully."
+
+    def extra_serializer_data(
+        self, request: KirovyRequest, uploaded_file: UploadedFile, parent_object: GameScopedUserOwnedModel
+    ) -> t.Dict[str, t.Any]:
+        try:
+            with Image.open(uploaded_file) as image:
+                height = image.height
+                width = image.width
+        except (DecompressionBombError, UnidentifiedImageError) as e:
+            _LOGGER.warning(
+                "user-attempted-bad-image-upload",
+                {"user_id": request.user.id, "username": request.user.username, "e": str(e)},
+            )
+            raise KirovyValidationError("Image is invalid", code=api_codes.FileUploadApiCodes.INVALID)
+        return {"height": height, "width": width}

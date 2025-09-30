@@ -4,7 +4,7 @@ from functools import cached_property
 from django.conf import settings
 from django.core.files.uploadedfile import UploadedFile
 from django.db import models
-from structlog import BoundLogger
+from structlog.stdlib import BoundLogger
 
 from kirovy import exceptions, typing as t
 
@@ -182,6 +182,8 @@ class CncGame(CncNetBaseModel):
 
 
 class GameScopedUserOwnedModel(CncNetUserOwnedModel):
+    """A user owned object that is specific to a game. e.g. a map or image."""
+
     cnc_game = models.ForeignKey(CncGame, models.PROTECT, null=False, blank=False)
 
     class Meta:

@@ -139,7 +139,7 @@ class CncMapImageFileSerializer(KirovySerializer):
     If there are collsions, we fallback to the created date.
     """
 
-    file = serializers.FileField(use_url=True)
+    file = serializers.FileField(use_url=True, max_length=140)  # Max filename length is 140 arbitrarily.
 
     file_extension_id = serializers.PrimaryKeyRelatedField(
         source="file_extension",

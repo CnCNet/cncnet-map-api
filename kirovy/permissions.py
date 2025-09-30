@@ -17,8 +17,7 @@ class StaticPermission(t.Protocol[_C]):
 
     __call__: _C  # Make callable so type checker doesn't whine about calling the classes.
 
-    def has_permission(self, request: KirovyRequest, view: View) -> bool:
-        ...
+    def has_permission(self, request: KirovyRequest, view: View) -> bool: ...
 
 
 class CanUpload(permissions.IsAuthenticated):
@@ -61,16 +60,14 @@ class CanEdit(CanUpload):
     The edit check flow for users: ``Is the user banned -> Is the object banned -> Does the user own the object``
     """
 
-    def has_object_permission(
-        self, request: KirovyRequest, view: View, obj: models.Model
-    ) -> bool:
+    def has_object_permission(self, request: KirovyRequest, view: View, obj: models.Model) -> bool:
         if request.user.is_staff:
             return True
 
         # Check if this model type is owned by users.
         if isinstance(obj, cnc_user.CncNetUserOwnedModel):
             obj_is_banned = hasattr(obj, "is_banned") and obj.is_banned
-            return request.user == obj.cnc_user and not obj_is_banned
+            return request.user.id == obj.cnc_user_id and not obj_is_banned
 
         return False
 
@@ -78,9 +75,7 @@ class CanEdit(CanUpload):
 class CanDelete(permissions.IsAdminUser):
     """Check if a user can delete an object."""
 
-    def has_object_permission(
-        self, request: KirovyRequest, view: View, obj: models.Model
-    ) -> bool:
+    def has_object_permission(self, request: KirovyRequest, view: View, obj: models.Model) -> bool:
         # for now, only staff can delete.
         return request.user.is_staff
 
