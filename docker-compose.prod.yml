@@ -1,9 +1,9 @@
 services:
   db:
     container_name: mapdb-postgres
-    image: postgres
+    image: postgres:18
     volumes:
-      - ${POSTGRES_DATA_DIR}:/var/lib/postgresql/data
+      - ${POSTGRES_DATA_DIR}:/var/lib/postgresql/18/data
     environment:
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
