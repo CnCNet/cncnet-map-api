@@ -4,7 +4,7 @@ Base views with common functionality for all API views in Kirovy
 
 from abc import ABCMeta
 
-from django.core.files.uploadedfile import UploadedFile
+from django.core.files.uploadedfile import UploadedFile, InMemoryUploadedFile
 from rest_framework import (
     exceptions as _e,
     generics as _g,
@@ -205,6 +205,7 @@ class FileUploadBaseView(APIView, metaclass=ABCMeta):
 
         parent_object = self.get_parent_object(request)
         self.extra_verification(request, uploaded_file, parent_object)
+        uploaded_file = self.modify_uploaded_file(request, uploaded_file, parent_object)
 
         extension_id = CncFileExtension.get_extension_id_for_upload(
             uploaded_file,
@@ -213,6 +214,7 @@ class FileUploadBaseView(APIView, metaclass=ABCMeta):
             error_detail_upload_type="image",
             extra_log_attrs={"user_id": request.user.id, "username": request.user.username},
         )
+
         serializer = self.serializer_class(
             data={
                 "cnc_game_id": parent_object.cnc_game_id,
@@ -220,6 +222,7 @@ class FileUploadBaseView(APIView, metaclass=ABCMeta):
                 "name": uploaded_file.name,
                 "file": uploaded_file,
                 "file_extension_id": extension_id,
+                "cnc_user_id": self.request.user.id,
                 **self.extra_serializer_data(request, uploaded_file, parent_object),
             }
         )
@@ -255,4 +258,9 @@ class FileUploadBaseView(APIView, metaclass=ABCMeta):
         :raises kirovy.exceptions.view_exceptions.KirovyValidationError:
             Raised for any issues.
         """
+        raise NotImplementedError()
+
+    def modify_uploaded_file(
+        self, request: KirovyRequest, uploaded_file: UploadedFile, parent_object: GameScopedUserOwnedModel
+    ) -> InMemoryUploadedFile | UploadedFile:
         raise NotImplementedError()

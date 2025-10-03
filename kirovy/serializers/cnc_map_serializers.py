@@ -2,7 +2,7 @@ from kirovy.exceptions.view_exceptions import KirovyValidationError
 from kirovy.serializers import KirovySerializer, CncNetUserOwnedModelSerializer
 from rest_framework import serializers
 from kirovy import typing as t
-from kirovy.models import cnc_map, CncGame, MapCategory, CncFileExtension
+from kirovy.models import cnc_map, CncGame, MapCategory, CncFileExtension, CncUser
 
 
 class MapParserSerializerField(serializers.Field): ...
@@ -29,7 +29,7 @@ class CncMapFileSerializer(KirovySerializer):
     class Meta:
         model = cnc_map.CncMapFile
         # We return the ID instead of the whole object.
-        exclude = ["cnc_game", "cnc_map", "file_extension"]
+        exclude = ["cnc_game", "cnc_map", "file_extension", "cnc_user"]
         fields = "__all__"
 
     width = serializers.IntegerField()
@@ -77,6 +77,12 @@ class CncMapFileSerializer(KirovySerializer):
         pk_field=serializers.UUIDField(),
     )
 
+    cnc_user_id = serializers.PrimaryKeyRelatedField(
+        source="cnc_user",
+        queryset=CncUser.objects.all(),
+        pk_field=serializers.UUIDField(),
+    )
+
     hash_md5 = serializers.CharField(required=True, allow_blank=False)
     hash_sha512 = serializers.CharField(required=True, allow_blank=False)
     hash_sha1 = serializers.CharField(required=True, allow_blank=False)
@@ -100,7 +106,7 @@ class CncMapImageFileSerializer(KirovySerializer):
     class Meta:
         model = cnc_map.CncMapImageFile
         # We return the ID instead of the whole object.
-        exclude = ["cnc_game", "cnc_map", "file_extension", "hash_md5", "hash_sha512", "hash_sha1"]
+        exclude = ["cnc_user", "cnc_game", "cnc_map", "file_extension", "hash_md5", "hash_sha512", "hash_sha1"]
         fields = "__all__"
 
     width = serializers.IntegerField()
@@ -150,6 +156,12 @@ class CncMapImageFileSerializer(KirovySerializer):
     cnc_game_id = serializers.PrimaryKeyRelatedField(
         source="cnc_game",
         queryset=CncGame.objects.all(),
+        pk_field=serializers.UUIDField(),
+    )
+
+    cnc_user_id = serializers.PrimaryKeyRelatedField(
+        source="cnc_user",
+        queryset=CncUser.objects.all(),
         pk_field=serializers.UUIDField(),
     )
 

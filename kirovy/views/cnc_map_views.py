@@ -1,9 +1,10 @@
+import io
 import pathlib
 from uuid import UUID
 
 from PIL import Image, UnidentifiedImageError
 from PIL.Image import DecompressionBombError
-from django.core.files.uploadedfile import UploadedFile
+from django.core.files.uploadedfile import UploadedFile, InMemoryUploadedFile
 from django.db.models import Q, QuerySet
 from django.http import FileResponse
 from rest_framework import status
@@ -23,6 +24,7 @@ from kirovy.models import (
     CncMap,
     CncMapFile,
 )
+from kirovy.models.cnc_game import GameScopedUserOwnedModel
 from kirovy.models.cnc_map import CncMapImageFile
 from kirovy.objects import ui_objects
 from kirovy.request import KirovyRequest
@@ -335,18 +337,9 @@ class MapImageFileUploadView(base_views.FileUploadBaseView):
             .only("image_order")
             .first()
         )
-        try:
-            with Image.open(uploaded_file) as image:
-                height = image.height
-                width = image.width
-        except (DecompressionBombError, UnidentifiedImageError) as e:
-            # This should be in verification, but we need the width and height,
-            # and loading the image twice is inefficient.
-            _LOGGER.warning(
-                "user-attempted-bad-image-upload",
-                {"user_id": request.user.id, "username": request.user.username, "e": str(e)},
-            )
-            raise KirovyValidationError("Image is invalid", code=api_codes.FileUploadApiCodes.INVALID)
+        with Image.open(uploaded_file) as image:
+            height = image.height
+            width = image.width
         return {
             "height": height,
             "width": width,
@@ -359,3 +352,24 @@ class MapImageFileUploadView(base_views.FileUploadBaseView):
             raise KirovyValidationError(
                 "Map type does not support custom preview images", code=api_codes.FileUploadApiCodes.UNSUPPORTED
             )
+        try:
+            with Image.open(uploaded_file) as maybe_image:
+                maybe_image.verify()
+        except (DecompressionBombError, UnidentifiedImageError) as e:
+            _LOGGER.warning(
+                "user-attempted-bad-image-upload",
+                **{"user_id": str(request.user.id), "username": request.user.username, "e": str(e)},
+            )
+            raise KirovyValidationError("Image is invalid", code=api_codes.FileUploadApiCodes.INVALID)
+
+    def modify_uploaded_file(
+        self, request: KirovyRequest, uploaded_file: UploadedFile, parent_object: GameScopedUserOwnedModel
+    ) -> InMemoryUploadedFile | UploadedFile:
+        """Compress the image to jpeg."""
+        filename = pathlib.Path(uploaded_file.name).stem
+        with Image.open(uploaded_file) as image:
+            image_io = io.BytesIO()
+            # This should also remove metadata.
+            image.convert("RGB").save(image_io, format="JPEG", quality=95)
+
+        return InMemoryUploadedFile(image_io, None, f"{filename}.jpg", "image/jpeg", image_io.tell(), None)

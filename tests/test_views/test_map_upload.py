@@ -1,12 +1,10 @@
 import pathlib
-import zipfile
-import io
 
 import pytest
+from PIL import Image, ExifTags
 from django.core.files.uploadedfile import UploadedFile
 from rest_framework import status
 
-from kirovy import settings, typing as t
 from kirovy.constants.api_codes import UploadApiCodes, FileUploadApiCodes
 from kirovy.models.cnc_map import CncMapImageFile
 from kirovy.utils import file_utils
@@ -55,8 +53,11 @@ def test_map_file_upload_happy_path(
     image_object = CncMapImageFile.objects.get(cnc_map_id=map_object.id)
 
     assert map_object
+    assert file_object.cnc_user_id == client_user.kirovy_user.id
+    assert image_object.cnc_user_id == client_user.kirovy_user.id
+    assert map_object.cnc_user_id == client_user.kirovy_user.id
 
-    # Note: These won't match an md5 from the commandline because we add the ID to the map file.
+    # Note: These won't match a md5 from the commandline because we add the ID to the map file.
     assert file_object.hash_md5 == file_utils.hash_file_md5(uploaded_file.open())
     file_map_desert.seek(0)
     assert file_object.hash_md5 != file_utils.hash_file_md5(file_map_desert.open())
@@ -120,7 +121,10 @@ def test_map_file_upload_banned_map(banned_cheat_map, file_map_unfair, client_an
 
 
 def test_map_image_upload__happy_path(create_cnc_map, file_map_image, client_user, get_file_path_for_uploaded_file_url):
-    """Test that we can upload an image as a verified user, who has created a map"""
+    """Test that we can upload an image as a verified user, who has created a map.
+
+    The PNG file should be converted to jpeg.
+    """
     cnc_map = create_cnc_map(user_id=client_user.kirovy_user.id, is_legacy=False, is_published=True, is_temporary=False)
     original_image_count = cnc_map.cncmapimagefile_set.select_related().count()
     response = client_user.post(
@@ -138,22 +142,31 @@ def test_map_image_upload__happy_path(create_cnc_map, file_map_image, client_use
 
     assert parent_id == cnc_map.id
     expected_date = saved_file.created.date().isoformat()
-    assert image_url == f"/silo/yr/map_images/{cnc_map.id.hex}/{expected_date}_{saved_file.id.hex}.png"
+    assert image_url == f"/silo/yr/map_images/{cnc_map.id.hex}/{expected_date}_{saved_file.id.hex}.jpg"
 
     assert get_file_path_for_uploaded_file_url(image_url).exists()
 
     assert cnc_map.cncmapimagefile_set.select_related().count() == original_image_count + 1
     # Image order starts at 0, then gets incremented, so image_order should be current_count - 1
     assert saved_file.image_order == original_image_count
-    assert saved_file.name == pathlib.Path(file_map_image.name).name
-    assert saved_file.file_extension.extension == "png"
+    assert saved_file.name == pathlib.Path(file_map_image.name).stem + ".jpg"
+    assert saved_file.file_extension.extension == "jpg"
     # Width and height are from the image itself.
     assert saved_file.width == 768
     assert saved_file.height == 494
+    assert saved_file.cnc_user_id == client_user.kirovy_user.id
+    assert saved_file.file.size < file_map_image.size, "Converting to jpeg should have shrunk the file size."
 
 
 def test_map_image_upload__jpg(create_cnc_map, file_map_image_jpg, client_user, get_file_path_for_uploaded_file_url):
-    """Test that we can upload a jpg."""
+    """Test that we can upload a jpg.
+
+    Image should be stripped of exif data.
+    """
+    with Image.open(file_map_image_jpg, "r") as raw_image:
+        exif_data = raw_image.getexif()
+        assert exif_data[ExifTags.Base.XPAuthor], "metadata for test image should exist."
+    file_map_image_jpg.seek(0)
     cnc_map = create_cnc_map(user_id=client_user.kirovy_user.id, is_legacy=False, is_published=True, is_temporary=False)
     response = client_user.post(
         "/maps/img/",
@@ -171,6 +184,12 @@ def test_map_image_upload__jpg(create_cnc_map, file_map_image_jpg, client_user, 
     # Width and height are from the image itself.
     assert saved_file.width == 993
     assert saved_file.height == 740
+    assert saved_file.file.size < file_map_image_jpg.size
+
+    with Image.open(saved_file.file) as processed_image:
+        # exif data should have been removed.
+        assert processed_image.getexif().get(ExifTags.Base.XPAuthor) is None
+        assert not processed_image.getexif().keys()
 
 
 @pytest.mark.parametrize("map_kwargs", [{"is_legacy": True}, {"is_temporary": True}])
@@ -236,7 +255,7 @@ def test_map_image_upload__not_an_image(create_cnc_map, file_map_desert, client_
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
-    assert response.data["code"] == UploadApiCodes.FILE_EXTENSION_NOT_SUPPORTED
+    assert response.data["code"] == FileUploadApiCodes.INVALID
     assert cnc_map.cncmapimagefile_set.select_related().count() == original_image_count
 
 

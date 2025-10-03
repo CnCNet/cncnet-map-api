@@ -133,6 +133,7 @@ class _BaseMapFileUploadView(APIView, metaclass=ABCMeta):
                 hash_md5=map_hashes_post_processing.md5,
                 hash_sha512=map_hashes_post_processing.sha512,
                 hash_sha1=map_hashes_post_processing.sha1,
+                cnc_user_id=self.request.user.id,
             ),
             context={"request": self.request},
         )
@@ -177,6 +178,7 @@ class _BaseMapFileUploadView(APIView, metaclass=ABCMeta):
                     file=django_image,
                     file_extension_id=image_extension.id,
                     image_order=999,
+                    cnc_user_id=self.request.user.id,
                 )
             )
             image_serializer.is_valid(raise_exception=True)
@@ -408,6 +410,7 @@ class CncNetBackwardsCompatibleUploadView(CncnetClientMapUploadView):
                 hash_md5=map_hashes.md5,
                 hash_sha512=map_hashes.sha512,
                 hash_sha1=map_hashes.sha1,
+                cnc_user_id=CncUser.objects.get_or_create_legacy_upload_user().id,
             ),
             context={"request": self.request},
         )
