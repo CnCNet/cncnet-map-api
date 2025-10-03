@@ -31,3 +31,4 @@ class FileUploadApiCodes(enum.StrEnum):
 
     e.g. a temporary map does not support custom image uploads.
     """
+    TOO_LARGE = "file-too-large"

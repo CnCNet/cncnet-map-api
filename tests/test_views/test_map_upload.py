@@ -222,3 +222,38 @@ def test_map_image_upload__map_is_banned(create_cnc_map, file_map_image, client_
     assert response.status_code == status.HTTP_403_FORBIDDEN
 
     assert cnc_map.cncmapimagefile_set.select_related().count() == original_image_count
+
+
+def test_map_image_upload__not_an_image(create_cnc_map, file_map_desert, client_user):
+    """Test that map image uploads fail for non-image files."""
+    cnc_map = create_cnc_map(user_id=client_user.kirovy_user.id)
+    original_image_count = cnc_map.cncmapimagefile_set.select_related().count()
+    response = client_user.post(
+        "/maps/img/",
+        {"file": file_map_desert, "cnc_map_id": str(cnc_map.id)},
+        format="multipart",
+        content_type=None,
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.data["code"] == UploadApiCodes.FILE_EXTENSION_NOT_SUPPORTED
+    assert cnc_map.cncmapimagefile_set.select_related().count() == original_image_count
+
+
+def test_map_image_upload__too_large(create_cnc_map, file_binary, client_user):
+    """Test that map image uploads fail for files that are too large.
+
+    This test works because the file size check happens before the extension check
+    """
+    cnc_map = create_cnc_map(user_id=client_user.kirovy_user.id)
+    original_image_count = cnc_map.cncmapimagefile_set.select_related().count()
+    response = client_user.post(
+        "/maps/img/",
+        {"file": file_binary, "cnc_map_id": str(cnc_map.id)},
+        format="multipart",
+        content_type=None,
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.data["code"] == FileUploadApiCodes.TOO_LARGE
+    assert cnc_map.cncmapimagefile_set.select_related().count() == original_image_count

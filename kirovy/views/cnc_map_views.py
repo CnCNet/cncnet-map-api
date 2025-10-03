@@ -23,7 +23,6 @@ from kirovy.models import (
     CncMap,
     CncMapFile,
 )
-from kirovy.models.cnc_game import GameScopedUserOwnedModel
 from kirovy.models.cnc_map import CncMapImageFile
 from kirovy.objects import ui_objects
 from kirovy.request import KirovyRequest
@@ -341,6 +340,8 @@ class MapImageFileUploadView(base_views.FileUploadBaseView):
                 height = image.height
                 width = image.width
         except (DecompressionBombError, UnidentifiedImageError) as e:
+            # This should be in verification, but we need the width and height,
+            # and loading the image twice is inefficient.
             _LOGGER.warning(
                 "user-attempted-bad-image-upload",
                 {"user_id": request.user.id, "username": request.user.username, "e": str(e)},

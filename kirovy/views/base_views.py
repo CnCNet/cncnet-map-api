@@ -28,7 +28,7 @@ from kirovy.permissions import CanUpload, CanEdit
 from kirovy.request import KirovyRequest
 from kirovy.response import KirovyResponse
 from kirovy.serializers import KirovySerializer, CncNetUserOwnedModelSerializer
-
+from kirovy.utils import file_utils
 
 _LOGGER = logging.get_logger(__name__)
 
@@ -176,6 +176,8 @@ class FileUploadBaseView(APIView, metaclass=ABCMeta):
 
     serializer_class: t.ClassVar[t.Type[CncNetUserOwnedModelSerializer]]
 
+    max_file_size: t.ClassVar[file_utils.ByteSized] = file_utils.ByteSized(mega=3)
+
     def get_parent_object(self, request: KirovyRequest) -> GameScopedUserOwnedModel:
 
         parent_object_id = request.data.get(self.file_parent_attr_name)
@@ -193,6 +195,14 @@ class FileUploadBaseView(APIView, metaclass=ABCMeta):
 
     def post(self, request: KirovyRequest, format=None) -> KirovyResponse[ui_objects.ResultResponseData]:
         uploaded_file: UploadedFile = request.data["file"]
+
+        if file_utils.ByteSized(uploaded_file.size) > self.max_file_size:
+            raise KirovyValidationError(
+                "File too large",
+                code=api_codes.FileUploadApiCodes.TOO_LARGE,
+                additional={"max_size": str(self.max_file_size)},
+            )
+
         parent_object = self.get_parent_object(request)
         self.extra_verification(request, uploaded_file, parent_object)
 
