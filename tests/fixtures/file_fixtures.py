@@ -188,3 +188,40 @@ def zip_map_for_legacy_upload():
         return ContentFile(zip_bytes.read(), f"{file_sha1}.zip"), file_sha1
 
     return _inner
+
+
+@pytest.fixture
+def file_map_image(load_test_file) -> Generator[File, Any, None]:
+    """Return a valid map preview image."""
+    file = load_test_file("test_images/2_across_the_frost.png")
+    yield file
+    file.close()
+
+
+@pytest.fixture
+def file_map_image_jpg(load_test_file) -> Generator[File, Any, None]:
+    """Return a valid map preview image in jpg."""
+    file = load_test_file("test_images/uptown.jpg")
+    yield file
+    file.close()
+
+
+@pytest.fixture
+def get_file_path_for_uploaded_file_url(settings, tmp_media_root):
+    """Returns a function to convert an uploaded file's URL to the actual file path in the tmp folder.
+
+    Used to check that an uploaded file actually exists on disk after uploading in tests.
+    """
+
+    def _inner(uploaded_file_url: str) -> pathlib.Path:
+        """Convert an uploaded file's URL to its physical filepath in the tmp directory.
+
+        :param uploaded_file_url:
+            The URL path for an uploaded file.
+        :return:
+            The file path to the uploaded file.
+        """
+        strip_media_url = f"/{settings.MEDIA_URL}"
+        return pathlib.Path(tmp_media_root) / uploaded_file_url.lstrip(strip_media_url)
+
+    return _inner

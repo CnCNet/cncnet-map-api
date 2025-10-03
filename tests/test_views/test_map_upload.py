@@ -2,22 +2,26 @@ import pathlib
 import zipfile
 import io
 
+import pytest
 from django.core.files.uploadedfile import UploadedFile
 from rest_framework import status
 
 from kirovy import settings, typing as t
-from kirovy.constants.api_codes import UploadApiCodes
+from kirovy.constants.api_codes import UploadApiCodes, FileUploadApiCodes
 from kirovy.models.cnc_map import CncMapImageFile
 from kirovy.utils import file_utils
 from kirovy.models import CncMap, CncMapFile, MapCategory
 from kirovy.response import KirovyResponse
 from kirovy.services.cnc_gen_2_services import CncGen2MapParser
+from kirovy.views.cnc_map_views import MapImageFileUploadView
 
 _UPLOAD_URL = "/maps/upload/"
 _CLIENT_URL = "/maps/client/upload/"
 
 
-def test_map_file_upload_happy_path(client_user, file_map_desert, game_yuri, extension_map, tmp_media_root):
+def test_map_file_upload_happy_path(
+    client_user, file_map_desert, game_yuri, extension_map, tmp_media_root, get_file_path_for_uploaded_file_url
+):
     response: KirovyResponse = client_user.post(
         _UPLOAD_URL,
         {"file": file_map_desert, "game_id": str(game_yuri.id)},
@@ -30,11 +34,9 @@ def test_map_file_upload_happy_path(client_user, file_map_desert, game_yuri, ext
     uploaded_file_url: str = response.data["result"]["cnc_map_file"]
     uploaded_image_url: str = response.data["result"]["extracted_preview_file"]
 
-    # We need to strip the url path off of the files,
-    # then check the tmp directory to make sure the uploaded files were saved
-    strip_media_url = f"/{settings.MEDIA_URL}"
-    uploaded_file_path = pathlib.Path(tmp_media_root) / uploaded_file_url.lstrip(strip_media_url)
-    uploaded_image = pathlib.Path(tmp_media_root) / uploaded_image_url.lstrip(strip_media_url)
+    # We need to check the tmp directory to make sure the uploaded files were saved
+    uploaded_file_path = get_file_path_for_uploaded_file_url(uploaded_file_url)
+    uploaded_image = get_file_path_for_uploaded_file_url(uploaded_image_url)
     assert uploaded_file_path.exists()
     assert uploaded_image.exists()
 
@@ -115,3 +117,108 @@ def test_map_file_upload_banned_map(banned_cheat_map, file_map_unfair, client_an
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert response.data["code"] == UploadApiCodes.DUPLICATE_MAP
     assert response.data["additional"]["existing_map_id"] == str(banned_cheat_map.id)
+
+
+def test_map_image_upload__happy_path(create_cnc_map, file_map_image, client_user, get_file_path_for_uploaded_file_url):
+    """Test that we can upload an image as a verified user, who has created a map"""
+    cnc_map = create_cnc_map(user_id=client_user.kirovy_user.id, is_legacy=False, is_published=True, is_temporary=False)
+    original_image_count = cnc_map.cncmapimagefile_set.select_related().count()
+    response = client_user.post(
+        "/maps/img/",
+        {"file": file_map_image, "cnc_map_id": str(cnc_map.id)},
+        format="multipart",
+        content_type=None,
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED
+    assert response.data["message"] == MapImageFileUploadView.success_message
+    saved_file = CncMapImageFile.objects.get(id=response.data["result"]["file_id"])
+    image_url: str = response.data["result"]["file_url"]
+    parent_id: str = response.data["result"]["parent_object_id"]
+
+    assert parent_id == cnc_map.id
+    expected_date = saved_file.created.date().isoformat()
+    assert image_url == f"/silo/yr/map_images/{cnc_map.id.hex}/{expected_date}_{saved_file.id.hex}.png"
+
+    assert get_file_path_for_uploaded_file_url(image_url).exists()
+
+    assert cnc_map.cncmapimagefile_set.select_related().count() == original_image_count + 1
+    # Image order starts at 0, then gets incremented, so image_order should be current_count - 1
+    assert saved_file.image_order == original_image_count
+    assert saved_file.name == pathlib.Path(file_map_image.name).name
+    assert saved_file.file_extension.extension == "png"
+    # Width and height are from the image itself.
+    assert saved_file.width == 768
+    assert saved_file.height == 494
+
+
+def test_map_image_upload__jpg(create_cnc_map, file_map_image_jpg, client_user, get_file_path_for_uploaded_file_url):
+    """Test that we can upload a jpg."""
+    cnc_map = create_cnc_map(user_id=client_user.kirovy_user.id, is_legacy=False, is_published=True, is_temporary=False)
+    response = client_user.post(
+        "/maps/img/",
+        {"file": file_map_image_jpg, "cnc_map_id": str(cnc_map.id)},
+        format="multipart",
+        content_type=None,
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED
+    assert response.data["message"] == MapImageFileUploadView.success_message
+    saved_file = CncMapImageFile.objects.get(id=response.data["result"]["file_id"])
+    assert saved_file.name == pathlib.Path(file_map_image_jpg.name).name
+    assert saved_file.file_extension.extension == "jpg"
+
+    # Width and height are from the image itself.
+    assert saved_file.width == 993
+    assert saved_file.height == 740
+
+
+@pytest.mark.parametrize("map_kwargs", [{"is_legacy": True}, {"is_temporary": True}])
+def test_map_image_upload__unsupported_map(create_cnc_map, file_map_image, client_user, map_kwargs):
+    """Test that map image uploads fail for legacy and temporary maps."""
+    cnc_map = create_cnc_map(user_id=client_user.kirovy_user.id, **map_kwargs)
+    original_image_count = cnc_map.cncmapimagefile_set.select_related().count()
+    response = client_user.post(
+        "/maps/img/",
+        {"file": file_map_image, "cnc_map_id": str(cnc_map.id)},
+        format="multipart",
+        content_type=None,
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert response.data["message"] == "Map type does not support custom preview images"
+    assert response.data["code"] == FileUploadApiCodes.UNSUPPORTED
+
+    assert cnc_map.cncmapimagefile_set.select_related().count() == original_image_count
+
+
+def test_map_image_upload__user_is_banned(create_cnc_map, file_map_image, client_banned):
+    """Test that map image uploads fail for banned users."""
+    cnc_map = create_cnc_map(user_id=client_banned.kirovy_user.id)
+    original_image_count = cnc_map.cncmapimagefile_set.select_related().count()
+    response = client_banned.post(
+        "/maps/img/",
+        {"file": file_map_image, "cnc_map_id": str(cnc_map.id)},
+        format="multipart",
+        content_type=None,
+    )
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    assert cnc_map.cncmapimagefile_set.select_related().count() == original_image_count
+
+
+def test_map_image_upload__map_is_banned(create_cnc_map, file_map_image, client_user):
+    """Test that map image uploads fail for banned maps."""
+    cnc_map = create_cnc_map(user_id=client_user.kirovy_user.id, is_banned=True)
+    original_image_count = cnc_map.cncmapimagefile_set.select_related().count()
+    response = client_user.post(
+        "/maps/img/",
+        {"file": file_map_image, "cnc_map_id": str(cnc_map.id)},
+        format="multipart",
+        content_type=None,
+    )
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    assert cnc_map.cncmapimagefile_set.select_related().count() == original_image_count

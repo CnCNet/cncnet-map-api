@@ -328,8 +328,14 @@ class MapImageFileUploadView(base_views.FileUploadBaseView):
     success_message = "Map image uploaded successfully."
 
     def extra_serializer_data(
-        self, request: KirovyRequest, uploaded_file: UploadedFile, parent_object: GameScopedUserOwnedModel
+        self, request: KirovyRequest, uploaded_file: UploadedFile, parent_object: CncMap
     ) -> t.Dict[str, t.Any]:
+        latest_image: CncMapImageFile | None = (
+            CncMapImageFile.objects.filter(cnc_map_id=parent_object.id)
+            .order_by("-image_order")
+            .only("image_order")
+            .first()
+        )
         try:
             with Image.open(uploaded_file) as image:
                 height = image.height
@@ -340,4 +346,15 @@ class MapImageFileUploadView(base_views.FileUploadBaseView):
                 {"user_id": request.user.id, "username": request.user.username, "e": str(e)},
             )
             raise KirovyValidationError("Image is invalid", code=api_codes.FileUploadApiCodes.INVALID)
-        return {"height": height, "width": width}
+        return {
+            "height": height,
+            "width": width,
+            "is_extracted": False,
+            "image_order": latest_image.image_order if latest_image else 0,
+        }
+
+    def extra_verification(self, request: KirovyRequest, uploaded_file: UploadedFile, parent_object: CncMap) -> None:
+        if parent_object.is_legacy or parent_object.is_temporary:
+            raise KirovyValidationError(
+                "Map type does not support custom preview images", code=api_codes.FileUploadApiCodes.UNSUPPORTED
+            )

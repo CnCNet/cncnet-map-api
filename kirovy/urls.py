@@ -108,7 +108,7 @@ map_patterns = [
     path("<uuid:pk>/", cnc_map_views.MapRetrieveUpdateView.as_view()),
     path("delete/<uuid:pk>/", cnc_map_views.MapDeleteView.as_view()),
     path("search/", cnc_map_views.MapListView.as_view()),
-    path("img", cnc_map_views.MapImageFileUploadView.as_view()),
+    path("img/", cnc_map_views.MapImageFileUploadView.as_view()),
     # path("img/<uuid:map_id>/", ...),
     # path("search/")
 ]

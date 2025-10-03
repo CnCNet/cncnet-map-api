@@ -194,6 +194,7 @@ class FileUploadBaseView(APIView, metaclass=ABCMeta):
     def post(self, request: KirovyRequest, format=None) -> KirovyResponse[ui_objects.ResultResponseData]:
         uploaded_file: UploadedFile = request.data["file"]
         parent_object = self.get_parent_object(request)
+        self.extra_verification(request, uploaded_file, parent_object)
 
         extension_id = CncFileExtension.get_extension_id_for_upload(
             uploaded_file,
@@ -206,7 +207,7 @@ class FileUploadBaseView(APIView, metaclass=ABCMeta):
             data={
                 "cnc_game_id": parent_object.cnc_game_id,
                 self.file_parent_attr_name: parent_object.id,
-                "name": request.get("name"),
+                "name": uploaded_file.name,
                 "file": uploaded_file,
                 "file_extension_id": extension_id,
                 **self.extra_serializer_data(request, uploaded_file, parent_object),
@@ -223,13 +224,25 @@ class FileUploadBaseView(APIView, metaclass=ABCMeta):
             ui_objects.ResultResponseData(
                 message=self.success_message,
                 result={
+                    "file_id": saved.id,
                     "file_url": saved.file.url,
                     "parent_object_id": parent_object.id,
                 },
-            )
+            ),
+            status=status.HTTP_201_CREATED,
         )
 
     def extra_serializer_data(
         self, request: KirovyRequest, uploaded_file: UploadedFile, parent_object: GameScopedUserOwnedModel
     ) -> t.Dict[str, t.Any]:
+        raise NotImplementedError()
+
+    def extra_verification(
+        self, request: KirovyRequest, uploaded_file: UploadedFile, parent_object: GameScopedUserOwnedModel
+    ) -> None:
+        """Any extra verification that the file needs.
+
+        :raises kirovy.exceptions.view_exceptions.KirovyValidationError:
+            Raised for any issues.
+        """
         raise NotImplementedError()

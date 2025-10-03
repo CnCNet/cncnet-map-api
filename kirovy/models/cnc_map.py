@@ -292,7 +292,7 @@ class CncMapImageFile(file_base.CncNetFileBaseModel):
             Path to upload map to relative to :attr:`~kirovy.settings.base.MEDIA_ROOT`.
         """
         filename = pathlib.Path(filename)
-        final_file_name = f"{instance.created.isoformat('-')}_{instance.id.hex}{filename.suffix}"
+        final_file_name = f"{instance.created.date().isoformat()}_{instance.id.hex}{filename.suffix}"
 
         # e.g. "yr/map_images/CNC_NET_MAP_ID_HEX/2020-01-01_somelongid.jpg
         return pathlib.Path(instance.cnc_map.get_map_directory_path(instance.UPLOAD_TYPE), final_file_name)

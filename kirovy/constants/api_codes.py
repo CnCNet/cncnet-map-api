@@ -26,3 +26,8 @@ class LegacyUploadApiCodes(enum.StrEnum):
 class FileUploadApiCodes(enum.StrEnum):
     MISSING_FOREIGN_ID = "missing-foreign-id"
     INVALID = "file-failed-validation"
+    UNSUPPORTED = "parent-does-not-support-this-upload"
+    """attr: Raised when the parent object for the file does not allow this upload.
+
+    e.g. a temporary map does not support custom image uploads.
+    """
