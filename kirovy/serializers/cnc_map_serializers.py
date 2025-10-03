@@ -79,7 +79,8 @@ class CncMapFileSerializer(KirovySerializer):
 
     cnc_user_id = serializers.PrimaryKeyRelatedField(
         source="cnc_user",
-        queryset=CncUser.objects.all(),
+        # Allow system users
+        queryset=CncUser.objects.all_including_legacy_uploader(),
         pk_field=serializers.UUIDField(),
     )
 

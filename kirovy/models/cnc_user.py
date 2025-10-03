@@ -72,6 +72,14 @@ class CncUserManager(models.Manager):
         """
         return super().get_queryset().exclude(cncnet_id__in=self._SYSTEM_CNCNET_IDS)
 
+    def all_including_legacy_uploader(self):
+        """Base queryset that includes the legacy upload user.
+
+        :return:
+            A queryset that only returns all.
+        """
+        return super().get_queryset().exclude(cncnet_id=constants.MigrationUser.CNCNET_ID)
+
 
 class CncUser(AbstractBaseUser):
     CncnetUserGroup = constants.CncnetUserGroup
