@@ -5,6 +5,7 @@ from django.db import models
 from django.utils.translation import gettext as _
 from kirovy import typing as t, constants
 from kirovy.models.cnc_base_model import CncNetBaseModel
+from kirovy.models.moderabile import Moderabile
 
 from kirovy.objects import CncnetUserInfo
 
@@ -81,7 +82,7 @@ class CncUserManager(models.Manager):
         return super().get_queryset().exclude(cncnet_id=constants.MigrationUser.CNCNET_ID)
 
 
-class CncUser(AbstractBaseUser):
+class CncUser(AbstractBaseUser, Moderabile):
     CncnetUserGroup = constants.CncnetUserGroup
     """:attr: The user group constants for convenience so you don't need ``import kirovy.constants`` everywhere."""
 
@@ -107,16 +108,6 @@ class CncUser(AbstractBaseUser):
         help_text=_("The user group from the CNCNet ladder API."),
         blank=False,
     )
-
-    is_banned = models.BooleanField(default=False, help_text="If true, user was banned for some reason.")
-    ban_reason = models.CharField(default=None, null=True, help_text="If banned, the reason the user was banned.")
-    ban_date = models.DateTimeField(default=None, null=True, help_text="If banned, when the user was banned.")
-    ban_expires = models.DateTimeField(
-        default=None,
-        null=True,
-        help_text="If banned, when the ban expires, if temporary.",
-    )
-    ban_count = models.IntegerField(default=0, help_text="How many times this user has been banned.")
 
     USERNAME_FIELD = "cncnet_id"
     """:attr:
@@ -180,11 +171,6 @@ class CncUser(AbstractBaseUser):
             kirovy_user.save(update_fields=["verified_email", "username", "group"])
 
         return kirovy_user
-
-    def set_ban(self, is_banned: bool, banned_by: "CncUser") -> None:
-        # TODO: bannable objects should probably be an abstract class
-        self.is_banned = is_banned
-        self.save(update_fields=["is_banned"])
 
 
 class CncNetUserOwnedModel(CncNetBaseModel):

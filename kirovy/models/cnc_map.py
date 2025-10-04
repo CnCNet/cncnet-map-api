@@ -10,6 +10,7 @@ from kirovy.models import cnc_game as game_models, cnc_user
 from kirovy.models.cnc_base_model import CncNetBaseModel
 from kirovy import typing as t, exceptions
 from kirovy.models.cnc_game import GameScopedUserOwnedModel
+from kirovy.models.moderabile import Moderabile
 
 
 class MapCategory(CncNetBaseModel):
@@ -47,7 +48,7 @@ class MapCategory(CncNetBaseModel):
         super().save(force_insert, force_update, using, update_fields)
 
 
-class CncMap(GameScopedUserOwnedModel):
+class CncMap(GameScopedUserOwnedModel, Moderabile):
     """The Logical representation of a map for a Command & Conquer game.
 
     We have this as a separate model from the file model because later C&C's allow for various files
@@ -97,12 +98,6 @@ class CncMap(GameScopedUserOwnedModel):
     """
 
     is_reviewed = models.BooleanField(default=False, help_text="If true, this map was reviewed by a staff member.")
-
-    is_banned = models.BooleanField(
-        default=False,
-        help_text="If true, this map will be hidden everywhere. Likely due to breaking a rule.",
-    )
-    """:attr: Keep banned maps around so we can keep track of rule-breakers."""
 
     incomplete_upload = models.BooleanField(
         default=False,
@@ -158,11 +153,9 @@ class CncMap(GameScopedUserOwnedModel):
             self.id.hex,
         )
 
-    def set_ban(self, is_banned: bool, banned_by: cnc_user.CncUser) -> None:
+    def check_is_bannable(self) -> None:
         if self.is_legacy:
             raise exceptions.BanException("legacy-maps-cannot-be-banned")
-        self.is_banned = is_banned
-        self.save(update_fields=["is_banned"])
 
 
 class CncMapFileManager(models.Manager["CncMapFile"]):

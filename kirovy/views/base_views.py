@@ -22,12 +22,13 @@ from kirovy import permissions, typing as t, logging
 from kirovy.constants import api_codes
 from kirovy.exceptions.view_exceptions import KirovyValidationError
 from kirovy.models import CncNetFileBaseModel
-from kirovy.models.cnc_game import GameScopedUserOwnedModel, CncFileExtension
+from kirovy.models.cnc_game import GameScopedUserOwnedModel
 from kirovy.objects import ui_objects
 from kirovy.permissions import CanUpload, CanEdit
 from kirovy.request import KirovyRequest
 from kirovy.response import KirovyResponse
 from kirovy.serializers import KirovySerializer, CncNetUserOwnedModelSerializer
+from kirovy.services.file_extension_service import FileExtensionService
 from kirovy.utils import file_utils
 
 _LOGGER = logging.get_logger(__name__)
@@ -207,7 +208,7 @@ class FileUploadBaseView(APIView, metaclass=ABCMeta):
         self.extra_verification(request, uploaded_file, parent_object)
         uploaded_file = self.modify_uploaded_file(request, uploaded_file, parent_object)
 
-        extension_id = CncFileExtension.get_extension_id_for_upload(
+        extension_id = FileExtensionService.get_extension_id_for_upload(
             uploaded_file,
             self.file_class.ALLOWED_EXTENSION_TYPES,
             logger=_LOGGER,

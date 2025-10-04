@@ -1,5 +1,4 @@
 import io
-import pathlib
 from abc import ABCMeta
 
 from cryptography.utils import cached_property
@@ -8,7 +7,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.base import ContentFile, File
 from django.core.files.uploadedfile import UploadedFile, InMemoryUploadedFile
 from django.db.models import Q, QuerySet
-from rest_framework import status, serializers
+from rest_framework import status
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import BasePermission, AllowAny
 from rest_framework.views import APIView
@@ -16,7 +15,7 @@ from rest_framework.views import APIView
 from kirovy import typing as t, permissions, exceptions, constants, logging
 from kirovy.constants.api_codes import UploadApiCodes
 from kirovy.exceptions.view_exceptions import KirovyValidationError
-from kirovy.models import cnc_map, CncGame, CncFileExtension, MapCategory, map_preview, CncUser
+from kirovy.models import cnc_map, CncGame, CncFileExtension, MapCategory, CncUser
 from kirovy.objects.ui_objects import ResultResponseData
 from kirovy.request import KirovyRequest
 from kirovy.response import KirovyResponse
@@ -24,6 +23,7 @@ from kirovy.serializers import cnc_map_serializers
 from kirovy.serializers.cnc_map_serializers import CncMapBaseSerializer
 from kirovy.services import legacy_upload
 from kirovy.services.cnc_gen_2_services import CncGen2MapParser, CncGen2MapSections
+from kirovy.services.file_extension_service import FileExtensionService
 from kirovy.utils import file_utils
 
 
@@ -238,7 +238,7 @@ class _BaseMapFileUploadView(APIView, metaclass=ABCMeta):
         raise NotImplementedError()
 
     def get_extension_id_for_upload(self, uploaded_file: UploadedFile) -> str:
-        return CncFileExtension.get_extension_id_for_upload(
+        return FileExtensionService.get_extension_id_for_upload(
             uploaded_file,
             cnc_map.CncMapFile.ALLOWED_EXTENSION_TYPES,
             logger=_LOGGER,

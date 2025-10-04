@@ -1,3 +1,5 @@
+import datetime
+
 from rest_framework import status
 
 BASE_URL = "/admin/ban/"
@@ -5,11 +7,13 @@ BASE_URL = "/admin/ban/"
 
 def test_ban_has_permission(client_moderator, create_cnc_map, create_kirovy_user):
     user = create_kirovy_user(username="SethOfNOD")
+    ban_reason = "Power shifts quickly in the Brotherhood"
     cnc_map = create_cnc_map(user_id=user.id)
     data = dict(
         object_type="map",
         is_banned=True,
         object_id=str(cnc_map.id),
+        note=ban_reason,
     )
 
     response = client_moderator.post(BASE_URL, data=data)
@@ -17,12 +21,17 @@ def test_ban_has_permission(client_moderator, create_cnc_map, create_kirovy_user
     cnc_map.refresh_from_db()
 
     assert cnc_map.is_banned
+    assert cnc_map.ban_reason == ban_reason
+    assert cnc_map.moderated_by == client_moderator.kirovy_user
+    assert cnc_map.ban_date.date() == datetime.date.today()
+    assert cnc_map.ban_count == 1
 
     ## Ban the user
     data = dict(
         object_type="user",
         is_banned=True,
         object_id=str(user.id),
+        note=ban_reason,
     )
 
     response = client_moderator.post(BASE_URL, data=data)
@@ -30,6 +39,10 @@ def test_ban_has_permission(client_moderator, create_cnc_map, create_kirovy_user
     user.refresh_from_db()
 
     assert user.is_banned
+    assert user.ban_reason == ban_reason
+    assert user.moderated_by == client_moderator.kirovy_user
+    assert user.ban_date.date() == datetime.date.today()
+    assert user.ban_count == 1
 
 
 def test_ban_404(client_moderator):
