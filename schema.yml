@@ -141,10 +141,7 @@ paths:
   /maps/categories/:
     get:
       operationId: maps_categories_list
-      description: |-
-        Base view for listing and creating objects.
-
-        It is up to subclasses to figure out how they want to filter large queries.
+      description: Endpoint to list available map categories, or create a new category.
       parameters:
       - name: limit
         required: false
@@ -169,10 +166,7 @@ paths:
           description: ''
     post:
       operationId: maps_categories_create
-      description: |-
-        Base view for listing and creating objects.
-
-        It is up to subclasses to figure out how they want to filter large queries.
+      description: Endpoint to list available map categories, or create a new category.
       tags:
       - maps
       requestBody:
@@ -197,6 +191,7 @@ paths:
   /maps/client/upload/:
     post:
       operationId: maps_client_upload_create
+      description: DO NOT USE THIS FOR NOW. Use
       tags:
       - maps
       security:
@@ -223,6 +218,28 @@ paths:
       responses:
         '204':
           description: No response body
+  /maps/img/:
+    post:
+      operationId: maps_img_create
+      description: |-
+        Endpoint for uploading map images.
+
+        The map ID that this image belongs to must be in the POST data with the attr ``cnc_map_id``.
+      tags:
+      - maps
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CncMapImageFile'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CncMapImageFile'
+          description: ''
   /maps/search/:
     get:
       operationId: maps_search_list
@@ -246,6 +263,10 @@ paths:
             format: uuid
         explode: true
         style: form
+      - in: query
+        name: game_slug
+        schema:
+          type: string
       - in: query
         name: include_edits
         schema:
@@ -295,30 +316,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedCncMapBaseList'
-          description: ''
-    post:
-      operationId: maps_search_create
-      description: The view for maps.
-      tags:
-      - maps
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CncMapBase'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/CncMapBase'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/CncMapBase'
-        required: true
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CncMapBase'
           description: ''
   /maps/upload/:
     post:
@@ -385,6 +382,7 @@ components:
           items:
             type: string
             format: uuid
+          readOnly: true
         is_published:
           type: boolean
           default: false
@@ -404,20 +402,174 @@ components:
           type: string
           format: date-time
           readOnly: true
+        incomplete_upload:
+          type: boolean
+          default: false
+        parent_id:
+          type: string
+          format: uuid
+          nullable: true
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/CncMapFile'
+          readOnly: true
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/CncMapImageFile'
+          readOnly: true
+        latest_map_file_hash:
+          type: string
+          nullable: true
+          readOnly: true
+        game_slug:
+          type: string
+          readOnly: true
+        created_date:
+          type: string
+          format: date-time
+          readOnly: true
       required:
       - category_ids
       - cnc_game_id
       - cnc_user_id
       - created
+      - created_date
       - description
+      - files
+      - game_slug
       - id
+      - images
       - is_banned
       - is_legacy
       - is_reviewed
       - is_temporary
+      - latest_map_file_hash
       - legacy_upload_date
       - map_name
       - modified
+    CncMapFile:
+      type: object
+      description: Base serializer for Kirovy models.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        modified:
+          type: string
+          format: date-time
+          readOnly: true
+        width:
+          type: integer
+        height:
+          type: integer
+        version:
+          type: integer
+          readOnly: true
+        cnc_map_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          readOnly: true
+        file:
+          type: string
+          format: uri
+        file_extension_id:
+          type: string
+          format: uuid
+        cnc_game_id:
+          type: string
+          format: uuid
+        cnc_user_id:
+          type: string
+          format: uuid
+        hash_md5:
+          type: string
+        hash_sha512:
+          type: string
+        hash_sha1:
+          type: string
+      required:
+      - cnc_game_id
+      - cnc_map_id
+      - cnc_user_id
+      - created
+      - file
+      - file_extension_id
+      - hash_md5
+      - hash_sha1
+      - hash_sha512
+      - height
+      - id
+      - modified
+      - name
+      - version
+      - width
+    CncMapImageFile:
+      type: object
+      description: Base serializer for Kirovy models.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        modified:
+          type: string
+          format: date-time
+          readOnly: true
+        width:
+          type: integer
+        height:
+          type: integer
+        is_extracted:
+          type: boolean
+        cnc_map_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          nullable: true
+          maxLength: 100
+        image_order:
+          type: integer
+          minimum: 0
+        file:
+          type: string
+          format: uri
+        file_extension_id:
+          type: string
+          format: uuid
+        cnc_game_id:
+          type: string
+          format: uuid
+        cnc_user_id:
+          type: string
+          format: uuid
+      required:
+      - cnc_game_id
+      - cnc_map_id
+      - cnc_user_id
+      - created
+      - file
+      - file_extension_id
+      - height
+      - id
+      - image_order
+      - is_extracted
+      - modified
+      - name
+      - width
     MapCategory:
       type: object
       description: Base serializer for Kirovy models.
@@ -526,6 +678,7 @@ components:
           items:
             type: string
             format: uuid
+          readOnly: true
         is_published:
           type: boolean
           default: false
@@ -542,6 +695,34 @@ components:
           type: boolean
           readOnly: true
         legacy_upload_date:
+          type: string
+          format: date-time
+          readOnly: true
+        incomplete_upload:
+          type: boolean
+          default: false
+        parent_id:
+          type: string
+          format: uuid
+          nullable: true
+        files:
+          type: array
+          items:
+            $ref: '#/components/schemas/CncMapFile'
+          readOnly: true
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/CncMapImageFile'
+          readOnly: true
+        latest_map_file_hash:
+          type: string
+          nullable: true
+          readOnly: true
+        game_slug:
+          type: string
+          readOnly: true
+        created_date:
           type: string
           format: date-time
           readOnly: true
