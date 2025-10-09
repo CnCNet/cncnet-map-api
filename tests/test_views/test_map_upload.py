@@ -11,7 +11,7 @@ from kirovy.utils import file_utils
 from kirovy.models import CncMap, CncMapFile, MapCategory
 from kirovy.response import KirovyResponse
 from kirovy.services.cnc_gen_2_services import CncGen2MapParser
-from kirovy.views.cnc_map_views import MapImageFileUploadView
+from kirovy.views.map_image_views import MapImageFileUploadView
 
 _UPLOAD_URL = "/maps/upload/"
 _CLIENT_URL = "/maps/client/upload/"
@@ -156,6 +156,14 @@ def test_map_image_upload__happy_path(create_cnc_map, file_map_image, client_use
     assert saved_file.height == 494
     assert saved_file.cnc_user_id == client_user.kirovy_user.id
     assert saved_file.file.size < file_map_image.size, "Converting to jpeg should have shrunk the file size."
+
+    # Check that the image gets returned with the map.
+    get_response = client_user.get(f"/maps/{cnc_map.id}/")
+    assert get_response.status_code == status.HTTP_200_OK
+
+    map_images = get_response.data["result"]["images"]
+    assert len(map_images) == 1
+    assert map_images[0]["id"] == str(saved_file.id)
 
 
 def test_map_image_upload__jpg(create_cnc_map, file_map_image_jpg, client_user, get_file_path_for_uploaded_file_url):

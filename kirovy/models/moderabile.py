@@ -111,7 +111,7 @@ class Moderabile(models.Model):
         action: str, action_date: datetime.datetime, action_reason: str, moderated_by: "CncUser"
     ) -> str:
         action = escape(action)
-        action_reason = escape(action_reason)
+        action_reason = escape(" ".join([l.strip() for l in action_reason.strip().splitlines()]))
         return f"- {action} [{action_date.date().isoformat()}]: {action_reason} -- by: '{moderated_by.username}'\n"
 
     def check_is_bannable(self) -> None:

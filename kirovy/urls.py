@@ -21,6 +21,7 @@ from django.db import connection
 from django.urls import path, include, URLPattern, URLResolver
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
+import kirovy.views.map_image_views
 from kirovy.models import CncGame
 from kirovy.settings import settings_constants
 from kirovy.views import test, cnc_map_views, permission_views, admin_views, map_upload_views
@@ -108,7 +109,7 @@ map_patterns = [
     path("<uuid:pk>/", cnc_map_views.MapRetrieveUpdateView.as_view()),
     path("delete/<uuid:pk>/", cnc_map_views.MapDeleteView.as_view()),
     path("search/", cnc_map_views.MapListView.as_view()),
-    path("img/", cnc_map_views.MapImageFileUploadView.as_view()),
+    path("img/", kirovy.views.map_image_views.MapImageFileUploadView.as_view()),
     # path("img/<uuid:map_id>/", ...),
     # path("search/")
 ]
