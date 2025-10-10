@@ -1,7 +1,6 @@
-from rest_framework import status
 from rest_framework.views import exception_handler
 
-from kirovy.exceptions.view_exceptions import KirovyValidationError
+from kirovy.exceptions.view_exceptions import KirovyAPIException
 from kirovy.objects import ui_objects
 from kirovy.response import KirovyResponse
 
@@ -23,7 +22,7 @@ def kirovy_exception_handler(exception: Exception, context) -> KirovyResponse[ui
         Returns the ``KirovyResponse`` if the exception is one we defined.
         Otherwise, it calls the base DRF exception handler :func:`rest_framework.views.exception_handler`.
     """
-    if isinstance(exception, KirovyValidationError):
-        return KirovyResponse(exception.as_error_response_data(), status=status.HTTP_400_BAD_REQUEST)
+    if isinstance(exception, KirovyAPIException):
+        return KirovyResponse(exception.as_error_response_data(), status=exception.status_code)
 
     return exception_handler(exception, context)

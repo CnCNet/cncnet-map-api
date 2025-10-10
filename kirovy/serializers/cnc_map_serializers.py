@@ -109,6 +109,7 @@ class CncMapImageFileSerializer(KirovySerializer):
         # We return the ID instead of the whole object.
         exclude = ["cnc_user", "cnc_game", "cnc_map", "file_extension", "hash_md5", "hash_sha512", "hash_sha1"]
         fields = "__all__"
+        editable_fields: set[str] = {"name", "image_order"}
 
     width = serializers.IntegerField()
     """attr: The map height.

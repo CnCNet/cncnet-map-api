@@ -6,7 +6,6 @@ from abc import ABCMeta
 
 from django.core.files.uploadedfile import UploadedFile, InMemoryUploadedFile
 from rest_framework import (
-    exceptions as _e,
     generics as _g,
     permissions as _p,
     pagination as _pagination,
@@ -14,13 +13,12 @@ from rest_framework import (
 )
 from rest_framework.generics import get_object_or_404
 from rest_framework.parsers import MultiPartParser
-from rest_framework.response import Response
 from rest_framework.views import APIView
 
 import kirovy.objects.ui_objects
 from kirovy import permissions, typing as t, logging
 from kirovy.constants import api_codes
-from kirovy.exceptions.view_exceptions import KirovyValidationError
+from kirovy.exceptions.view_exceptions import KirovyValidationError, KirovyMethodNotAllowed
 from kirovy.models import CncNetFileBaseModel
 from kirovy.models.cnc_game import GameScopedUserOwnedModel
 from kirovy.objects import ui_objects
@@ -124,16 +122,16 @@ class KirovyRetrieveUpdateView(_g.RetrieveUpdateAPIView):
             status=status.HTTP_200_OK,
         )
 
-    def put(self, request: KirovyRequest, *args, **kwargs) -> Response:
-        raise _e.MethodNotAllowed(
+    def put(self, request: KirovyRequest, *args, **kwargs) -> KirovyResponse:
+        raise KirovyMethodNotAllowed(
             "PUT",
             "PUT is not allowed. Only use PATCH and only send fields that were modified.",
         )
 
-    def delete(self, request: KirovyRequest, *args, **kwargs) -> Response:
-        raise _e.MethodNotAllowed(
+    def delete(self, request: KirovyRequest, *args, **kwargs) -> KirovyResponse:
+        raise KirovyMethodNotAllowed(
             "DELETE",
-            "DELETE is not allowed on this endpoint. Please use the delete endpoint.",
+            "DELETE is not allowed on this endpoint",
         )
 
 

@@ -4,6 +4,7 @@ import pathlib
 from PIL import Image, UnidentifiedImageError
 from PIL.Image import DecompressionBombError
 from django.core.files.uploadedfile import UploadedFile, InMemoryUploadedFile
+from django.db.models import QuerySet
 
 from kirovy import permissions, typing as t
 from kirovy.constants import api_codes
@@ -75,3 +76,16 @@ class MapImageFileUploadView(base_views.FileUploadBaseView):
             image.convert("RGB").save(image_io, format="JPEG", quality=95)
 
         return InMemoryUploadedFile(image_io, None, f"{filename}.jpg", "image/jpeg", image_io.tell(), None)
+
+
+class MapImageFileRetrieveUpdate(base_views.KirovyRetrieveUpdateView):
+    """Endpoint to edit the editable fields for a map image."""
+
+    serializer_class = cnc_map_serializers.CncMapImageFileSerializer
+
+    def get_queryset(self) -> QuerySet[CncMapImageFile]:
+        base = CncMapImageFile.objects.filter(cnc_map__is_banned=False)
+        if self.request.user.is_authenticated:
+            return base | CncMapImageFile.objects.filter(cnc_user_id=self.request.user.id)
+
+        return base

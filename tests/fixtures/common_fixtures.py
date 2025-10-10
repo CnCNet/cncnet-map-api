@@ -17,7 +17,7 @@ from rest_framework import status
 
 from kirovy import objects, typing as t, constants
 from kirovy.models import CncUser
-from kirovy.objects.ui_objects import ErrorResponseData
+from kirovy.objects.ui_objects import ErrorResponseData, BanData
 from kirovy.response import KirovyResponse
 
 
@@ -376,3 +376,21 @@ def client_admin(admin, create_client) -> KirovyClient:
 def client_god(god, create_client) -> KirovyClient:
     """Returns a client with an active god user."""
     return create_client(god)
+
+
+@pytest.fixture
+def ban_user(client_god):
+    """Return a function to ban a user."""
+
+    def _inner(user_to_ban: CncUser, ban_reason: str = "Silos Needed") -> CncUser:
+        response = client_god.post(
+            "/admin/ban/",
+            BanData(
+                object_type=BanData.Meta.ObjectType.USER, is_banned=True, note=ban_reason, object_id=str(user_to_ban.id)
+            ).model_dump_json(),
+        )
+        assert response.status_code == status.HTTP_200_OK
+        user_to_ban.refresh_from_db()
+        return user_to_ban
+
+    return _inner

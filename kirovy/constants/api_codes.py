@@ -32,3 +32,8 @@ class FileUploadApiCodes(enum.StrEnum):
     e.g. a temporary map does not support custom image uploads.
     """
     TOO_LARGE = "file-too-large"
+
+
+class GenericApiCodes(enum.StrEnum):
+    CANNOT_UPDATE_FIELD = "field-cannot-be-updated-after-creation"
+    """attr: Some fields are not allowed to be edited via any API endpoint."""
