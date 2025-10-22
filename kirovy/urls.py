@@ -110,7 +110,7 @@ map_patterns = [
     path("delete/<uuid:pk>/", cnc_map_views.MapDeleteView.as_view()),
     path("search/", cnc_map_views.MapListView.as_view()),
     path("img/", map_image_views.MapImageFileUploadView.as_view()),
-    path("img/<uuid:pk>/", map_image_views.MapImageFileRetrieveUpdate.as_view()),
+    path("img/<uuid:pk>/", map_image_views.MapImageFileRetrieveUpdateDestroy.as_view()),
     # path("img/<uuid:map_id>/", ...),
     # path("search/")
 ]

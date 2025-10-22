@@ -78,10 +78,11 @@ class MapImageFileUploadView(base_views.FileUploadBaseView):
         return InMemoryUploadedFile(image_io, None, f"{filename}.jpg", "image/jpeg", image_io.tell(), None)
 
 
-class MapImageFileRetrieveUpdate(base_views.KirovyRetrieveUpdateView):
+class MapImageFileRetrieveUpdateDestroy(base_views.KirovyRetrieveUpdateDestroyView):
     """Endpoint to edit the editable fields for a map image."""
 
     serializer_class = cnc_map_serializers.CncMapImageFileSerializer
+    allow_simple_destroy = True
 
     def get_queryset(self) -> QuerySet[CncMapImageFile]:
         base = CncMapImageFile.objects.filter(cnc_map__is_banned=False)

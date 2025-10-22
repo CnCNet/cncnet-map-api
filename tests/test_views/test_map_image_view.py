@@ -26,34 +26,34 @@ def test_map_image_upload__happy_path(create_cnc_map, file_map_image, client_use
 
     assert response.status_code == status.HTTP_201_CREATED
     assert response.data["message"] == MapImageFileUploadView.success_message
-    saved_file = CncMapImageFile.objects.get(id=response.data["result"]["file_id"])
-    image_url: str = response.data["result"]["file_url"]
-    parent_id: str = response.data["result"]["parent_object_id"]
-
-    assert parent_id == cnc_map.id
-    expected_date = saved_file.created.date().isoformat()
-    assert image_url == f"/silo/yr/map_images/{cnc_map.id.hex}/{expected_date}_{saved_file.id.hex}.jpg"
-
-    assert get_file_path_for_uploaded_file_url(image_url).exists()
-
-    assert cnc_map.cncmapimagefile_set.select_related().count() == original_image_count + 1
-    # Image order starts at 0, then gets incremented, so image_order should be current_count - 1
-    assert saved_file.image_order == original_image_count
-    assert saved_file.name == pathlib.Path(file_map_image.name).stem + ".jpg"
-    assert saved_file.file_extension.extension == "jpg"
-    # Width and height are from the image itself.
-    assert saved_file.width == 768
-    assert saved_file.height == 494
-    assert saved_file.cnc_user_id == client_user.kirovy_user.id
-    assert saved_file.file.size < file_map_image.size, "Converting to jpeg should have shrunk the file size."
-
-    # Check that the image gets returned with the map.
-    get_response = client_user.get(f"/maps/{cnc_map.id}/")
+    file_id = response.data["result"]["file_id"]
+    get_response = client_user.get(f"/maps/img/{file_id}/")
     assert get_response.status_code == status.HTTP_200_OK
 
-    map_images = get_response.data["result"]["images"]
-    assert len(map_images) == 1
-    assert map_images[0]["id"] == str(saved_file.id)
+    saved_file_raw = CncMapImageFile.objects.get(id=file_id)
+    saved_file = get_response.data["result"]
+    image_url: str = response.data["result"]["file_url"]
+    parent_id: str = response.data["result"]["parent_object_id"]
+    expected_date = saved_file_raw.created.date().isoformat()
+    expected_url_path = f"/silo/yr/map_images/{cnc_map.id.hex}/{expected_date}_{saved_file_raw.id.hex}.jpg"
+
+    assert parent_id == cnc_map.id
+    assert image_url == expected_url_path
+    assert get_file_path_for_uploaded_file_url(image_url).exists()
+
+    # Check results from the API and the stored file where necessary
+    assert cnc_map.cncmapimagefile_set.select_related().count() == original_image_count + 1
+    # Image order starts at 0, then gets incremented, so image_order should be current_count - 1
+    assert saved_file["image_order"] == original_image_count
+    assert saved_file["name"] == pathlib.Path(file_map_image.name).stem + ".jpg"
+    assert saved_file_raw.file_extension.extension == "jpg"
+    assert saved_file["file_extension_id"] == str(saved_file_raw.file_extension.id)
+    # Width and height are from the image itself.
+    assert saved_file["width"] == 768
+    assert saved_file["height"] == 494
+    assert saved_file["cnc_user_id"] == str(client_user.kirovy_user.id)
+    assert saved_file_raw.file.size < file_map_image.size, "Converting to jpeg should have shrunk the file size."
+    assert saved_file["file"].endswith(expected_url_path)
 
 
 def test_map_image_upload__jpg(create_cnc_map, file_map_image_jpg, client_user, get_file_path_for_uploaded_file_url):
@@ -230,3 +230,19 @@ def test_map_image_edit__uneditable_fields(client_user, create_cnc_map, create_c
     assert response.data["code"] == api_codes.GenericApiCodes.CANNOT_UPDATE_FIELD
     assert set(response.data["additional"]["attempted"]) == {"width", "height", "cnc_map"}
     assert set(response.data["additional"]["can_update"]) == {"name", "image_order"}
+
+
+def test_map_image_delete(client_user, create_cnc_map, create_cnc_map_image_file, file_map_image):
+    """Test that a user can delete their own image."""
+    cnc_map = create_cnc_map(user_id=client_user.kirovy_user.id)
+    image_file = create_cnc_map_image_file(file_map_image, cnc_map)
+    response = client_user.delete(f"/maps/img/{image_file.id}/")
+
+    assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    cnc_map.refresh_from_db()
+
+    assert cnc_map.id
+
+    with pytest.raises(CncMapImageFile.DoesNotExist):
+        image_file.refresh_from_db()

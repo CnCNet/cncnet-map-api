@@ -66,6 +66,7 @@ class CanEdit(CanUpload):
 
         # Check if this model type is owned by users.
         if isinstance(obj, cnc_user.CncNetUserOwnedModel):
+            # Don't allow destroying evidence.
             obj_is_banned = hasattr(obj, "is_banned") and obj.is_banned
             return request.user.id == obj.cnc_user_id and not obj_is_banned
 

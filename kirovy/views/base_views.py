@@ -128,17 +128,20 @@ class KirovyRetrieveUpdateView(_g.RetrieveUpdateAPIView):
             "PUT is not allowed. Only use PATCH and only send fields that were modified.",
         )
 
+
+class KirovyRetrieveUpdateDestroyView(KirovyRetrieveUpdateView, _g.DestroyAPIView):
+    """Prevents accidentally allowing deletes for CanEdit permissions until we allow user deletion."""
+
+    allow_simple_destroy: t.ClassVar[bool] = False
+    """attr: If true, then we will allow using the default DRF destroy functionality for this view."""
+
     def delete(self, request: KirovyRequest, *args, **kwargs) -> KirovyResponse:
+        if self.allow_simple_destroy:
+            return super().delete(request, *args, **kwargs)
         raise KirovyMethodNotAllowed(
             "DELETE",
             "DELETE is not allowed on this endpoint",
         )
-
-
-class KirovyRetrieveUpdateDestroyView(KirovyRetrieveUpdateView):
-    """Prevents accidentally allowing deletes for CanEdit permissions until we allow user deletion."""
-
-    pass
 
 
 class KirovyDestroyView(_g.DestroyAPIView):
