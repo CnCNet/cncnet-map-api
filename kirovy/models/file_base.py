@@ -9,7 +9,7 @@ from kirovy.utils import file_utils
 from kirovy.zip_storage import ZipFileStorage
 
 
-def _generate_upload_to(instance: "CncNetFileBaseModel", filename: t.Union[str, pathlib.Path]) -> pathlib.Path:
+def default_generate_upload_to(instance: "CncNetFileBaseModel", filename: t.Union[str, pathlib.Path]) -> pathlib.Path:
     """Calls the subclass specific method to generate an upload path.
 
     Do **NOT** override this function. Override the ``generate_upload_to`` function on your file model.
@@ -34,7 +34,7 @@ class CncNetFileBaseModel(GameScopedUserOwnedModel):
     name = models.CharField(max_length=255, null=False, blank=False)
     """Filename no extension."""
 
-    file = models.FileField(null=False, upload_to=_generate_upload_to)
+    file = models.FileField(null=False, upload_to=default_generate_upload_to)
     """The actual file this object represent."""
 
     file_extension = models.ForeignKey(
@@ -129,4 +129,4 @@ class CncNetZippedFileBaseModel(CncNetFileBaseModel):
     class Meta:
         abstract = True
 
-    file = models.FileField(null=False, upload_to=_generate_upload_to, storage=ZipFileStorage)
+    file = models.FileField(null=False, upload_to=default_generate_upload_to, storage=ZipFileStorage)

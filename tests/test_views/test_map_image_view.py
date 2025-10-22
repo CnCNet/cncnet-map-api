@@ -125,9 +125,10 @@ def test_map_image_upload__user_is_banned(create_cnc_map, file_map_image, client
     assert cnc_map.cncmapimagefile_set.select_related().count() == original_image_count
 
 
-def test_map_image_upload__map_is_banned(create_cnc_map, file_map_image, client_user):
+def test_map_image_upload__map_is_banned(create_cnc_map, file_map_image, client_user, moderator):
     """Test that map image uploads fail for banned maps."""
-    cnc_map = create_cnc_map(user_id=client_user.kirovy_user.id, is_banned=True)
+    cnc_map = create_cnc_map(user_id=client_user.kirovy_user.id)
+    cnc_map.ban(moderator, ban_reason="Map sucks")
     original_image_count = cnc_map.cncmapimagefile_set.select_related().count()
     response = client_user.post(
         "/maps/img/",

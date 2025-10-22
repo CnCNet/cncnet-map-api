@@ -289,19 +289,17 @@ def user(create_kirovy_user) -> CncUser:
 
 
 @pytest.fixture
-def banned_user(create_kirovy_user) -> CncUser:
+def banned_user(create_kirovy_user, moderator) -> CncUser:
     """Returns a user that is verified, but is banned."""
-    return create_kirovy_user(
+    user = create_kirovy_user(
         username="MendicantBias",
         verified_email=True,
         verified_map_uploader=True,
         cncnet_id=49,
-        is_banned=True,
-        ban_count=2,
-        ban_date=datetime.datetime.min,
-        ban_expires=datetime.datetime(2552, 12, 11),
-        ban_reason="Siding with the shaping sickness",
     )
+    user.ban(moderator, ban_reason="Siding with the shaping sickness", ban_expires=datetime.datetime(2552, 12, 11))
+    user.refresh_from_db()
+    return user
 
 
 @pytest.fixture

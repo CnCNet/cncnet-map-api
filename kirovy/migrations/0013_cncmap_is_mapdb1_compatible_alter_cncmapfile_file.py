@@ -19,6 +19,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="cncmapfile",
             name="file",
-            field=models.FileField(upload_to=kirovy.models.file_base._generate_upload_to),
+            field=models.FileField(upload_to=kirovy.models.file_base.default_generate_upload_to),
         ),
     ]

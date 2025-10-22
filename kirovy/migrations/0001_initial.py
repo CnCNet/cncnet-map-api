@@ -21,9 +21,7 @@ class Migration(migrations.Migration):
                 ("password", models.CharField(max_length=128, verbose_name="password")),
                 (
                     "last_login",
-                    models.DateTimeField(
-                        blank=True, null=True, verbose_name="last login"
-                    ),
+                    models.DateTimeField(blank=True, null=True, verbose_name="last login"),
                 ),
                 (
                     "id",
@@ -44,17 +42,13 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "username",
-                    models.CharField(
-                        help_text="The name from the CNCNet ladder API.", null=True
-                    ),
+                    models.CharField(help_text="The name from the CNCNet ladder API.", null=True),
                 ),
                 ("verified_map_uploader", models.BooleanField(default=False)),
                 ("verified_email", models.BooleanField(default=False)),
                 (
                     "group",
-                    models.CharField(
-                        help_text="The user group from the CNCNet ladder API."
-                    ),
+                    models.CharField(help_text="The user group from the CNCNet ladder API."),
                 ),
                 (
                     "is_banned",
@@ -89,9 +83,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "ban_count",
-                    models.IntegerField(
-                        default=0, help_text="How many times this user has been banned."
-                    ),
+                    models.IntegerField(default=0, help_text="How many times this user has been banned."),
                 ),
             ],
             options={
@@ -123,9 +115,7 @@ class Migration(migrations.Migration):
                 ("about", models.CharField(max_length=2048, null=True)),
                 (
                     "extension_type",
-                    models.CharField(
-                        choices=[("map", "map"), ("assets", "assets")], max_length=32
-                    ),
+                    models.CharField(choices=[("map", "map"), ("assets", "assets")], max_length=32),
                 ),
             ],
             options={
@@ -257,9 +247,7 @@ class Migration(migrations.Migration):
                 ("name", models.CharField(max_length=255)),
                 (
                     "file",
-                    models.FileField(
-                        upload_to=kirovy.models.file_base._generate_upload_to
-                    ),
+                    models.FileField(upload_to=kirovy.models.file_base.default_generate_upload_to),
                 ),
                 ("hash_md5", models.CharField(max_length=32)),
                 ("hash_sha512", models.CharField(max_length=512)),
@@ -268,15 +256,11 @@ class Migration(migrations.Migration):
                 ("version", models.IntegerField()),
                 (
                     "cnc_game",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.PROTECT, to="kirovy.cncgame"
-                    ),
+                    models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to="kirovy.cncgame"),
                 ),
                 (
                     "cnc_map",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE, to="kirovy.cncmap"
-                    ),
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="kirovy.cncmap"),
                 ),
                 (
                     "file_extension",
@@ -295,9 +279,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="cncmap",
             name="cnc_game",
-            field=models.ForeignKey(
-                on_delete=django.db.models.deletion.PROTECT, to="kirovy.cncgame"
-            ),
+            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to="kirovy.cncgame"),
         ),
         migrations.AddField(
             model_name="cncmap",
@@ -320,9 +302,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name="cncmapfile",
-            constraint=models.UniqueConstraint(
-                fields=("cnc_map_id", "version"), name="unique_map_version"
-            ),
+            constraint=models.UniqueConstraint(fields=("cnc_map_id", "version"), name="unique_map_version"),
         ),
         migrations.AlterModelManagers(
             name="cncuser",

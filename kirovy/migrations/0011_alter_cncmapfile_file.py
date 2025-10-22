@@ -16,7 +16,7 @@ class Migration(migrations.Migration):
             model_name="cncmapfile",
             name="file",
             field=models.FileField(
-                storage=kirovy.zip_storage.ZipFileStorage, upload_to=kirovy.models.file_base._generate_upload_to
+                storage=kirovy.zip_storage.ZipFileStorage, upload_to=kirovy.models.file_base.default_generate_upload_to
             ),
         ),
     ]

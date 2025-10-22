@@ -46,10 +46,10 @@ class MapPreview(file_base.CncNetFileBaseModel):
     def generate_upload_to(instance: "MapPreview", filename: str) -> pathlib.Path:
         """Generate the path to upload map previews to.
 
-        Gets called by :func:`kirovy.models.file_base._generate_upload_to` when ``CncMapFile.save`` is called.
+        Gets called by :func:`kirovy.models.file_base.default_generate_upload_to` when ``CncMapFile.save`` is called.
         See [the django docs for file fields](https://docs.djangoproject.com/en/5.0/ref/models/fields/#filefield).
         ``upload_to`` is set in :attr:`kirovy.models.file_base.CncNetFileBaseModel.file`, which calls
-        ``_generate_upload_to``, which calls this function.
+        ``default_generate_upload_to``, which calls this function.
 
         :param instance:
             Acts as ``self``. The map preview object that we are creating an upload path for.
@@ -63,6 +63,4 @@ class MapPreview(file_base.CncNetFileBaseModel):
         final_file_name = f"{instance.name}_{filename_uuid}{filename.suffix}"
 
         # e.g. "yr/maps/CNC_NET_MAP_ID_HEX/ra2_map_file_name_UUID.png
-        return pathlib.Path(
-            instance.cnc_map_file.cnc_map.get_map_directory_path(), final_file_name
-        )
+        return pathlib.Path(instance.cnc_map_file.cnc_map.get_map_directory_path(), final_file_name)
