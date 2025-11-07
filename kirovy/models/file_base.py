@@ -3,13 +3,13 @@ import pathlib
 from django.db import models
 
 from kirovy import typing as t
-from kirovy.models.cnc_base_model import CncNetBaseModel
 from kirovy.models import cnc_game as game_models
+from kirovy.models.cnc_game import GameScopedUserOwnedModel
 from kirovy.utils import file_utils
 from kirovy.zip_storage import ZipFileStorage
 
 
-def _generate_upload_to(instance: "CncNetFileBaseModel", filename: t.Union[str, pathlib.Path]) -> pathlib.Path:
+def default_generate_upload_to(instance: "CncNetFileBaseModel", filename: t.Union[str, pathlib.Path]) -> pathlib.Path:
     """Calls the subclass specific method to generate an upload path.
 
     Do **NOT** override this function. Override the ``generate_upload_to`` function on your file model.
@@ -24,7 +24,7 @@ def _generate_upload_to(instance: "CncNetFileBaseModel", filename: t.Union[str, 
     return instance.generate_upload_to(instance, filename)
 
 
-class CncNetFileBaseModel(CncNetBaseModel):
+class CncNetFileBaseModel(GameScopedUserOwnedModel):
     class Meta:
         abstract = True
 
@@ -34,7 +34,7 @@ class CncNetFileBaseModel(CncNetBaseModel):
     name = models.CharField(max_length=255, null=False, blank=False)
     """Filename no extension."""
 
-    file = models.FileField(null=False, upload_to=_generate_upload_to)
+    file = models.FileField(null=False, upload_to=default_generate_upload_to)
     """The actual file this object represent."""
 
     file_extension = models.ForeignKey(
@@ -50,9 +50,6 @@ class CncNetFileBaseModel(CncNetBaseModel):
 
     These are checked against :attr:`kirovy.models.cnc_game.CncFileExtension.extension_type`.
     """
-
-    cnc_game = models.ForeignKey(game_models.CncGame, models.PROTECT, null=False, blank=False)
-    """Which game does this file belong to. Needed for file validation."""
 
     hash_md5 = models.CharField(max_length=32, null=False, blank=False)
     """Used for checking exact file duplicates."""
@@ -132,4 +129,4 @@ class CncNetZippedFileBaseModel(CncNetFileBaseModel):
     class Meta:
         abstract = True
 
-    file = models.FileField(null=False, upload_to=_generate_upload_to, storage=ZipFileStorage)
+    file = models.FileField(null=False, upload_to=default_generate_upload_to, storage=ZipFileStorage)

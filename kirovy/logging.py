@@ -1,6 +1,7 @@
-from structlog import get_logger
-import orjson
+from structlog import get_logger as _get_logger
 import typing as t
+
+from structlog.stdlib import BoundLogger
 
 
 def default_json_encode_object(value: object) -> str:
@@ -13,3 +14,7 @@ def default_json_encode_object(value: object) -> str:
         return str(value)
 
     return f"cannot-json-encode--{type(value).__name__}"
+
+
+def get_logger(*args: t.Any, **initial_values: t.Any) -> BoundLogger:
+    return _get_logger(*args, **initial_values)

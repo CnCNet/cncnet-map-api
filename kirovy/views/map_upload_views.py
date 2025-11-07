@@ -1,5 +1,4 @@
 import io
-import pathlib
 from abc import ABCMeta
 
 from cryptography.utils import cached_property
@@ -8,7 +7,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.base import ContentFile, File
 from django.core.files.uploadedfile import UploadedFile, InMemoryUploadedFile
 from django.db.models import Q, QuerySet
-from rest_framework import status, serializers
+from rest_framework import status
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import BasePermission, AllowAny
 from rest_framework.views import APIView
@@ -16,7 +15,7 @@ from rest_framework.views import APIView
 from kirovy import typing as t, permissions, exceptions, constants, logging
 from kirovy.constants.api_codes import UploadApiCodes
 from kirovy.exceptions.view_exceptions import KirovyValidationError
-from kirovy.models import cnc_map, CncGame, CncFileExtension, MapCategory, map_preview, CncUser
+from kirovy.models import cnc_map, CncGame, CncFileExtension, MapCategory, CncUser
 from kirovy.objects.ui_objects import ResultResponseData
 from kirovy.request import KirovyRequest
 from kirovy.response import KirovyResponse
@@ -24,6 +23,7 @@ from kirovy.serializers import cnc_map_serializers
 from kirovy.serializers.cnc_map_serializers import CncMapBaseSerializer
 from kirovy.services import legacy_upload
 from kirovy.services.cnc_gen_2_services import CncGen2MapParser, CncGen2MapSections
+from kirovy.services.file_extension_service import FileExtensionService
 from kirovy.utils import file_utils
 
 
@@ -52,13 +52,13 @@ class _BaseMapFileUploadView(APIView, metaclass=ABCMeta):
             raise NotImplementedError("Must define what this endpoint sets for ``map_file.is_temporary``.")
 
     def post(self, request: KirovyRequest, format=None) -> KirovyResponse:
-        # todo: add file version support.
-        # todo: make validation less trash
+        # todo: add support for uploading new version of maps.
+        # todo: make validation less trash. This should probably all be in serializers.
         uploaded_file: UploadedFile = request.data["file"]
 
         game = self.get_game_from_request(request)
         if not game:
-            raise KirovyValidationError(detail="Game doesnot exist", code=UploadApiCodes.GAME_DOES_NOT_EXIST)
+            raise KirovyValidationError(detail="Game does not exist", code=UploadApiCodes.GAME_DOES_NOT_EXIST)
         extension_id = self.get_extension_id_for_upload(uploaded_file)
         self.verify_file_size_is_allowed(uploaded_file)
 
@@ -133,6 +133,7 @@ class _BaseMapFileUploadView(APIView, metaclass=ABCMeta):
                 hash_md5=map_hashes_post_processing.md5,
                 hash_sha512=map_hashes_post_processing.sha512,
                 hash_sha1=map_hashes_post_processing.sha1,
+                cnc_user_id=self.request.user.id,
             ),
             context={"request": self.request},
         )
@@ -166,14 +167,23 @@ class _BaseMapFileUploadView(APIView, metaclass=ABCMeta):
             image_extension = CncFileExtension.objects.get(extension="jpg")
             extracted_image.save(image_io, format="JPEG", quality=95)
             django_image = InMemoryUploadedFile(image_io, None, "temp.jpg", "image/jpeg", image_io.tell(), None)
-            new_map_preview = map_preview.MapPreview(
-                is_extracted=True,
-                cnc_map_file=new_map_file,
-                file=django_image,
-                file_extension=image_extension,
+            image_serializer = cnc_map_serializers.CncMapImageFileSerializer(
+                data=dict(
+                    name=None,  # will default to map name.
+                    width=extracted_image.width,
+                    height=extracted_image.height,
+                    is_extracted=True,
+                    cnc_map_id=new_map_file.cnc_map_id,
+                    cnc_game_id=new_map_file.cnc_game_id,
+                    file=django_image,
+                    file_extension_id=image_extension.id,
+                    image_order=999,
+                    cnc_user_id=self.request.user.id,
+                )
             )
-            new_map_preview.save()
-            extracted_image_url = new_map_preview.file.url
+            image_serializer.is_valid(raise_exception=True)
+            image_serializer.save()
+            extracted_image_url = image_serializer.instance.file.url
 
         return extracted_image_url
 
@@ -228,24 +238,12 @@ class _BaseMapFileUploadView(APIView, metaclass=ABCMeta):
         raise NotImplementedError()
 
     def get_extension_id_for_upload(self, uploaded_file: UploadedFile) -> str:
-        uploaded_extension = pathlib.Path(uploaded_file.name).suffix.lstrip(".").lower()
-        # iexact is case insensitive
-        kirovy_extension = CncFileExtension.objects.filter(
-            extension__iexact=uploaded_extension,
-            extension_type__in=cnc_map.CncMapFile.ALLOWED_EXTENSION_TYPES,
-        ).first()
-
-        if kirovy_extension:
-            return str(kirovy_extension.id)
-
-        _LOGGER.warning(
-            "User attempted uploading unknown filetype",
-            uploaded_extension=uploaded_extension,
-            **self.user_log_attrs,  # todo: the userattrs should be a context tag for structlog.
-        )
-        raise serializers.ValidationError(
-            detail=f"'{uploaded_extension}' is not a valid map file extension.",
-            code=UploadApiCodes.FILE_EXTENSION_NOT_SUPPORTED,
+        return FileExtensionService.get_extension_id_for_upload(
+            uploaded_file,
+            cnc_map.CncMapFile.ALLOWED_EXTENSION_TYPES,
+            logger=_LOGGER,
+            error_detail_upload_type="map",
+            extra_log_attrs=self.user_log_attrs,
         )
 
     def verify_file_does_not_exist(self, hashes: MapHashes) -> None:
@@ -412,6 +410,7 @@ class CncNetBackwardsCompatibleUploadView(CncnetClientMapUploadView):
                 hash_md5=map_hashes.md5,
                 hash_sha512=map_hashes.sha512,
                 hash_sha1=map_hashes.sha1,
+                cnc_user_id=CncUser.objects.get_or_create_legacy_upload_user().id,
             ),
             context={"request": self.request},
         )

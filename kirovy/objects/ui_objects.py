@@ -5,19 +5,22 @@ Not necessary for endpoint that take one parameter in the Post, but still recomm
 """
 
 import enum
+from functools import cached_property
 from typing import TypedDict, NotRequired, List
 
+import pydantic
+from django.apps import apps
 from django.views import View
-from pydantic import BaseModel
 
-from kirovy import typing as t, models
+from kirovy import typing as t
 from kirovy.permissions import StaticPermission, IsStaff, CanUpload, IsAdmin
 from kirovy.request import KirovyRequest
 
 from kirovy.typing import DictStrAny
+from kirovy.models.moderabile import Moderabile
 
 
-class BanData(BaseModel):
+class BanData(pydantic.BaseModel):
     """For ban post requests.
 
     - View: :class:`kirovy.views.admin_views.BanView`
@@ -30,15 +33,22 @@ class BanData(BaseModel):
             MAP = "map"
 
         OBJECT_MODEL_MAP = {
-            ObjectType.MAP: models.CncMap,
-            ObjectType.USER: models.CncUser,
+            ObjectType.MAP: "CncMap",
+            ObjectType.USER: "CncUser",
         }
 
-    def get_model(self) -> models.SupportsBan:
-        return self.Meta.OBJECT_MODEL_MAP[self.object_type]
+    @cached_property
+    def django_model(self) -> t.Type[Moderabile]:
+        try:
+            model: t.Type[Moderabile] = apps.get_model("kirovy", self.Meta.OBJECT_MODEL_MAP[self.object_type])
+        except LookupError:
+            raise ValueError(f"Model not found")
+        return model
 
     object_type: Meta.ObjectType
     is_banned: bool
+    note: str | None = None
+    ban_expires: pydantic.FutureDate | None = None
     object_id: str
 
 

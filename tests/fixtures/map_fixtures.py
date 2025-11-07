@@ -1,8 +1,9 @@
 from django.core.files import File
 from django.db.models import UUIDField
+from rest_framework import status
 
-from kirovy.models import CncGame
-from kirovy.models.cnc_map import CncMap, CncMapFile, MapCategory
+from kirovy.models import CncGame, CncUser
+from kirovy.models.cnc_map import CncMap, CncMapFile, MapCategory, CncMapImageFile
 from kirovy import typing as t
 import pytest
 
@@ -169,3 +170,39 @@ def banned_cheat_map(create_cnc_map, file_map_unfair) -> CncMap:
         is_temporary=True,
         file=file_map_unfair,
     )
+
+
+@pytest.fixture
+def create_cnc_map_image_file(create_client, create_cnc_map, create_kirovy_user):
+    """Return a function to add an image to a map."""
+
+    def _inner(
+        file: File,
+        cnc_map: CncMap | None = None,
+        user: CncUser | None = None,
+    ) -> CncMapImageFile:
+        if cnc_map and not user:
+            # The most common case is just passing a map.
+            user = cnc_map.cnc_user
+        else:
+            # Only passed a user, or passed neither.
+            if not user:
+                user = create_kirovy_user()
+            if not cnc_map:
+                cnc_map = create_cnc_map(user_id=user.id)
+
+        assert cnc_map and user
+        assert cnc_map.cnc_user_id == user.id
+
+        client = create_client(user)
+        response = client.post(
+            "/maps/img/",
+            {"file": file, "cnc_map_id": str(cnc_map.id)},
+            format="multipart",
+            content_type=None,
+        )
+        assert response.status_code == status.HTTP_201_CREATED
+
+        return CncMapImageFile.objects.get(id=response.data["result"]["file_id"])
+
+    return _inner

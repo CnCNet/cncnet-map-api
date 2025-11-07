@@ -18,7 +18,15 @@ def _forward(apps: StateApps, schema_editor: DatabaseSchemaEditor):
     CncFileExtension: typing.Type[_Ext] = apps.get_model("kirovy", "CncFileExtension")
     CncUser: typing.Type[_User] = apps.get_model("kirovy", "CncUser")
 
-    migration_user = CncUser.objects.get_or_create_migration_user()
+    # We have to create the migration user manually because the helper method on
+    # ``objects`` will crash due to not using the correct schema.
+    migration_user = CncUser(
+        cncnet_id=constants.MigrationUser.CNCNET_ID,
+        username=constants.MigrationUser.USERNAME,
+        group=constants.MigrationUser.GROUP,
+    )
+    migration_user.save()
+    migration_user.refresh_from_db()
 
     mix = CncFileExtension(
         extension="mix",

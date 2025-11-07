@@ -9,6 +9,8 @@ from kirovy.models import file_base
 from kirovy.models import cnc_game as game_models, cnc_user
 from kirovy.models.cnc_base_model import CncNetBaseModel
 from kirovy import typing as t, exceptions
+from kirovy.models.cnc_game import GameScopedUserOwnedModel
+from kirovy.models.moderabile import Moderabile
 
 
 class MapCategory(CncNetBaseModel):
@@ -46,7 +48,7 @@ class MapCategory(CncNetBaseModel):
         super().save(force_insert, force_update, using, update_fields)
 
 
-class CncMap(cnc_user.CncNetUserOwnedModel):
+class CncMap(GameScopedUserOwnedModel, Moderabile):
     """The Logical representation of a map for a Command & Conquer game.
 
     We have this as a separate model from the file model because later C&C's allow for various files
@@ -97,18 +99,11 @@ class CncMap(cnc_user.CncNetUserOwnedModel):
 
     is_reviewed = models.BooleanField(default=False, help_text="If true, this map was reviewed by a staff member.")
 
-    is_banned = models.BooleanField(
-        default=False,
-        help_text="If true, this map will be hidden everywhere. Likely due to breaking a rule.",
-    )
-    """:attr: Keep banned maps around so we can keep track of rule-breakers."""
-
     incomplete_upload = models.BooleanField(
         default=False,
         help_text="If true, then the map file has been uploaded, but the map info has not been set yet.",
     )
 
-    cnc_game = models.ForeignKey(game_models.CncGame, models.PROTECT, null=False)
     categories = models.ManyToManyField(MapCategory)
     parent = models.ForeignKey(
         "CncMap",
@@ -146,7 +141,7 @@ class CncMap(cnc_user.CncNetUserOwnedModel):
         """
         return f"{self.cnc_game.slug}_{self.id.hex}_v{self.next_version_number():02}"
 
-    def get_map_directory_path(self) -> pathlib.Path:
+    def get_map_directory_path(self, upload_type: str = settings.CNC_MAP_DIRECTORY) -> pathlib.Path:
         """Returns the path to the directory where all files related to the map will be store.
 
         :return:
@@ -154,15 +149,13 @@ class CncMap(cnc_user.CncNetUserOwnedModel):
         """
         return pathlib.Path(
             self.cnc_game.slug,
-            settings.CNC_MAP_DIRECTORY,
+            upload_type,
             self.id.hex,
         )
 
-    def set_ban(self, is_banned: bool, banned_by: cnc_user.CncUser) -> None:
+    def check_is_bannable(self) -> None:
         if self.is_legacy:
             raise exceptions.BanException("legacy-maps-cannot-be-banned")
-        self.is_banned = is_banned
-        self.save(update_fields=["is_banned"])
 
 
 class CncMapFileManager(models.Manager["CncMapFile"]):
@@ -199,6 +192,7 @@ class CncMapFile(file_base.CncNetFileBaseModel):
         constraints = [
             models.UniqueConstraint(fields=["cnc_map_id", "version"], name="unique_map_version"),
         ]
+        indexes = [models.Index(fields=["cnc_map"])]
 
     def save(self, *args, **kwargs):
         if not self.version:
@@ -210,10 +204,10 @@ class CncMapFile(file_base.CncNetFileBaseModel):
     def generate_upload_to(instance: "CncMapFile", filename: str) -> pathlib.Path:
         """Generate the path to upload map files to.
 
-        Gets called by :func:`kirovy.models.file_base._generate_upload_to` when ``CncMapFile.save`` is called.
+        Gets called by :func:`kirovy.models.file_base.default_generate_upload_to` when ``CncMapFile.save`` is called.
         See [the django docs for file fields](https://docs.djangoproject.com/en/5.0/ref/models/fields/#filefield).
         ``upload_to`` is set in :attr:`kirovy.models.file_base.CncNetFileBaseModel.file`, which calls
-        ``_generate_upload_to``, which calls this function.
+        ``default_generate_upload_to``, which calls this function.
 
         :param instance:
             Acts as ``self``. The map file object that we are creating an upload path for.
@@ -226,7 +220,7 @@ class CncMapFile(file_base.CncNetFileBaseModel):
         final_file_name = f"{instance.name}{filename.suffix}"
 
         # e.g. "yr/maps/CNC_NET_MAP_ID_HEX/ra2_CNC_NET_MAP_ID_HEX_v1.map
-        return pathlib.Path(instance.cnc_map.get_map_directory_path(), final_file_name)
+        return pathlib.Path(instance.cnc_map.get_map_directory_path(instance.UPLOAD_TYPE), final_file_name)
 
 
 class CncMapImageFile(file_base.CncNetFileBaseModel):
@@ -237,29 +231,54 @@ class CncMapImageFile(file_base.CncNetFileBaseModel):
         ``name`` is auto-generated for this file subclass.
     """
 
-    objects = CncMapFileManager()
-
     width = models.IntegerField()
     height = models.IntegerField()
-    version = models.IntegerField(editable=False)
 
     cnc_map = models.ForeignKey(CncMap, on_delete=models.CASCADE, null=False)
 
     ALLOWED_EXTENSION_TYPES = {game_models.CncFileExtension.ExtensionTypes.IMAGE.value}
 
-    UPLOAD_TYPE = settings.CNC_MAP_DIRECTORY
+    UPLOAD_TYPE = settings.CNC_MAP_IMAGE_DIRECTORY
+
+    file = models.ImageField(null=False, upload_to=file_base.default_generate_upload_to)
+    """The actual file this object represent."""
+
+    is_extracted = models.BooleanField(null=False, blank=False, default=False)
+    """attr: If true, then this image was extracted from the uploaded map file, usually generated by FinalAlert.
+
+    This will always be false for games released after Yuri's Revenge because Generals and beyond do not pack the
+    preview image into the map files.
+    """
+
+    image_order = models.IntegerField(null=False, default=0)
+    """attr: The order in which images will be returned to the UI.
+
+    ``0`` will be the "primary" image that we use in the thumbnails for the search screen.
+    If there are ``order`` collisions, then we fallback to the creation date.
+    """
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["cnc_map"]),
+            models.Index(fields=["is_extracted"]),
+            models.Index(fields=["cnc_user_id"]),
+            models.Index(fields=["cnc_game_id"]),
+        ]
 
     def save(self, *args, **kwargs):
+        if not self.name:
+            self.name = self.cnc_map.map_name
+        self.cnc_game = self.cnc_map.cnc_game
         super().save(*args, **kwargs)
 
     @staticmethod
-    def generate_upload_to(instance: "CncMapFile", filename: str) -> pathlib.Path:
+    def generate_upload_to(instance: "CncMapImageFile", filename: str) -> pathlib.Path:
         """Generate the path to upload map files to.
 
-        Gets called by :func:`kirovy.models.file_base._generate_upload_to` when ``CncMapImageFile.save`` is called.
+        Gets called by :func:`kirovy.models.file_base.default_generate_upload_to` when ``CncMapImageFile.save`` is called.
         See [the django docs for file fields](https://docs.djangoproject.com/en/5.0/ref/models/fields/#filefield).
         ``upload_to`` is set in :attr:`kirovy.models.file_base.CncNetFileBaseModel.file`, which calls
-        ``_generate_upload_to``, which calls this function.
+        ``default_generate_upload_to``, which calls this function.
 
         :param instance:
             Acts as ``self``. The image file object that we are creating an upload path for.
@@ -269,7 +288,7 @@ class CncMapImageFile(file_base.CncNetFileBaseModel):
             Path to upload map to relative to :attr:`~kirovy.settings.base.MEDIA_ROOT`.
         """
         filename = pathlib.Path(filename)
-        final_file_name = f"{instance.name}{filename.suffix}"
+        final_file_name = f"{instance.created.date().isoformat()}_{instance.id.hex}{filename.suffix}"
 
-        # e.g. "yr/maps/CNC_NET_MAP_ID_HEX/screenshot_of_map.jpg
-        return pathlib.Path(instance.cnc_map.get_map_directory_path(), final_file_name)
+        # e.g. "yr/map_images/CNC_NET_MAP_ID_HEX/2020-01-01_somelongid.jpg
+        return pathlib.Path(instance.cnc_map.get_map_directory_path(instance.UPLOAD_TYPE), final_file_name)

@@ -31,18 +31,14 @@ class Migration(migrations.Migration):
                 ("name", models.CharField(max_length=255)),
                 (
                     "file",
-                    models.FileField(
-                        upload_to=kirovy.models.file_base._generate_upload_to
-                    ),
+                    models.FileField(upload_to=kirovy.models.file_base.default_generate_upload_to),
                 ),
                 ("hash_md5", models.CharField(max_length=32)),
                 ("hash_sha512", models.CharField(max_length=512)),
                 ("is_extracted", models.BooleanField()),
                 (
                     "cnc_game",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.PROTECT, to="kirovy.cncgame"
-                    ),
+                    models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, to="kirovy.cncgame"),
                 ),
                 (
                     "cnc_map_file",

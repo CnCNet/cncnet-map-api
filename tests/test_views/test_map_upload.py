@@ -1,22 +1,25 @@
 import pathlib
-import zipfile
-import io
 
+import pytest
+from PIL import Image, ExifTags
 from django.core.files.uploadedfile import UploadedFile
 from rest_framework import status
 
-from kirovy import settings, typing as t
-from kirovy.constants.api_codes import UploadApiCodes
+from kirovy.constants.api_codes import UploadApiCodes, FileUploadApiCodes
+from kirovy.models.cnc_map import CncMapImageFile
 from kirovy.utils import file_utils
 from kirovy.models import CncMap, CncMapFile, MapCategory
 from kirovy.response import KirovyResponse
 from kirovy.services.cnc_gen_2_services import CncGen2MapParser
+from kirovy.views.map_image_views import MapImageFileUploadView
 
 _UPLOAD_URL = "/maps/upload/"
 _CLIENT_URL = "/maps/client/upload/"
 
 
-def test_map_file_upload_happy_path(client_user, file_map_desert, game_yuri, extension_map, tmp_media_root):
+def test_map_file_upload_happy_path(
+    client_user, file_map_desert, game_yuri, extension_map, tmp_media_root, get_file_path_for_uploaded_file_url
+):
     response: KirovyResponse = client_user.post(
         _UPLOAD_URL,
         {"file": file_map_desert, "game_id": str(game_yuri.id)},
@@ -29,11 +32,9 @@ def test_map_file_upload_happy_path(client_user, file_map_desert, game_yuri, ext
     uploaded_file_url: str = response.data["result"]["cnc_map_file"]
     uploaded_image_url: str = response.data["result"]["extracted_preview_file"]
 
-    # We need to strip the url path off of the files,
-    # then check the tmp directory to make sure the uploaded files were saved
-    strip_media_url = f"/{settings.MEDIA_URL}"
-    uploaded_file_path = pathlib.Path(tmp_media_root) / uploaded_file_url.lstrip(strip_media_url)
-    uploaded_image = pathlib.Path(tmp_media_root) / uploaded_image_url.lstrip(strip_media_url)
+    # We need to check the tmp directory to make sure the uploaded files were saved
+    uploaded_file_path = get_file_path_for_uploaded_file_url(uploaded_file_url)
+    uploaded_image = get_file_path_for_uploaded_file_url(uploaded_image_url)
     assert uploaded_file_path.exists()
     assert uploaded_image.exists()
 
@@ -49,10 +50,14 @@ def test_map_file_upload_happy_path(client_user, file_map_desert, game_yuri, ext
 
     map_object = CncMap.objects.get(id=response.data["result"]["cnc_map_id"])
     file_object = CncMapFile.objects.get(cnc_map_id=map_object.id)
+    image_object = CncMapImageFile.objects.get(cnc_map_id=map_object.id)
 
     assert map_object
+    assert file_object.cnc_user_id == client_user.kirovy_user.id
+    assert image_object.cnc_user_id == client_user.kirovy_user.id
+    assert map_object.cnc_user_id == client_user.kirovy_user.id
 
-    # Note: These won't match an md5 from the commandline because we add the ID to the map file.
+    # Note: These won't match a md5 from the commandline because we add the ID to the map file.
     assert file_object.hash_md5 == file_utils.hash_file_md5(uploaded_file.open())
     file_map_desert.seek(0)
     assert file_object.hash_md5 != file_utils.hash_file_md5(file_map_desert.open())
@@ -75,6 +80,18 @@ def test_map_file_upload_happy_path(client_user, file_map_desert, game_yuri, ext
     assert not response_map["is_banned"], "Happy path maps should not be banned on upload."
     assert response_map["legacy_upload_date"] is None, "Non legacy maps should never have this field."
     assert response_map["id"] == str(map_object.id)
+
+    # Check the get endpoint returns the files.
+    assert len(response_map["files"]) == 1
+    assert response_map["files"][0]["id"] == str(file_object.id)
+    assert response_map["files"][0]["file"].endswith(uploaded_file_url)
+
+    # Check that the image was included
+    assert len(response_map["images"]) == 1
+    assert response_map["images"][0]["id"] == str(image_object.id)
+    assert response_map["images"][0]["name"] == map_object.map_name
+    assert response_map["images"][0]["file"].endswith(uploaded_image_url)
+    assert response_map["images"][0]["is_extracted"] is True
 
 
 def test_map_file_upload_banned_user(file_map_desert, game_yuri, client_banned):

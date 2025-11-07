@@ -21,3 +21,19 @@ class LegacyUploadApiCodes(enum.StrEnum):
     INVALID_FILE_TYPE = "invalid-file-type-in-zip"
     GAME_NOT_SUPPORTED = "game-not-supported"
     MAP_FAILED_TO_PARSE = "map-failed-to-parse"
+
+
+class FileUploadApiCodes(enum.StrEnum):
+    MISSING_FOREIGN_ID = "missing-foreign-id"
+    INVALID = "file-failed-validation"
+    UNSUPPORTED = "parent-does-not-support-this-upload"
+    """attr: Raised when the parent object for the file does not allow this upload.
+
+    e.g. a temporary map does not support custom image uploads.
+    """
+    TOO_LARGE = "file-too-large"
+
+
+class GenericApiCodes(enum.StrEnum):
+    CANNOT_UPDATE_FIELD = "field-cannot-be-updated-after-creation"
+    """attr: Some fields are not allowed to be edited via any API endpoint."""

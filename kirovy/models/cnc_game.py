@@ -7,7 +7,9 @@ from kirovy import exceptions, typing as t
 
 from kirovy.models.cnc_base_model import CncNetBaseModel
 
-__all__ = ["CncFileExtension", "CncGame"]
+__all__ = ["CncFileExtension", "CncGame", "GameScopedUserOwnedModel"]
+
+from kirovy.models.cnc_user import CncNetUserOwnedModel
 
 
 def is_valid_extension(extension: str) -> None:
@@ -55,6 +57,9 @@ class CncFileExtension(CncNetBaseModel):
         null=False,
         blank=False,
     )
+
+    class Meta:
+        indexes = [models.Index(fields=["extension_type"])]
 
     def save(self, *args, **kwargs):
         self.extension = self.extension.lower()  # Force lowercase
@@ -137,3 +142,12 @@ class CncGame(CncNetBaseModel):
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__} Object: ({self.slug}) '{self.full_name}' [{self.id}]>"
+
+
+class GameScopedUserOwnedModel(CncNetUserOwnedModel):
+    """A user owned object that is specific to a game. e.g. a map or image."""
+
+    cnc_game = models.ForeignKey(CncGame, models.PROTECT, null=False, blank=False)
+
+    class Meta:
+        abstract = True

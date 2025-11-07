@@ -21,7 +21,7 @@ class Migration(migrations.Migration):
                 ("created", models.DateTimeField(auto_now_add=True, null=True)),
                 ("modified", models.DateTimeField(auto_now=True, null=True)),
                 ("name", models.CharField(max_length=255)),
-                ("file", models.FileField(upload_to=kirovy.models.file_base._generate_upload_to)),
+                ("file", models.FileField(upload_to=kirovy.models.file_base.default_generate_upload_to)),
                 ("hash_md5", models.CharField(max_length=32)),
                 ("hash_sha512", models.CharField(max_length=512)),
                 ("hash_sha1", models.CharField(max_length=50, null=True)),

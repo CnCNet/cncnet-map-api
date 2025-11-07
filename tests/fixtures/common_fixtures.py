@@ -17,7 +17,7 @@ from rest_framework import status
 
 from kirovy import objects, typing as t, constants
 from kirovy.models import CncUser
-from kirovy.objects.ui_objects import ErrorResponseData
+from kirovy.objects.ui_objects import ErrorResponseData, BanData
 from kirovy.response import KirovyResponse
 
 
@@ -289,19 +289,17 @@ def user(create_kirovy_user) -> CncUser:
 
 
 @pytest.fixture
-def banned_user(create_kirovy_user) -> CncUser:
+def banned_user(create_kirovy_user, moderator) -> CncUser:
     """Returns a user that is verified, but is banned."""
-    return create_kirovy_user(
+    user = create_kirovy_user(
         username="MendicantBias",
         verified_email=True,
         verified_map_uploader=True,
         cncnet_id=49,
-        is_banned=True,
-        ban_count=2,
-        ban_date=datetime.datetime.min,
-        ban_expires=datetime.datetime(2552, 12, 11),
-        ban_reason="Siding with the shaping sickness",
     )
+    user.ban(moderator, ban_reason="Siding with the shaping sickness", ban_expires=datetime.datetime(2552, 12, 11))
+    user.refresh_from_db()
+    return user
 
 
 @pytest.fixture
@@ -376,3 +374,21 @@ def client_admin(admin, create_client) -> KirovyClient:
 def client_god(god, create_client) -> KirovyClient:
     """Returns a client with an active god user."""
     return create_client(god)
+
+
+@pytest.fixture
+def ban_user(client_god):
+    """Return a function to ban a user."""
+
+    def _inner(user_to_ban: CncUser, ban_reason: str = "Silos Needed") -> CncUser:
+        response = client_god.post(
+            "/admin/ban/",
+            BanData(
+                object_type=BanData.Meta.ObjectType.USER, is_banned=True, note=ban_reason, object_id=str(user_to_ban.id)
+            ).model_dump_json(),
+        )
+        assert response.status_code == status.HTTP_200_OK
+        user_to_ban.refresh_from_db()
+        return user_to_ban
+
+    return _inner

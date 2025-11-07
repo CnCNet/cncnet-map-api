@@ -4,6 +4,8 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.views import APIView
 
 from kirovy import permissions, exceptions
+from kirovy.exceptions.view_exceptions import KirovyValidationError
+from kirovy.models.moderabile import Moderabile
 from kirovy.objects import ui_objects
 from kirovy.request import KirovyRequest
 from kirovy.response import KirovyResponse
@@ -22,28 +24,25 @@ class BanView(APIView):
 
     def post(self, request: KirovyRequest, **kwargs) -> KirovyResponse:
         if not request.data:
-            return KirovyResponse(
-                status=status.HTTP_400_BAD_REQUEST,
-                data=ui_objects.ErrorResponseData(message="no_data"),
-            )
+            raise KirovyValidationError("No data")
         try:
             ban_data = ui_objects.BanData(**request.data)
         except pydantic.ValidationError:
-            return KirovyResponse(
-                status=status.HTTP_400_BAD_REQUEST,
-                data=ui_objects.ErrorResponseData(message="data_failed_validation"),
-            )
+            raise KirovyValidationError("Ban object failed validation")
 
-        obj = get_object_or_404(ban_data.get_model().objects.filter(), id=ban_data.object_id)
+        obj: Moderabile = get_object_or_404(ban_data.django_model.objects.filter(), id=ban_data.object_id)
+
         try:
-            obj.set_ban(ban_data.is_banned, self.request.user)
+            if ban_data.is_banned:
+                obj.ban(self.request.user, ban_reason=ban_data.note, ban_expires=ban_data.ban_expires)
+            else:
+                obj.unban(self.request.user, note=ban_data.note)
         except exceptions.BanException as e:
-            return KirovyResponse(
-                status=status.HTTP_400_BAD_REQUEST,
-                data=ui_objects.ErrorResponseData(message=str(e)),
+            raise KirovyValidationError(
+                str(e),
             )
 
         return KirovyResponse(
             status=status.HTTP_200_OK,
-            data=ui_objects.ResultResponseData(message="", result=ban_data.model_dump()),
+            data=ui_objects.ResultResponseData(message="Updated ban status for object", result=ban_data.model_dump()),
         )
