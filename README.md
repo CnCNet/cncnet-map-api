@@ -22,18 +22,22 @@ Follow this guide to set up the api locally for development.
 ### Prerequisites
 
 > [!note]
-> By default, we are using Docker for the sake of simplicity. If you want to run the API natively, you can check out the section [Native Guide](#native-guide).
+> By default, we are containerizing for the sake of simplicity.
+> If you want to run the API natively, you can check out the section [Native Guide](#native-guide).
 
-- Docker
-- An IDE (PyCharm strongly recommended)
+- Docker (or colima, or podman)
+- An IDE &mdash; PyCharm is what the docs will usually use.
 
 ### Set up environment variables
 
 You can copy `example.env` to `.env` and fill in the required values.
 
-- Set `POSTGRES_PASSWORD` to a secure password.
-- Set `SECRET_KEY` to a secure secret key. You can use `from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())` in a python shell to generate it.
-- Optionally you can set `DEBUG` to `1` if needed
+- Set `POSTGRES_PASSWORD` to a secure password. It will just be for your local machine.
+- Set `SECRET_KEY` to a secure secret key.
+  You can use `from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())` in a
+  python shell to generate it, or you can let a cat walk on your keyboard.
+- Optionally you can set `DEBUG` to `1` if needed. See the
+  [django docs](https://docs.djangoproject.com/en/5.2/ref/settings/#debug) for why you would.
 - Set `RUN_ENVIRONMENT=dev` if you want to see the developer endpoints.
 
 ### Running the API
@@ -52,12 +56,33 @@ Once the api is started you can run the tests using the following command.
 
 Run tests
 ```
-docker exec -it mapdb-django-dev pytest
+docker compose exec django pytest
+```
+
+If it's not running already then use `docker compose run` instead.
+
+### Committing code
+
+We use [pre-commit](https://pre-commit.com/) to run checks prior to committing code. Pre-commit's settings are in the
+file [.pre-commit-config.yaml](/CnCNet/cncnet-map-api/blob/main/.pre-commit-config.yaml)
+
+If you have python installed natively, you can just do the following in the `cncnet-map-api` project directory.
+
+```shell
+pip install pre-commit
+pre-commit install
+```
+
+If you use [UV](https://github.com/astral-sh/uv) then you can use the following command to install `pre-commit`[^1].
+
+```shell
+uv tool install pre-commit
+pre-commit install
 ```
 
 ## Production
 
-> This section is still a WIP...
+> [!warning] This section is still a WIP...
 
 Follow this guide to set up the app for production.
 
@@ -130,9 +155,9 @@ natively on Windows is a... less-than-pleasant effort. So use docker instead.
 
 1. Install docker for windows. I have had success with [Rancher Desktop](https://rancherdesktop.io/)
    or [Docker Desktop](https://docs.docker.com/desktop/setup/install/windows-install/)
-2. After docker is running, switch to your local git repo and run `docker compose up windows-dev -d`.
+2. After docker is running, switch to your local git repo and run `docker compose -f docker-compose.debugger.yml up debugger-django -d`.
    Make sure the build succeeds.
-3. Set `windows-dev` as your python interpreter for whichever editor you use.
+3. Set `debugger-django` as your python interpreter for whichever editor you use.
 
 > [!TIP]
 > In Pycharm you go to `Settings > Project > Python Interpreter > Add Interpreter > Docker Compose`
@@ -146,7 +171,7 @@ All you need to do is run the database from `docker-compose`, then launch the te
 **If you want to run the tests via CLI:**
 
 - Make sure your database is running from the docker compose file. `docker-compose start db`
-- Make sure your environment variables are setup and loaded to your shell. See [backend dev setup](#load-shell-env)
+- Make sure your environment variables are set up and loaded to your shell. See [backend dev setup](#load-shell-env)
 - Run `DJANGO_SETTINGS_MODULE="kirovy.settings.testing" pytest tests`
 
 Django should automatically run migrations as part of the test startup.
@@ -154,3 +179,7 @@ Django should automatically run migrations as part of the test startup.
 **Run tests with docker compose:**
 
 - `docker-compose up --build test`
+
+# Footnotes
+
+[^1]: Thank you to [Adam Johnson](https://adamj.eu/tech/2025/05/07/pre-commit-install-uv/) for the UV guide.
