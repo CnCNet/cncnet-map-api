@@ -82,7 +82,8 @@ pre-commit install
 
 ## Production
 
-> [!warning] This section is still a WIP...
+> [!warning]
+> This section is still a WIP...
 
 Follow this guide to set up the app for production.
 
