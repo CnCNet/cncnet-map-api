@@ -12,6 +12,9 @@ services:
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     env_file:
       - .env
+    # necessary for rootless containers because postgres makes a new user if running as uid=0, and subuid will make the
+    # container uid 0 by default. The `postgres` user won't have the necessary permissions for the volume path.
+    userns_mode: keep-id
     ports:
       - "127.0.0.1:${POSTGRES_PORT}:${POSTGRES_PORT}"
     command: -p ${POSTGRES_PORT}

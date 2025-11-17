@@ -3,6 +3,6 @@ line-length = 120  # GitHub's line length. Black will help prevent you from need
 target-version = ['py312']
 
 [project]
-requires-python = "3.12.4"
+requires-python = ">=3.12.4"
 name  = "cncnet-map-api"
 dynamic = ["version"]
