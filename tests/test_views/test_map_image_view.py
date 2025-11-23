@@ -35,7 +35,7 @@ def test_map_image_upload__happy_path(create_cnc_map, file_map_image, client_use
     image_url: str = response.data["result"]["file_url"]
     parent_id: str = response.data["result"]["parent_object_id"]
     expected_date = saved_file_raw.created.date().isoformat()
-    expected_url_path = f"/silo/yr/map_images/{cnc_map.id.hex}/{expected_date}_{saved_file_raw.id.hex}.jpg"
+    expected_url_path = f"/silo/ra2remaster/map_images/{cnc_map.id.hex}/{expected_date}_{saved_file_raw.id.hex}.jpg"
 
     assert parent_id == cnc_map.id
     assert image_url == expected_url_path

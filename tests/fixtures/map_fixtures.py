@@ -75,13 +75,13 @@ def create_cnc_map_file(db, extension_map, zip_map_for_legacy_upload):
 
 
 @pytest.fixture
-def create_cnc_map(db, cnc_map_category, game_yuri, client_user, create_cnc_map_file):
+def create_cnc_map(db, cnc_map_category, game_uploadable, client_user, create_cnc_map_file):
     """Return a function to create a CncMap object."""
 
     def _inner(
         map_name: str = "Streets Of Gold 2",
         description: str = "A fun map. Capture the center airports for a Hind.",
-        cnc_game: CncGame = game_yuri,
+        cnc_game: CncGame = game_uploadable,
         map_categories: t.List[MapCategory] = None,
         user_id: t.Union[UUIDField, str, None, t.NO_VALUE] = t.NO_VALUE,
         is_legacy: bool = False,
