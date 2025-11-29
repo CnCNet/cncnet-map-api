@@ -134,7 +134,7 @@ admin_patterns = [path("ban/", admin_views.BanView.as_view())]
 
 # /game
 game_patterns = [
-    path("", game_views.KirovyListCreateView.as_view()),
+    path("", game_views.GamesListView.as_view()),
     path("<uuid:pk>/", game_views.GameDetailView.as_view()),
 ]
 

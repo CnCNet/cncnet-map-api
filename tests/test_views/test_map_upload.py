@@ -1,17 +1,14 @@
-import pathlib
-
-import pytest
-from PIL import Image, ExifTags
 from django.core.files.uploadedfile import UploadedFile
+from django.http import FileResponse
 from rest_framework import status
 
 from kirovy.constants.api_codes import UploadApiCodes, FileUploadApiCodes
 from kirovy.models.cnc_map import CncMapImageFile
+from kirovy.objects import ui_objects
 from kirovy.utils import file_utils
 from kirovy.models import CncMap, CncMapFile, MapCategory, CncGame
 from kirovy.response import KirovyResponse
 from kirovy.services.cnc_gen_2_services import CncGen2MapParser
-from kirovy.views.map_image_views import MapImageFileUploadView
 
 _UPLOAD_URL = "/maps/upload/"
 _CLIENT_URL = "/maps/client/upload/"
@@ -20,11 +17,9 @@ _CLIENT_URL = "/maps/client/upload/"
 def test_map_file_upload_happy_path(
     client_user, file_map_desert, game_uploadable, extension_map, tmp_media_root, get_file_path_for_uploaded_file_url
 ):
-    response: KirovyResponse = client_user.post(
+    response = client_user.post_file(
         _UPLOAD_URL,
         {"file": file_map_desert, "game_id": str(game_uploadable.id)},
-        format="multipart",
-        content_type=None,
     )
 
     assert response.status_code == status.HTTP_201_CREATED
@@ -40,8 +35,8 @@ def test_map_file_upload_happy_path(
 
     uploaded_file = UploadedFile(uploaded_file_path.open(mode="rb"))
 
-    file_response = client_user.get(uploaded_file_url)
-    image_response = client_user.get(uploaded_image_url)
+    file_response: FileResponse = client_user.get_file(uploaded_file_url)
+    image_response: FileResponse = client_user.get_file(uploaded_image_url)
     assert file_response.status_code == status.HTTP_200_OK
     assert image_response.status_code == status.HTTP_200_OK
 
@@ -96,11 +91,9 @@ def test_map_file_upload_happy_path(
 
 def test_map_file_upload_banned_user(file_map_desert, game_uploadable, client_banned):
     """Test that a banned user cannot upload a new map."""
-    response = client_banned.post(
+    response = client_banned.post_file(
         _UPLOAD_URL,
         {"file": file_map_desert, "game_id": str(game_uploadable.id)},
-        format="multipart",
-        content_type=None,
     )
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -108,11 +101,10 @@ def test_map_file_upload_banned_user(file_map_desert, game_uploadable, client_ba
 
 def test_map_file_upload_banned_map(banned_cheat_map, file_map_unfair, client_anonymous):
     """Test that an uploaded map will be rejected if the hash matches a banned one."""
-    response = client_anonymous.post(
+    response = client_anonymous.post_file(
         _CLIENT_URL,
         {"file": file_map_unfair, "game": banned_cheat_map.cnc_game.slug},
-        format="multipart",
-        content_type=None,
+        data_type=ui_objects.ErrorResponseData,
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -137,11 +129,9 @@ def test_map_file_upload_game_allowances(
     for game, expectation in user_expectations.items():
         CncMap.objects.all().delete()
         file_map_desert.seek(0)
-        response: KirovyResponse = client_user.post(
+        response: KirovyResponse = client_user.post_file(
             _UPLOAD_URL,
             {"file": file_map_desert, "game_id": str(game.id)},
-            format="multipart",
-            content_type=None,
         )
         assert response.status_code == expectation, f"{game}, should have been {expectation}"
         assert expectation == status.HTTP_201_CREATED or response.data["message"] == "Game does not exist"
@@ -149,11 +139,9 @@ def test_map_file_upload_game_allowances(
     for game, _ in user_expectations.items():
         CncMap.objects.all().delete()
         file_map_desert.seek(0)
-        response: KirovyResponse = client_moderator.post(
+        response: KirovyResponse = client_moderator.post_file(
             _UPLOAD_URL,
             # Need to use a different map to get passed the duplicate file checker.
             {"file": file_map_desert, "game_id": str(game.id)},
-            format="multipart",
-            content_type=None,
         )
         assert response.status_code == status.HTTP_201_CREATED
