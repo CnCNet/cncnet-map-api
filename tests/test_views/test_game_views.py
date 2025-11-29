@@ -58,3 +58,59 @@ def test_game__hidden_games_visible_to_moderators(client_moderator, create_cnc_g
     assert response.status_code == status.HTTP_200_OK
 
     assert str(invisible.id) in [r["id"] for r in response.data["results"]]
+
+
+def test_game__cannot_be_deleted(client_god, create_cnc_game):
+    """C&C games don't change much these days, so there's no real reason to expose deletions to the API.
+
+    If you are a future person and are adding more capabilities to the game endpoints, you can just alter this test
+    to use the ``client_user`` fixture to test that user's can't delete games.
+    """
+    my_game = create_cnc_game()
+
+    response = client_god.delete(f"/games/{my_game.id}/", data_type=ui_objects.ResultResponseData)
+
+    assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
+
+
+def test_game__cannot_be_edited_by_non_admins(client_moderator, create_cnc_game):
+    """C&C games don't change much so we'll only allow admins to edit them via the API.
+
+    Maybe in the future we can allow mod authors to edit their own mod entries."""
+    my_game = create_cnc_game()
+
+    response = client_moderator.post(f"/games/{my_game.id}/", data_type=ui_objects.ResultResponseData)
+
+    assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+def test_game__admins_can_edit(client_admin, create_cnc_game):
+    """Admins should be able to edit a few non-structural things for games via the API."""
+    my_game = create_cnc_game()
+    new_full_name = f"{my_game.full_name} (Steam version)"
+    new_visibility = not my_game.is_visible
+    new_allow_public_uploads = not my_game.allow_public_uploads
+    new_compatible_with_parent_maps = not my_game.compatible_with_parent_maps
+    original_is_mod = my_game.is_mod
+    original_slug = my_game.slug
+
+    data = {
+        "full_name": new_full_name,
+        "is_visible": new_visibility,
+        "allow_public_uploads": new_allow_public_uploads,
+        "compatible_with_parent_maps": new_compatible_with_parent_maps,
+        "is_mod": not original_is_mod,  # should not change, not editable via API.
+        "slug": "wontwork",  # should not change, not editable via API.
+    }
+
+    response = client_admin.patch(f"/games/{my_game.id}/", data=data, data_type=ui_objects.ResultResponseData)
+
+    assert response.status_code == status.HTTP_200_OK
+    my_game.refresh_from_db()
+
+    assert my_game.full_name == new_full_name
+    assert my_game.is_visible == new_visibility
+    assert my_game.allow_public_uploads == new_allow_public_uploads
+    assert my_game.compatible_with_parent_maps == new_compatible_with_parent_maps
+    assert my_game.is_mod == original_is_mod, "should not be changeable via the API."
+    assert my_game.slug == original_slug, "should not be changeable via the API."

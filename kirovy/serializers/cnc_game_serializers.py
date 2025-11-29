@@ -47,7 +47,7 @@ class CncGameSerializer(KirovySerializer):
     is_visible = serializers.BooleanField(allow_null=False, default=True)
     allow_public_uploads = serializers.BooleanField(allow_null=False, default=False)
     compatible_with_parent_maps = serializers.BooleanField(allow_null=False, default=False)
-    is_mod = serializers.BooleanField(allow_null=False, default=False)
+    is_mod = serializers.BooleanField(read_only=True, allow_null=False, default=False)
     allowed_extension_ids = serializers.PrimaryKeyRelatedField(
         source="allowed_extensions",
         pk_field=serializers.UUIDField(),
@@ -57,12 +57,12 @@ class CncGameSerializer(KirovySerializer):
 
     parent_game_id = serializers.PrimaryKeyRelatedField(
         source="parent_game",
-        queryset=cnc_game.CncGame.objects.filter(is_visible=True),
         pk_field=serializers.UUIDField(),
         many=False,
         allow_null=True,
         allow_empty=False,
         default=None,
+        read_only=True,  # parent_id affects file path generation so we can't change it via the API.
     )
 
     class Meta:
@@ -74,4 +74,18 @@ class CncGameSerializer(KirovySerializer):
     def create(self, validated_data: t.DictStrAny) -> cnc_game.CncGame:
         instance = cnc_game.CncGame(**validated_data)
         instance.save()
+        return instance
+
+    def update(self, instance: cnc_game.CncGame, validated_data: t.DictStrAny) -> cnc_game.CncGame:
+        instance.full_name = validated_data.get("full_name", instance.full_name)
+        instance.is_visible = validated_data.get("is_visible", instance.is_visible)
+        instance.is_mod = validated_data.get("is_mod", instance.is_mod)
+        instance.allow_public_uploads = validated_data.get("allow_public_uploads", instance.allow_public_uploads)
+        instance.compatible_with_parent_maps = validated_data.get(
+            "compatible_with_parent_maps", instance.compatible_with_parent_maps
+        )
+        instance.save(
+            update_fields=["full_name", "is_visible", "is_mod", "allow_public_uploads", "compatible_with_parent_maps"]
+        )
+        instance.refresh_from_db()
         return instance
