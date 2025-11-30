@@ -34,8 +34,8 @@ class CncNetFileBaseModel(GameScopedUserOwnedModel):
     name = models.CharField(max_length=255, null=False, blank=False)
     """Filename no extension."""
 
-    file = models.FileField(null=False, upload_to=default_generate_upload_to)
-    """The actual file this object represent."""
+    file = models.FileField(null=False, upload_to=default_generate_upload_to, max_length=2048)
+    """The actual file this object represent. The max length of 2048 is half of the unix max."""
 
     file_extension = models.ForeignKey(
         game_models.CncFileExtension,

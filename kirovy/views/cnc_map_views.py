@@ -224,7 +224,7 @@ class MapRetrieveUpdateView(base_views.KirovyRetrieveUpdateView):
             # Staff users can see everything.
             return CncMap.objects.filter()
 
-        # Anyone can view legacy maps, temporary maps (for the cncnet client,) and published maps that aren't banned.
+        # Anyone can view legacy maps, temporary maps (cncnet client uploads) and published maps that aren't banned.
         queryset: QuerySet[CncMap] = CncMap.objects.filter(
             Q(Q(is_published=True) | Q(is_legacy=True) | Q(is_temporary=True)) & Q(is_banned=False)
         )

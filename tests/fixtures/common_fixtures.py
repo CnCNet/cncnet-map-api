@@ -17,6 +17,7 @@ from rest_framework import status
 
 from kirovy import objects, typing as t, constants
 from kirovy.models import CncUser
+from kirovy.objects import ui_objects
 from kirovy.objects.ui_objects import ErrorResponseData, BanData
 from kirovy.response import KirovyResponse
 
@@ -68,6 +69,8 @@ def tmp_media_root(tmp_path, settings):
 
 
 _ClientReturnT = KirovyResponse | FileResponse
+
+_ClientResponseDataT = t.TypeVar("_ClientResponseDataT", bound=ui_objects.BaseResponseData)
 
 
 class KirovyClient(Client):
@@ -146,8 +149,9 @@ class KirovyClient(Client):
         content_type=__application_json,
         follow=False,
         secure=False,
+        data_type: t.Type[_ClientResponseDataT] = ui_objects.BaseResponseData,
         **extra,
-    ) -> _ClientReturnT:
+    ) -> KirovyResponse[_ClientResponseDataT]:
         """Wraps post to make it default to JSON."""
 
         data = self.__convert_data(data, content_type)
@@ -170,6 +174,20 @@ class KirovyClient(Client):
             **extra,
         )
 
+    def post_file(
+        self,
+        path: str,
+        data: dict[str, t.Any] | None = None,
+        data_type: t.Type[_ClientResponseDataT] = ui_objects.ResultResponseData,
+        **extra,
+    ) -> KirovyResponse[_ClientResponseDataT]:
+        return super().post(
+            path,
+            data=data,
+            format="multipart",
+            **extra,
+        )
+
     def patch(
         self,
         path,
@@ -177,8 +195,9 @@ class KirovyClient(Client):
         content_type=__application_json,
         follow=False,
         secure=False,
+        data_type: t.Type[_ClientResponseDataT] = ui_objects.BaseResponseData,
         **extra,
-    ) -> _ClientReturnT:
+    ) -> KirovyResponse[_ClientResponseDataT]:
         """Wraps patch to make it default to JSON."""
 
         data = self.__convert_data(data, content_type)
@@ -198,8 +217,9 @@ class KirovyClient(Client):
         content_type=__application_json,
         follow=False,
         secure=False,
+        data_type: t.Type[_ClientResponseDataT] = ui_objects.BaseResponseData,
         **extra,
-    ) -> _ClientReturnT:
+    ) -> KirovyResponse[_ClientResponseDataT]:
         """Wraps put to make it default to JSON."""
 
         data = self.__convert_data(data, content_type)
@@ -211,6 +231,32 @@ class KirovyClient(Client):
             secure=secure,
             **extra,
         )
+
+    def get(
+        self,
+        path: str,
+        data: t.DictStrAny | None = None,
+        follow: bool = False,
+        secure: bool = False,
+        data_type: t.Type[_ClientResponseDataT] = ui_objects.BaseResponseData,
+        *,
+        headers: t.DictStrAny | None = None,
+        **extra: t.DictStrAny,
+    ) -> KirovyResponse[_ClientResponseDataT]:
+        return super().get(path, data, follow, secure, headers=headers, **extra)
+
+    def get_file(
+        self,
+        path: str,
+        data: t.DictStrAny | None = None,
+        follow: bool = False,
+        secure: bool = False,
+        *,
+        headers: t.DictStrAny | None = None,
+        **extra: t.DictStrAny,
+    ) -> FileResponse:
+        """Wraps get to type hint a file return."""
+        return super().get(path, data, follow, secure, headers=headers, **extra)
 
 
 @pytest.fixture

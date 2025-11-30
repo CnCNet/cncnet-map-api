@@ -13,17 +13,17 @@ def test_cnc_map_invalid_file_extension(game_yuri, extension_map, extension_mix,
     assert extension_mix.extension in str(exc_info.value)
 
 
-def test_cnc_map_generate_upload_to(game_yuri, extension_map, file_map_desert, cnc_map, settings):
+def test_cnc_map_generate_upload_to(game_uploadable, extension_map, file_map_desert, cnc_map, settings):
     """Test that we generate the correct upload path for a map file.
 
     This test will fail if you alter the initial migrations.
     """
     expected_path = pathlib.Path(
         settings.MEDIA_ROOT,
-        "yr",
+        "ra2remaster",
         "worlds",
         cnc_map.id.hex,
-        f"yr_{cnc_map.id.hex}_v01.map",
+        f"ra2remaster_{cnc_map.id.hex}_v01.map",
     )
     saved_map = CncMapFile(
         height=117,  # doesn't matter for this test.
@@ -31,7 +31,7 @@ def test_cnc_map_generate_upload_to(game_yuri, extension_map, file_map_desert, c
         file=file_map_desert,
         file_extension=extension_map,
         cnc_map=cnc_map,
-        cnc_game=game_yuri,
+        cnc_game=game_uploadable,
         name=cnc_map.generate_versioned_name_for_file(),
     )
     CncMapFile.UPLOAD_TYPE = "worlds"
@@ -41,7 +41,7 @@ def test_cnc_map_generate_upload_to(game_yuri, extension_map, file_map_desert, c
     assert saved_map.file.path == str(expected_path)
 
 
-def test_cnc_map_version(game_yuri, extension_map, file_map_valid, cnc_map):
+def test_cnc_map_version(game_uploadable, extension_map, file_map_valid, cnc_map):
     """Test saving two map files to one map will increment the version and place both files in the same directory."""
     map1 = CncMapFile(
         height=10,
@@ -49,7 +49,7 @@ def test_cnc_map_version(game_yuri, extension_map, file_map_valid, cnc_map):
         file=file_map_valid,
         file_extension=extension_map,
         cnc_map=cnc_map,
-        cnc_game=game_yuri,
+        cnc_game=game_uploadable,
     )
     map1.save()
     map1.refresh_from_db()
@@ -62,7 +62,7 @@ def test_cnc_map_version(game_yuri, extension_map, file_map_valid, cnc_map):
         file=file_map_valid,
         file_extension=extension_map,
         cnc_map=cnc_map,
-        cnc_game=game_yuri,
+        cnc_game=game_uploadable,
     )
     map2.save()
     map2.refresh_from_db()

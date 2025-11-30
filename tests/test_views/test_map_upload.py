@@ -1,30 +1,25 @@
-import pathlib
-
-import pytest
-from PIL import Image, ExifTags
 from django.core.files.uploadedfile import UploadedFile
+from django.http import FileResponse
 from rest_framework import status
 
 from kirovy.constants.api_codes import UploadApiCodes, FileUploadApiCodes
 from kirovy.models.cnc_map import CncMapImageFile
+from kirovy.objects import ui_objects
 from kirovy.utils import file_utils
-from kirovy.models import CncMap, CncMapFile, MapCategory
+from kirovy.models import CncMap, CncMapFile, MapCategory, CncGame
 from kirovy.response import KirovyResponse
 from kirovy.services.cnc_gen_2_services import CncGen2MapParser
-from kirovy.views.map_image_views import MapImageFileUploadView
 
 _UPLOAD_URL = "/maps/upload/"
 _CLIENT_URL = "/maps/client/upload/"
 
 
 def test_map_file_upload_happy_path(
-    client_user, file_map_desert, game_yuri, extension_map, tmp_media_root, get_file_path_for_uploaded_file_url
+    client_user, file_map_desert, game_uploadable, extension_map, tmp_media_root, get_file_path_for_uploaded_file_url
 ):
-    response: KirovyResponse = client_user.post(
+    response = client_user.post_file(
         _UPLOAD_URL,
-        {"file": file_map_desert, "game_id": str(game_yuri.id)},
-        format="multipart",
-        content_type=None,
+        {"file": file_map_desert, "game_id": str(game_uploadable.id)},
     )
 
     assert response.status_code == status.HTTP_201_CREATED
@@ -40,8 +35,8 @@ def test_map_file_upload_happy_path(
 
     uploaded_file = UploadedFile(uploaded_file_path.open(mode="rb"))
 
-    file_response = client_user.get(uploaded_file_url)
-    image_response = client_user.get(uploaded_image_url)
+    file_response: FileResponse = client_user.get_file(uploaded_file_url)
+    image_response: FileResponse = client_user.get_file(uploaded_image_url)
     assert file_response.status_code == status.HTTP_200_OK
     assert image_response.status_code == status.HTTP_200_OK
 
@@ -70,7 +65,7 @@ def test_map_file_upload_happy_path(
     # A lot of these will break if you change the desert.map file.
     assert response_map["cnc_user_id"] == str(client_user.kirovy_user.id)
     assert response_map["map_name"] == "desert", "Should match the name in the map file."
-    assert response_map["cnc_game_id"] == str(game_yuri.id)
+    assert response_map["cnc_game_id"] == str(game_uploadable.id)
     assert response_map["category_ids"] == [
         str(MapCategory.objects.get(name__iexact="standard").id),
     ]
@@ -94,13 +89,11 @@ def test_map_file_upload_happy_path(
     assert response_map["images"][0]["is_extracted"] is True
 
 
-def test_map_file_upload_banned_user(file_map_desert, game_yuri, client_banned):
+def test_map_file_upload_banned_user(file_map_desert, game_uploadable, client_banned):
     """Test that a banned user cannot upload a new map."""
-    response = client_banned.post(
+    response = client_banned.post_file(
         _UPLOAD_URL,
-        {"file": file_map_desert, "game_id": str(game_yuri.id)},
-        format="multipart",
-        content_type=None,
+        {"file": file_map_desert, "game_id": str(game_uploadable.id)},
     )
 
     assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -108,13 +101,47 @@ def test_map_file_upload_banned_user(file_map_desert, game_yuri, client_banned):
 
 def test_map_file_upload_banned_map(banned_cheat_map, file_map_unfair, client_anonymous):
     """Test that an uploaded map will be rejected if the hash matches a banned one."""
-    response = client_anonymous.post(
+    response = client_anonymous.post_file(
         _CLIENT_URL,
         {"file": file_map_unfair, "game": banned_cheat_map.cnc_game.slug},
-        format="multipart",
-        content_type=None,
+        data_type=ui_objects.ErrorResponseData,
     )
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     assert response.data["code"] == UploadApiCodes.DUPLICATE_MAP
     assert response.data["additional"]["existing_map_id"] == str(banned_cheat_map.id)
+
+
+def test_map_file_upload_game_allowances(
+    client_user, client_moderator, file_map_desert, create_cnc_game, file_map_unfair
+):
+    """Test that we properly block uploads for invisible / restricted games for non-staff users."""
+    visible_and_uploadable = create_cnc_game()
+    invisible_and_uploadable = create_cnc_game("iu", is_visible=False, allow_public_uploads=True)
+    visible_and_restricted = create_cnc_game("vr", is_visible=True, allow_public_uploads=False)
+
+    user_expectations = {
+        visible_and_uploadable: status.HTTP_201_CREATED,
+        invisible_and_uploadable: status.HTTP_400_BAD_REQUEST,
+        visible_and_restricted: status.HTTP_400_BAD_REQUEST,
+    }
+
+    for game, expectation in user_expectations.items():
+        CncMap.objects.all().delete()
+        file_map_desert.seek(0)
+        response: KirovyResponse = client_user.post_file(
+            _UPLOAD_URL,
+            {"file": file_map_desert, "game_id": str(game.id)},
+        )
+        assert response.status_code == expectation, f"{game}, should have been {expectation}"
+        assert expectation == status.HTTP_201_CREATED or response.data["message"] == "Game does not exist"
+
+    for game, _ in user_expectations.items():
+        CncMap.objects.all().delete()
+        file_map_desert.seek(0)
+        response: KirovyResponse = client_moderator.post_file(
+            _UPLOAD_URL,
+            # Need to use a different map to get passed the duplicate file checker.
+            {"file": file_map_desert, "game_id": str(game.id)},
+        )
+        assert response.status_code == status.HTTP_201_CREATED

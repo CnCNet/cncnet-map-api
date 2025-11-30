@@ -240,7 +240,7 @@ class CncMapImageFile(file_base.CncNetFileBaseModel):
 
     UPLOAD_TYPE = settings.CNC_MAP_IMAGE_DIRECTORY
 
-    file = models.ImageField(null=False, upload_to=file_base.default_generate_upload_to)
+    file = models.ImageField(null=False, upload_to=file_base.default_generate_upload_to, max_length=2048)
     """The actual file this object represent."""
 
     is_extracted = models.BooleanField(null=False, blank=False, default=False)

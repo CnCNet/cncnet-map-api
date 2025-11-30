@@ -24,7 +24,15 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, Sp
 import kirovy.views.map_image_views
 from kirovy.models import CncGame
 from kirovy.settings import settings_constants
-from kirovy.views import test, cnc_map_views, permission_views, admin_views, map_upload_views, map_image_views
+from kirovy.views import (
+    test,
+    cnc_map_views,
+    permission_views,
+    admin_views,
+    map_upload_views,
+    map_image_views,
+    game_views,
+)
 from kirovy import typing as t, constants
 
 _DjangoPath = URLPattern | URLResolver
@@ -90,7 +98,7 @@ def _get_url_patterns() -> list[_DjangoPath]:
             path("ui-permissions/", permission_views.ListPermissionForAuthUser.as_view()),
             path("maps/", include(map_patterns)),
             # path("users/<uuid:cnc_user_id>/", ...),  # will show which files a user has uploaded.
-            # path("games/", ...),  # get games.,
+            path("games/", include(game_patterns)),
         ]
         + backwards_compatible_urls
         + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)  # static assets
@@ -122,5 +130,12 @@ user_patterns = [
 
 # /admin/
 admin_patterns = [path("ban/", admin_views.BanView.as_view())]
+
+
+# /game
+game_patterns = [
+    path("", game_views.GamesListView.as_view()),
+    path("<uuid:pk>/", game_views.GameDetailView.as_view()),
+]
 
 urlpatterns = _get_url_patterns()

@@ -57,7 +57,9 @@ class _BaseMapFileUploadView(APIView, metaclass=ABCMeta):
         uploaded_file: UploadedFile = request.data["file"]
 
         game = self.get_game_from_request(request)
-        if not game:
+        game_supports_uploads = game and (request.user.is_staff or (game.is_visible and game.allow_public_uploads))
+        if not game_supports_uploads:
+            # Gaslight the user
             raise KirovyValidationError(detail="Game does not exist", code=UploadApiCodes.GAME_DOES_NOT_EXIST)
         extension_id = self.get_extension_id_for_upload(uploaded_file)
         self.verify_file_size_is_allowed(uploaded_file)
@@ -77,6 +79,7 @@ class _BaseMapFileUploadView(APIView, metaclass=ABCMeta):
                 incomplete_upload=True,
                 cnc_user_id=request.user.id,
                 parent_id=parent_map.id if parent_map else None,
+                last_modified_by_id=request.user.id,
             ),
             context={"request": self.request},
         )
@@ -134,6 +137,7 @@ class _BaseMapFileUploadView(APIView, metaclass=ABCMeta):
                 hash_sha512=map_hashes_post_processing.sha512,
                 hash_sha1=map_hashes_post_processing.sha1,
                 cnc_user_id=self.request.user.id,
+                last_modified_by_id=self.request.user.id,
             ),
             context={"request": self.request},
         )
@@ -325,7 +329,7 @@ class MapFileUploadView(_BaseMapFileUploadView):
 
 
 class CncnetClientMapUploadView(_BaseMapFileUploadView):
-    """DO NOT USE THIS FOR NOW. Use"""
+    """DO NOT USE THIS FOR NOW. Use CncNetBackwardsCompatibleUploadView"""
 
     permission_classes = [AllowAny]
     upload_is_temporary = True
