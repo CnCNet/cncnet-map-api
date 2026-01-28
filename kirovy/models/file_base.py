@@ -60,6 +60,9 @@ class CncNetFileBaseModel(GameScopedUserOwnedModel):
     hash_sha1 = models.CharField(max_length=50, null=True, blank=False)
     """Backwards compatibility with the old CncNetClient."""
 
+    ip_address = models.CharField(max_length=50, null=True, blank=True, db_index=True)
+    """IP address that uploaded the file. 50 is long enough for ipv6"""
+
     def validate_file_extension(self, file_extension: game_models.CncFileExtension) -> None:
         """Validate that an extension is supported for a game.
 

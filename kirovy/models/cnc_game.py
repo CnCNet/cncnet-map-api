@@ -147,7 +147,7 @@ class CncGame(CncNetBaseModel):
 class GameScopedUserOwnedModel(CncNetUserOwnedModel):
     """A user owned object that is specific to a game. e.g. a map or image."""
 
-    cnc_game = models.ForeignKey(CncGame, models.PROTECT, null=False, blank=False)
+    cnc_game = models.ForeignKey(CncGame, models.PROTECT, null=False, blank=False, db_index=True)
 
     class Meta:
         abstract = True

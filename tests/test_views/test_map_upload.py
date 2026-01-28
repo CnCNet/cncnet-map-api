@@ -17,9 +17,11 @@ _CLIENT_URL = "/maps/client/upload/"
 def test_map_file_upload_happy_path(
     client_user, file_map_desert, game_uploadable, extension_map, tmp_media_root, get_file_path_for_uploaded_file_url
 ):
+    """Test uploading a map file via the UI endpoint."""
     response = client_user.post_file(
         _UPLOAD_URL,
         {"file": file_map_desert, "game_id": str(game_uploadable.id)},
+        HTTP_X_FORWARDED_FOR="117.117.117.117",
     )
 
     assert response.status_code == status.HTTP_201_CREATED
@@ -51,6 +53,7 @@ def test_map_file_upload_happy_path(
     assert file_object.cnc_user_id == client_user.kirovy_user.id
     assert image_object.cnc_user_id == client_user.kirovy_user.id
     assert map_object.cnc_user_id == client_user.kirovy_user.id
+    assert file_object.ip_address == image_object.ip_address == "117.117.117.117"
 
     # Note: These won't match a md5 from the commandline because we add the ID to the map file.
     assert file_object.hash_md5 == file_utils.hash_file_md5(uploaded_file.open())
@@ -73,6 +76,9 @@ def test_map_file_upload_happy_path(
     assert not response_map["is_temporary"], "Maps uploaded via a signed in user shouldn't be marked as temporary."
     assert not response_map["is_reviewed"], "Maps should not default to being reviewed."
     assert not response_map["is_banned"], "Happy path maps should not be banned on upload."
+    assert response_map[
+        "incomplete_upload"
+    ], "Map files that have been uploaded via the UI should be marked as incomplete until the user sets map info."
     assert response_map["legacy_upload_date"] is None, "Non legacy maps should never have this field."
     assert response_map["id"] == str(map_object.id)
 
@@ -87,6 +93,8 @@ def test_map_file_upload_happy_path(
     assert response_map["images"][0]["name"] == map_object.map_name
     assert response_map["images"][0]["file"].endswith(uploaded_image_url)
     assert response_map["images"][0]["is_extracted"] is True
+
+    assert "ip_address" not in response_map.keys()
 
 
 def test_map_file_upload_banned_user(file_map_desert, game_uploadable, client_banned):

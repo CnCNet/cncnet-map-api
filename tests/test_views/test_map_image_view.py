@@ -6,6 +6,8 @@ from PIL import Image, ExifTags
 from kirovy.constants import api_codes
 from kirovy.constants.api_codes import FileUploadApiCodes
 from kirovy.models.cnc_map import CncMapImageFile
+from kirovy.objects.ui_objects import ResultResponseData
+from kirovy.response import KirovyResponse
 from kirovy.views.map_image_views import MapImageFileUploadView
 from rest_framework import status
 
@@ -22,12 +24,13 @@ def test_map_image_upload__happy_path(create_cnc_map, file_map_image, client_use
         {"file": file_map_image, "cnc_map_id": str(cnc_map.id)},
         format="multipart",
         content_type=None,
+        HTTP_X_FORWARDED_FOR="1.1.1.1",
     )
 
     assert response.status_code == status.HTTP_201_CREATED
     assert response.data["message"] == MapImageFileUploadView.success_message
     file_id = response.data["result"]["file_id"]
-    get_response = client_user.get(f"/maps/img/{file_id}/")
+    get_response: KirovyResponse[ResultResponseData] = client_user.get(f"/maps/img/{file_id}/")
     assert get_response.status_code == status.HTTP_200_OK
 
     saved_file_raw = CncMapImageFile.objects.get(id=file_id)
@@ -54,6 +57,9 @@ def test_map_image_upload__happy_path(create_cnc_map, file_map_image, client_use
     assert saved_file["cnc_user_id"] == str(client_user.kirovy_user.id)
     assert saved_file_raw.file.size < file_map_image.size, "Converting to jpeg should have shrunk the file size."
     assert saved_file["file"].endswith(expected_url_path)
+    assert "ip_address" not in saved_file.keys()
+
+    assert CncMapImageFile.objects.get(id=file_id).ip_address == "1.1.1.1"
 
 
 def test_map_image_upload__jpg(create_cnc_map, file_map_image_jpg, client_user, get_file_path_for_uploaded_file_url):
