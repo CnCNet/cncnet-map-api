@@ -10,7 +10,6 @@ from django.db.models import Q, QuerySet
 from rest_framework import status
 from rest_framework.parsers import MultiPartParser
 from rest_framework.permissions import BasePermission, AllowAny
-from rest_framework.views import APIView
 
 from kirovy import typing as t, permissions, exceptions, constants, logging
 from kirovy.constants.api_codes import UploadApiCodes
@@ -25,7 +24,7 @@ from kirovy.services import legacy_upload
 from kirovy.services.cnc_gen_2_services import CncGen2MapParser, CncGen2MapSections
 from kirovy.services.file_extension_service import FileExtensionService
 from kirovy.utils import file_utils
-
+from kirovy.views.base_views import KirovyApiView
 
 _LOGGER = logging.get_logger(__name__)
 
@@ -36,10 +35,9 @@ class MapHashes(t.NamedTuple):
     sha512: str
 
 
-class _BaseMapFileUploadView(APIView, metaclass=ABCMeta):
+class _BaseMapFileUploadView(KirovyApiView, metaclass=ABCMeta):
     parser_classes = [MultiPartParser]
     permission_classes: t.ClassVar[t.Iterable[BasePermission]]
-    request: KirovyRequest
     upload_is_temporary: t.ClassVar[bool]
 
     def __init__(self, **kwargs):
@@ -80,6 +78,7 @@ class _BaseMapFileUploadView(APIView, metaclass=ABCMeta):
                 cnc_user_id=request.user.id,
                 parent_id=parent_map.id if parent_map else None,
                 last_modified_by_id=request.user.id,
+                is_temporary=self.upload_is_temporary,
             ),
             context={"request": self.request},
         )
@@ -138,6 +137,7 @@ class _BaseMapFileUploadView(APIView, metaclass=ABCMeta):
                 hash_sha1=map_hashes_post_processing.sha1,
                 cnc_user_id=self.request.user.id,
                 last_modified_by_id=self.request.user.id,
+                ip_address=self.request.client_ip_address,
             ),
             context={"request": self.request},
         )
@@ -183,6 +183,8 @@ class _BaseMapFileUploadView(APIView, metaclass=ABCMeta):
                     file_extension_id=image_extension.id,
                     image_order=999,
                     cnc_user_id=self.request.user.id,
+                    ip_address=self.request.client_ip_address,
+                    last_modified_by_id=self.request.user.id,
                 )
             )
             image_serializer.is_valid(raise_exception=True)
@@ -219,10 +221,9 @@ class _BaseMapFileUploadView(APIView, metaclass=ABCMeta):
     @cached_property
     def user_log_attrs(self) -> t.DictStrAny:
         # todo move to structlogger
-        naughty_ip_address = self.request.META.get("HTTP_X_FORWARDED_FOR", "unknown")
         user = self.request.user
         return {
-            "ip_address": naughty_ip_address,
+            "ip_address": self.request.client_ip_address,
             "user": f"[{user.cncnet_id}] {user.username}" if user.is_authenticated else "unauthenticated_upload",
         }
 
@@ -400,6 +401,7 @@ class CncNetBackwardsCompatibleUploadView(CncnetClientMapUploadView):
             cnc_user=CncUser.objects.get_or_create_legacy_upload_user(),
             parent=None,
             is_mapdb1_compatible=True,
+            is_temporary=True,
         )
         new_map.save()
 
@@ -415,6 +417,8 @@ class CncNetBackwardsCompatibleUploadView(CncnetClientMapUploadView):
                 hash_sha512=map_hashes.sha512,
                 hash_sha1=map_hashes.sha1,
                 cnc_user_id=CncUser.objects.get_or_create_legacy_upload_user().id,
+                ip_address=self.request.client_ip_address,
+                last_modified_by_id=None,
             ),
             context={"request": self.request},
         )

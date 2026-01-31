@@ -76,6 +76,7 @@ def test_map_upload_single_file_backwards_compatible(
     game_dawn_of_the_tiberium_age,
     game_red_alert,
 ):
+    """Test uploads for backwards compatible map files that only have a map file in the zip."""
     game_map_name = [
         (game_yuri, file_map_desert, "desert"),
         (game_tiberian_sun, file_map_ts_woodland_hills, "Woodland Hills"),
@@ -87,17 +88,24 @@ def test_map_upload_single_file_backwards_compatible(
         original_extension = pathlib.Path(file_map.name).suffix
         upload_file, file_sha1 = zip_map_for_legacy_upload(file_map)
         upload_response: KirovyResponse = client_anonymous.post(
-            url, {"file": upload_file, "game": game.slug}, format="multipart", content_type=None
+            url, {"file": upload_file, "game": game.slug}, format="multipart", content_type=None, REMOTE_ADDR="2.2.2.2"
         )
 
         assert upload_response.status_code == status.HTTP_200_OK
         assert upload_response.data["result"]["download_url"] == f"/{game.slug}/{file_sha1}.zip"
 
-        _download_and_check_hash(client_anonymous, file_sha1, game, map_name, [original_extension])
+        _download_and_check_hash(
+            client_anonymous, file_sha1, game, map_name, [original_extension], ip_address="2.2.2.2"
+        )
 
 
 def _download_and_check_hash(
-    client: "KirovyClient", file_sha1: str, game: CncGame, expected_map_name: str, extensions_to_check: t.List[str]
+    client: "KirovyClient",
+    file_sha1: str,
+    game: CncGame,
+    expected_map_name: str,
+    extensions_to_check: t.List[str],
+    ip_address: str | None = None,
 ):
     response: FileResponse = client.get(f"/{game.slug}/{file_sha1}.zip")
     assert response.status_code == status.HTTP_200_OK
@@ -112,3 +120,5 @@ def _download_and_check_hash(
     assert cnc_map_file
     assert cnc_map_file.cnc_game_id == game.id
     assert cnc_map_file.cnc_map.map_name == expected_map_name
+    if ip_address:
+        assert cnc_map_file.ip_address == ip_address

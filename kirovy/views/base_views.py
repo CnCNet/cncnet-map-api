@@ -32,6 +32,24 @@ from kirovy.utils import file_utils
 _LOGGER = logging.get_logger(__name__)
 
 
+class KirovyApiView(APIView):
+    request: KirovyRequest
+
+    def initialize_request(self, request, *args, **kwargs):
+        """
+        Returns the initial request object.
+        """
+        parser_context = self.get_parser_context(request)
+
+        return KirovyRequest(
+            request,
+            parsers=self.get_parsers(),
+            authenticators=self.get_authenticators(),
+            negotiator=self.get_content_negotiator(),
+            parser_context=parser_context,
+        )
+
+
 class KirovyDefaultPagination(_pagination.LimitOffsetPagination):
     """Default pagination values."""
 
@@ -64,6 +82,20 @@ class KirovyListCreateView(_g.ListCreateAPIView):
     pagination_class: t.Optional[t.Type[KirovyDefaultPagination]] = KirovyDefaultPagination
     _paginator: t.Optional[KirovyDefaultPagination]
     request: KirovyRequest  # Added for type hinting. Populated by DRF ``.setup()``
+
+    def initialize_request(self, request, *args, **kwargs):
+        """
+        Returns the initial request object.
+        """
+        parser_context = self.get_parser_context(request)
+
+        return KirovyRequest(
+            request,
+            parsers=self.get_parsers(),
+            authenticators=self.get_authenticators(),
+            negotiator=self.get_content_negotiator(),
+            parser_context=parser_context,
+        )
 
     def create(self, request: KirovyRequest, *args, **kwargs) -> KirovyResponse[ui_objects.ResultResponseData]:
         data = request.data
@@ -112,6 +144,20 @@ class KirovyRetrieveUpdateView(_g.RetrieveUpdateAPIView):
     request: KirovyRequest  # Added for type hinting. Populated by DRF ``.setup()``
     permission_classes = [permissions.CanEdit | permissions.ReadOnly]
 
+    def initialize_request(self, request, *args, **kwargs):
+        """
+        Returns the initial request object.
+        """
+        parser_context = self.get_parser_context(request)
+
+        return KirovyRequest(
+            request,
+            parsers=self.get_parsers(),
+            authenticators=self.get_authenticators(),
+            negotiator=self.get_content_negotiator(),
+            parser_context=parser_context,
+        )
+
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
@@ -153,8 +199,22 @@ class KirovyDestroyView(_g.DestroyAPIView):
     request: KirovyRequest  # Added for type hinting. Populated by DRF ``.setup()``
     permission_classes = [permissions.CanDelete | _p.IsAdminUser]
 
+    def initialize_request(self, request, *args, **kwargs):
+        """
+        Returns the initial request object.
+        """
+        parser_context = self.get_parser_context(request)
 
-class FileUploadBaseView(APIView, metaclass=ABCMeta):
+        return KirovyRequest(
+            request,
+            parsers=self.get_parsers(),
+            authenticators=self.get_authenticators(),
+            negotiator=self.get_content_negotiator(),
+            parser_context=parser_context,
+        )
+
+
+class FileUploadBaseView(KirovyApiView, metaclass=ABCMeta):
     """A base class for uploading files that are **not** map files for a game."""
 
     parser_classes = [MultiPartParser]
@@ -225,8 +285,11 @@ class FileUploadBaseView(APIView, metaclass=ABCMeta):
                 "file": uploaded_file,
                 "file_extension_id": extension_id,
                 "cnc_user_id": self.request.user.id,
+                "ip_address": self.request.client_ip_address,
+                "last_modified_by_id": self.request.user.id,
                 **self.extra_serializer_data(request, uploaded_file, parent_object),
-            }
+            },
+            context={"request": self.request},
         )
 
         if not serializer.is_valid(raise_exception=False):

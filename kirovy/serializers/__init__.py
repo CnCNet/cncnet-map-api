@@ -1,3 +1,5 @@
+from functools import cached_property
+
 from rest_framework import serializers
 
 from kirovy.constants import api_codes
@@ -18,24 +20,32 @@ class KirovySerializer(serializers.Serializer):
         source="last_modified_by",
         queryset=CncUser.objects.all(),
         pk_field=serializers.UUIDField(),
+        allow_null=True,
     )
 
     class Meta:
         exclude = ["last_modified_by"]
-        fields = "__all__"
         editable_fields: t.ClassVar[set[str]] = set()
 
-    def get_fields(self):
+    @cached_property
+    def permissioned_readable_fields(self):
         """Get fields based on permission level.
 
         Removes admin-only fields for non-admin requests. Will always remove the fields if the serializer doesn't
         have context.
         """
-        fields = super().get_fields()
+        fields = self.fields
         request: t.Optional[KirovyRequest] = self.context.get("request")
         if not (request and request.user.is_authenticated and request.user.is_staff):
             fields.pop("last_modified_by_id", None)
+            fields.pop("ip_address", None)
         return fields
+
+    @property
+    def _readable_fields(self):
+        for field in self.permissioned_readable_fields.values():
+            if not field.write_only:
+                yield field
 
     def to_internal_value(self, data: dict) -> dict:
         """Convert the raw request data into data that can be used in a django model.
@@ -72,4 +82,3 @@ class CncNetUserOwnedModelSerializer(KirovySerializer):
 
     class Meta:
         exclude = ["cnc_user"]
-        fields = "__all__"

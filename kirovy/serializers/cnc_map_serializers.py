@@ -30,7 +30,6 @@ class CncMapFileSerializer(KirovySerializer):
         model = cnc_map.CncMapFile
         # We return the ID instead of the whole object.
         exclude = ["cnc_game", "cnc_map", "file_extension", "cnc_user"]
-        fields = "__all__"
 
     width = serializers.IntegerField()
     """attr: The map height.
@@ -88,6 +87,8 @@ class CncMapFileSerializer(KirovySerializer):
     hash_sha512 = serializers.CharField(required=True, allow_blank=False)
     hash_sha1 = serializers.CharField(required=True, allow_blank=False)
 
+    ip_address = serializers.CharField(required=True, allow_null=True)
+
     def create(self, validated_data: t.DictStrAny) -> cnc_map.CncMapFile:
         map_file = cnc_map.CncMapFile(**validated_data)
         map_file.save()
@@ -108,7 +109,6 @@ class CncMapImageFileSerializer(KirovySerializer):
         model = cnc_map.CncMapImageFile
         # We return the ID instead of the whole object.
         exclude = ["cnc_user", "cnc_game", "cnc_map", "file_extension", "hash_md5", "hash_sha512", "hash_sha1"]
-        fields = "__all__"
         editable_fields: set[str] = {"name", "image_order"}
 
     width = serializers.IntegerField()
@@ -166,6 +166,8 @@ class CncMapImageFileSerializer(KirovySerializer):
         queryset=CncUser.objects.all(),
         pk_field=serializers.UUIDField(),
     )
+
+    ip_address = serializers.CharField(required=True, allow_null=True)
 
     def create(self, validated_data: t.DictStrAny) -> cnc_map.CncMapImageFile:
         image_file = cnc_map.CncMapImageFile(**validated_data)

@@ -1,14 +1,13 @@
 from django.conf import settings
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.request import Request
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from kirovy.request import KirovyRequest
+from kirovy.views.base_views import KirovyApiView
 
 
-class TestJwt(APIView):
+class TestJwt(KirovyApiView):
     """
     Test JWT tokens. Only for use in tests.
     """

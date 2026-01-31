@@ -9,7 +9,6 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters import rest_framework as filters
 from rest_framework.permissions import AllowAny
 from rest_framework.renderers import TemplateHTMLRenderer
-from rest_framework.views import APIView
 
 from kirovy import permissions
 from kirovy.models import (
@@ -25,6 +24,7 @@ from kirovy.serializers import cnc_map_serializers
 from kirovy.views import base_views
 from structlog import get_logger
 
+from kirovy.views.base_views import KirovyApiView
 
 _LOGGER = get_logger(__name__)
 
@@ -246,7 +246,7 @@ class MapDeleteView(base_views.KirovyDestroyView):
         return super().perform_destroy(instance)
 
 
-class BackwardsCompatibleMapView(APIView):
+class BackwardsCompatibleMapView(KirovyApiView):
     """Match the legacy mapdb download endpoints.
 
     This is needed until the new UI is running for the clients CnCNet owns.
@@ -272,7 +272,7 @@ class BackwardsCompatibleMapView(APIView):
         return FileResponse(map_file.file.open("rb"), as_attachment=True, filename=f"{map_file.hash_sha1}.zip")
 
 
-class MapLegacyStaticUI(APIView):
+class MapLegacyStaticUI(KirovyApiView):
     """Temporary upload page for backwards compatible upload testing.
 
     Map authors need an easy way to upload their maps to the database so that they

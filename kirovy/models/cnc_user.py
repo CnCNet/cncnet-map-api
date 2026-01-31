@@ -176,7 +176,7 @@ class CncUser(AbstractBaseUser, Moderabile):
 class CncNetUserOwnedModel(CncNetBaseModel):
     """A mixin model for any models that will be owned by a user."""
 
-    cnc_user = models.ForeignKey(CncUser, on_delete=models.PROTECT, null=True)
+    cnc_user = models.ForeignKey(CncUser, on_delete=models.PROTECT, null=True, db_index=True)
     """:attr: The user that owns this object, if it has an owner."""
 
     class Meta:

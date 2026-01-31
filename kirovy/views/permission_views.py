@@ -1,13 +1,13 @@
 from rest_framework import status
-from rest_framework.views import APIView
 
 import kirovy.objects.ui_objects
-from kirovy import permissions, typing as t
+from kirovy import permissions
 from kirovy.request import KirovyRequest
 from kirovy.response import KirovyResponse
+from kirovy.views.base_views import KirovyApiView
 
 
-class ListPermissionForAuthUser(APIView):
+class ListPermissionForAuthUser(KirovyApiView):
     """End point to check which buttons / views the UI should show.
 
     The UI showing the buttons / views will not guarantee access. The backend still checks permissions for all

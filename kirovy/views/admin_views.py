@@ -1,7 +1,6 @@
 import pydantic
 from rest_framework import status
 from rest_framework.generics import get_object_or_404
-from rest_framework.views import APIView
 
 from kirovy import permissions, exceptions
 from kirovy.exceptions.view_exceptions import KirovyValidationError
@@ -9,9 +8,10 @@ from kirovy.models.moderabile import Moderabile
 from kirovy.objects import ui_objects
 from kirovy.request import KirovyRequest
 from kirovy.response import KirovyResponse
+from kirovy.views.base_views import KirovyApiView
 
 
-class BanView(APIView):
+class BanView(KirovyApiView):
     """The view for banning things.
 
     ``POST /admin/ban/``

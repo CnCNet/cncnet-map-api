@@ -19,6 +19,7 @@ def test_search_map_name(create_cnc_map, client_anonymous):
     assert response.status_code == status.HTTP_200_OK
     assert len(response.data["results"]) == 1
     assert response.data["results"][0]["id"] == str(expected.id)
+    assert "ip_address" not in response.data["results"][0].keys()
 
 
 def test_search_map__categories(create_cnc_map, client_anonymous, create_cnc_map_category):
