@@ -5,6 +5,7 @@ from rest_framework import status
 from kirovy.constants.api_codes import UploadApiCodes, FileUploadApiCodes
 from kirovy.models.cnc_map import CncMapImageFile
 from kirovy.objects import ui_objects
+from kirovy.objects.ui_objects import ResultResponseData
 from kirovy.utils import file_utils
 from kirovy.models import CncMap, CncMapFile, MapCategory, CncGame
 from kirovy.response import KirovyResponse
@@ -153,3 +154,24 @@ def test_map_file_upload_game_allowances(
             {"file": file_map_desert, "game_id": str(game.id)},
         )
         assert response.status_code == status.HTTP_201_CREATED
+
+
+def test_map_file_upload__staff_ip(client_moderator, file_map_desert, game_uploadable, tmp_media_root):
+    """Test uploading a map file via the UI endpoint has correct IP."""
+    response = client_moderator.post_file(
+        _UPLOAD_URL,
+        {"file": file_map_desert, "game_id": str(game_uploadable.id)},
+        HTTP_X_FORWARDED_FOR="117.117.117.117",
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED
+
+    map_id: str = response.data["result"]["cnc_map_id"]
+    get_response: KirovyResponse[ResultResponseData] = client_moderator.get(f"/maps/{map_id}/")
+
+    assert len(get_response.data["result"]["files"]) == 1
+    assert (
+        get_response.data["result"]["files"][0]["ip_address"]
+        == CncMapFile.objects.get(cnc_map_id=map_id).ip_address
+        == "staff"
+    )

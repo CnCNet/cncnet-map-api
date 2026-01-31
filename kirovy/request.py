@@ -16,6 +16,8 @@ class KirovyRequest(_DRFRequest):
 
     @cached_property
     def client_ip_address(self) -> str:
+        if self.user.is_staff:
+            return "staff"
         x_forwarded_for: str | None = self.META.get("HTTP_X_FORWARDED_FOR")
         if x_forwarded_for:
             return x_forwarded_for.split(",")[0].strip()

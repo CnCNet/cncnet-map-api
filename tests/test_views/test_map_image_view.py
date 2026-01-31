@@ -253,3 +253,29 @@ def test_map_image_delete(client_user, create_cnc_map, create_cnc_map_image_file
 
     with pytest.raises(CncMapImageFile.DoesNotExist):
         image_file.refresh_from_db()
+
+
+def test_map_image_upload__admin_ip(
+    create_cnc_map, file_map_image, client_moderator, get_file_path_for_uploaded_file_url
+):
+    """Test that admin IPs are just `staff`. Test that admins can see IPs."""
+    cnc_map = create_cnc_map(
+        user_id=client_moderator.kirovy_user.id, is_legacy=False, is_published=True, is_temporary=False
+    )
+    response = client_moderator.post(
+        "/maps/img/",
+        {"file": file_map_image, "cnc_map_id": str(cnc_map.id)},
+        format="multipart",
+        content_type=None,
+        HTTP_X_FORWARDED_FOR="1.1.1.1",
+    )
+
+    assert response.status_code == status.HTTP_201_CREATED
+    assert response.data["message"] == MapImageFileUploadView.success_message
+    file_id = response.data["result"]["file_id"]
+    get_response: KirovyResponse[ResultResponseData] = client_moderator.get(f"/maps/img/{file_id}/")
+    assert get_response.status_code == status.HTTP_200_OK
+
+    saved_file_raw = CncMapImageFile.objects.get(id=file_id)
+    saved_file = get_response.data["result"]
+    assert saved_file["ip_address"] == saved_file_raw.ip_address == "staff"
