@@ -427,7 +427,7 @@ class CncNetBackwardsCompatibleUploadView(CncnetClientMapUploadView):
 
         return KirovyResponse(
             ResultResponseData(
-                message="File uploaded successfully",
+                message="Upload succeeded!",
                 result={
                     "cnc_map": new_map.map_name,
                     "cnc_map_file": new_map_file.file.url,
