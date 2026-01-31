@@ -1,7 +1,7 @@
 # Views
 
 Before importing from the default Django REST Framework views, check to see if we
-have a custom base view in [our base views](kirovy/views/base_views.py) first.
+have a custom base view in [our base views](/kirovy/views/base_views.py) first.
 
 They often have a lot of boilerplate, type hints, and custom request classes set up for you.
 
@@ -10,7 +10,7 @@ For example, use `KirovyApiView` instead of `rest_framework.views.APIView`.
 # API Errors in API class helpers
 
 Returning errors in the helper functions of your API endpoint can be annoying.
-To avoid that annoyance, just raise one of the [view exceptions](kirovy/exceptions/view_exceptions.py)
+To avoid that annoyance, just raise one of the [view exceptions](/kirovy/exceptions/view_exceptions.py)
 or write your own that subclasses `KirovyValidationError`.
 
 **Example where you annoy yourself with bubbling returns:**
