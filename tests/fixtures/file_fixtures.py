@@ -99,6 +99,14 @@ def file_map_unfair(load_test_file) -> Generator[File, Any, None]:
 
 
 @pytest.fixture
+def file_map_duplicate_ini(load_test_file) -> Generator[File, Any, None]:
+    """Return a valid map that has duplicate ini rules."""
+    file = load_test_file("duplicate_ini.map")
+    yield file
+    file.close()
+
+
+@pytest.fixture
 def file_map_dune2k(load_test_file) -> Generator[File, Any, None]:
     """Return a valid zip file for a dune 2k mpa.
 

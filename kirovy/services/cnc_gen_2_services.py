@@ -48,7 +48,7 @@ class MapConfigParser(configparser.ConfigParser):
 
     @classmethod
     def from_file(cls, file: File) -> "MapConfigParser":
-        parser = cls()
+        parser = cls(strict=False)
         parser.read_django_file(file)
         return parser
 
@@ -124,7 +124,7 @@ class CncGen2MapParser:
     def __init__(self, uploaded_file: UploadedFile | File):
         self.validate_file_type(uploaded_file)
         self.file = uploaded_file
-        self.ini = MapConfigParser()
+        self.ini = MapConfigParser(strict=False)
         self._parse_file()
 
     def _parse_file(self) -> None:
