@@ -239,3 +239,18 @@ AUTH_USER_MODEL = "kirovy.CncUser"
 
 RUN_ENVIRONMENT = get_env_var("RUN_ENVIRONMENT", settings_constants.RunEnvironment.PRODUCTION, run_environment_valid)
 """attr: Defines which type of environment we are running on. Useful for debug logic."""
+
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "INFO",
+    },
+}
