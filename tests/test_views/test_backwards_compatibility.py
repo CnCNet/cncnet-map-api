@@ -71,6 +71,7 @@ def test_map_upload_single_file_backwards_compatible(
     file_map_ts_woodland_hills,
     file_map_ra_d_day,
     file_map_dta_peace_and_war,
+    file_map_duplicate_ini,
     game_yuri,
     game_tiberian_sun,
     game_dawn_of_the_tiberium_age,
@@ -79,6 +80,11 @@ def test_map_upload_single_file_backwards_compatible(
     """Test uploads for backwards compatible map files that only have a map file in the zip."""
     game_map_name = [
         (game_yuri, file_map_desert, "desert"),
+        (
+            game_yuri,
+            file_map_duplicate_ini,
+            "[2] The Path More Traveled By [v1.1] - SFJ OFFICIAL v2.0 Precaptured Tech",
+        ),
         (game_tiberian_sun, file_map_ts_woodland_hills, "Woodland Hills"),
         (game_red_alert, file_map_ra_d_day, "D Day"),
         (game_dawn_of_the_tiberium_age, file_map_dta_peace_and_war, "Peace And War"),
