@@ -425,6 +425,8 @@ class CncNetBackwardsCompatibleUploadView(CncnetClientMapUploadView):
         new_map_file_serializer.is_valid(raise_exception=True)
         new_map_file: cnc_map.CncMapFile = new_map_file_serializer.save()
 
+        _LOGGER.info("Uploaded map", av={"ip": request.client_ip_address, "hash": new_map_file.hash_sha1})
+
         return KirovyResponse(
             ResultResponseData(
                 message="Upload succeeded!",
