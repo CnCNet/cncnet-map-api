@@ -271,14 +271,14 @@ LOGGING = {
         },
         "json_file": {
             "class": "logging.handlers.RotatingFileHandler",
-            "filename": "/var/log/kirovy/json/kirovy_json.log",
+            "filename": "/var/log/kirovy/kirovy_json.log",
             "maxBytes": ByteSized(mega=10).total_bytes,
             "backupCount": 50,
             "formatter": "json_formatter",
         },
         "flat_line_file": {
             "class": "logging.handlers.RotatingFileHandler",
-            "filename": "/var/log/kirovy/flat/kirovy_flat.log",
+            "filename": "/var/log/kirovy/kirovy_flat.log",
             "maxBytes": ByteSized(mega=10).total_bytes,
             "backupCount": 50,
             "formatter": "key_value",
