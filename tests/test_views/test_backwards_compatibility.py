@@ -9,6 +9,7 @@ from rest_framework import status
 
 from kirovy import typing as t
 from kirovy.models import CncGame, CncMapFile, CncMap
+from kirovy.objects.ui_objects import ResultResponseData
 from kirovy.response import KirovyResponse
 
 if t.TYPE_CHECKING:
@@ -128,3 +129,38 @@ def _download_and_check_hash(
     assert cnc_map_file.cnc_map.map_name == expected_map_name
     if ip_address:
         assert cnc_map_file.ip_address == ip_address
+
+
+def test_map_upload_duplicate_file_backwards_compatible(
+    client_anonymous,
+    zip_map_for_legacy_upload,
+    file_map_desert,
+    game_yuri,
+):
+    """
+    Test duplicate uploads for backwards compatible uploads.
+    Duplicates should just return successful like the old database.
+    """
+    url = "/upload"
+    original_extension = pathlib.Path(file_map_desert.name).suffix
+    upload_file, file_sha1 = zip_map_for_legacy_upload(file_map_desert)
+    upload_response: KirovyResponse[ResultResponseData] = client_anonymous.post(
+        url, {"file": upload_file, "game": game_yuri.slug}, format="multipart", content_type=None, REMOTE_ADDR="2.2.2.2"
+    )
+
+    assert upload_response.status_code == status.HTTP_200_OK
+    assert upload_response.data["result"]["download_url"] == f"/{game_yuri.slug}/{file_sha1}.zip"
+    original_map_id = upload_response.data["result"]["cnc_map_id"]
+
+    _download_and_check_hash(
+        client_anonymous, file_sha1, game_yuri, "desert", [original_extension], ip_address="2.2.2.2"
+    )
+
+    upload_file.seek(0)
+    duplicate_upload_response: KirovyResponse[ResultResponseData] = client_anonymous.post(
+        url, {"file": upload_file, "game": game_yuri.slug}, format="multipart", content_type=None, REMOTE_ADDR="1.2.2.2"
+    )
+
+    assert duplicate_upload_response.status_code == status.HTTP_200_OK
+    assert duplicate_upload_response.data["message"] == "Upload succeeded!"
+    assert duplicate_upload_response.data["result"]["cnc_map_id"] == original_map_id

@@ -15,4 +15,31 @@ DATABASES = {
     }
 }
 
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "tests_logging": {
+            "()": structlog.stdlib.ProcessorFormatter,
+            "processor": structlog.dev.ConsoleRenderer(),
+        },
+    },
+    "handlers": {
+        "pytest_console": {
+            "class": "logging.StreamHandler",
+            "formatter": "tests_logging",
+        },
+    },
+    "loggers": {
+        "kirovy": {
+            "handlers": ["pytest_console"],
+            "level": "DEBUG",
+        },
+        "django_structlog": {
+            "handlers": ["pytest_console"],
+            "level": "DEBUG",
+        },
+    },
+}
+
 # MEDIA_ROOT gets modified in common_fixtures.py in the tmp_media_root fixture.

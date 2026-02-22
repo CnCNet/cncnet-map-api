@@ -390,7 +390,31 @@ class CncNetBackwardsCompatibleUploadView(CncnetClientMapUploadView):
         legacy_map_service = legacy_upload.get_legacy_service_for_slug(game.slug.lower())(uploaded_file)
 
         map_hashes = self._get_file_hashes(ContentFile(legacy_map_service.file_contents_merged.read()))
-        self.verify_file_does_not_exist(map_hashes)
+        try:
+            self.verify_file_does_not_exist(map_hashes)
+        except KirovyValidationError:
+            # The old database just accepts duplicate uploads as if the map didn't exist.
+            # The client expects a successful upload in this scenario, so we need to mirror that.
+            _LOGGER.debug(
+                "Map already exists. Backwards compatible endpoint, returning success",
+                map_hash=map_hashes.sha1,
+                client_info=self.user_log_attrs,
+            )
+            existing_file = cnc_map.CncMapFile.objects.prefetch_related("cnc_map").get(hash_sha1=map_hashes.sha1)
+
+            return KirovyResponse(
+                ResultResponseData(
+                    message="Upload succeeded!",
+                    result={
+                        "cnc_map": existing_file.cnc_map.map_name,
+                        "cnc_map_file": existing_file.file.url,
+                        "cnc_map_id": existing_file.cnc_map_id,
+                        "extracted_preview_file": None,
+                        "download_url": f"/{game.slug}/{existing_file.hash_sha1}.zip",
+                    },
+                ),
+                status=status.HTTP_200_OK,
+            )
 
         # Make the map that we will attach the map file to.
         new_map = cnc_map.CncMap(
