@@ -249,8 +249,9 @@ LOGGING = {
             "class": "logging.StreamHandler",
         },
     },
-    "root": {
+    # No name will capture all logs
+    "": {
         "handlers": ["console"],
-        "level": "INFO",
+        "level": get_env_var("DJANGO_LOG_LEVEL", "INFO"),
     },
 }

@@ -1,8 +1,11 @@
 from rest_framework.views import exception_handler
 
+from kirovy import logging
 from kirovy.exceptions.view_exceptions import KirovyAPIException
 from kirovy.objects import ui_objects
 from kirovy.response import KirovyResponse
+
+_LOGGER = logging.get_logger("api_exceptions")
 
 
 def kirovy_exception_handler(exception: Exception, context) -> KirovyResponse[ui_objects.ErrorResponseData] | None:
@@ -23,6 +26,7 @@ def kirovy_exception_handler(exception: Exception, context) -> KirovyResponse[ui
         Otherwise, it calls the base DRF exception handler :func:`rest_framework.views.exception_handler`.
     """
     if isinstance(exception, KirovyAPIException):
+        _LOGGER.exception(str(exception.detail), context=context, e=exception)
         return KirovyResponse(exception.as_error_response_data(), status=exception.status_code)
 
     return exception_handler(exception, context)
