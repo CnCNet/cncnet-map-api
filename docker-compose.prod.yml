@@ -20,6 +20,7 @@ services:
     volumes:
       - ${HOST_MEDIA_ROOT}:/data/cncnet_silo  # django will save user-uploaded files here. MEDIA_ROOT
       - ${HOST_STATIC_ROOT}:/data/cncnet_static  # django will gather static files here. STATIC_ROOT
+      - ./docker/data/kirovy/logs:/var/log/kirovy  # Log files
     env_file:
       - .env
     depends_on:

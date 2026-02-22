@@ -19,6 +19,8 @@ COPY web_entry_point.sh /cncnet-map-api
 RUN chmod +x /cncnet-map-api/web_entry_point.sh
 
 RUN pip install --upgrade pip
+RUN mkdir -p "/var/log/kirovy/json/"
+RUN mkdir -p "/var/log/kirovy/flat/"
 
 FROM base AS dev
 RUN pip install -r ./requirements-dev.txt
