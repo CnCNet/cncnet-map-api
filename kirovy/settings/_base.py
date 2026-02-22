@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 
 from pathlib import Path
 
+import structlog
+
 from kirovy.settings import settings_constants
 from kirovy.utils import file_utils
 from kirovy.utils.settings_utils import (
@@ -51,6 +53,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django_filters",  # Used for advanced querying on the API.
     "rest_framework",  # Django REST Framework.
+    "django_structlog",
     "drf_spectacular",  # Generates openapi docs.
     "drf_spectacular_sidecar",  # swagger assets for openapi
 ]
@@ -64,6 +67,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "django_structlog.middlewares.RequestMiddleware",
 ]
 
 ROOT_URLCONF = "kirovy.urls"  # The file that holds our URL routing.
@@ -240,18 +244,55 @@ AUTH_USER_MODEL = "kirovy.CncUser"
 RUN_ENVIRONMENT = get_env_var("RUN_ENVIRONMENT", settings_constants.RunEnvironment.PRODUCTION, run_environment_valid)
 """attr: Defines which type of environment we are running on. Useful for debug logic."""
 
+LOG_LEVEL = get_env_var("DJANGO_LOG_LEVEL", "INFO")
 
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "formatters": {
+        "json_formatter": {
+            "()": structlog.stdlib.ProcessorFormatter,
+            "processor": structlog.processors.JSONRenderer(),
+        },
+        "plain_console": {
+            "()": structlog.stdlib.ProcessorFormatter,
+            "processor": structlog.dev.ConsoleRenderer(),
+        },
+        "key_value": {
+            "()": structlog.stdlib.ProcessorFormatter,
+            "processor": structlog.processors.KeyValueRenderer(key_order=["timestamp", "level", "event", "logger"]),
+        },
+    },
     "handlers": {
         "console": {
             "class": "logging.StreamHandler",
         },
     },
-    # No name will capture all logs
-    "": {
-        "handlers": ["console"],
-        "level": get_env_var("DJANGO_LOG_LEVEL", "INFO"),
+    "loggers": {
+        "kirovy": {
+            "handlers": ["console"],
+            "level": LOG_LEVEL,
+        },
+        "django_structlog": {
+            "handlers": ["console"],
+            "level": LOG_LEVEL,
+        },
     },
 }
+
+structlog.configure(
+    processors=[
+        structlog.contextvars.merge_contextvars,
+        structlog.stdlib.filter_by_level,
+        structlog.processors.TimeStamper(fmt="iso"),
+        structlog.stdlib.add_logger_name,
+        structlog.stdlib.add_log_level,
+        structlog.stdlib.PositionalArgumentsFormatter(),
+        structlog.processors.StackInfoRenderer(),
+        structlog.processors.format_exc_info,
+        structlog.processors.UnicodeDecoder(),
+        structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
+    ],
+    logger_factory=structlog.stdlib.LoggerFactory(),
+    cache_logger_on_first_use=True,
+)
