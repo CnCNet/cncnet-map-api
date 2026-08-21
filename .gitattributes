@@ -1,0 +1,7 @@
+# Ensure shell scripts always use LF line endings on all platforms.
+# Without this, Windows git (autocrlf=true) will convert LF->CRLF on checkout,
+# causing "no such file or directory" errors when Docker runs the entrypoint.
+*.sh text eol=lf
+
+# Standard: force LF for all text files committed to the repo
+* text=auto
