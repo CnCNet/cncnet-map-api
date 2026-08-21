@@ -1,7 +1,7 @@
 import io
 from abc import ABCMeta
 
-from cryptography.utils import cached_property
+from django.utils.functional import cached_property
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.base import ContentFile, File
