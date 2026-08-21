@@ -3,7 +3,7 @@ import io
 import pathlib
 import zipfile
 
-from cryptography.utils import cached_property
+from django.utils.functional import cached_property
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import UploadedFile
 
