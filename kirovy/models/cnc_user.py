@@ -20,6 +20,10 @@ class CncUserManager(models.Manager):
         constants.LegacyUploadUser.CNCNET_ID,
     }
 
+    def get_by_natural_key(self, cncnet_id):
+        """Required by ModelBackend for Django admin password-based login."""
+        return super().get_queryset().get(cncnet_id=cncnet_id)
+
     def find_by_cncnet_id(self, cncnet_id: int) -> t.Union["CncUser", None]:
         return super().get_queryset().filter(cncnet_id=cncnet_id).first()
 
@@ -140,6 +144,16 @@ class CncUser(AbstractBaseUser, Moderabile):
     def is_admin(self) -> bool:
         self.refresh_from_db(fields=["group"])
         return self.CncnetUserGroup.is_admin(self.group)
+
+    @property
+    def is_superuser(self) -> bool:
+        return self.is_admin
+
+    def has_perm(self, perm, obj=None) -> bool:
+        return self.is_staff
+
+    def has_module_perms(self, app_label) -> bool:
+        return self.is_staff
 
     @staticmethod
     def create_or_update_from_cncnet(user_dto: CncnetUserInfo) -> "CncUser":

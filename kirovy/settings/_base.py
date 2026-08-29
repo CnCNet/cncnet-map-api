@@ -241,6 +241,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "kirovy.CncUser"
 
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",  # enables password-based login for Django admin
+]
+
 
 RUN_ENVIRONMENT = get_env_var("RUN_ENVIRONMENT", settings_constants.RunEnvironment.PRODUCTION, run_environment_valid)
 """attr: Defines which type of environment we are running on. Useful for debug logic."""

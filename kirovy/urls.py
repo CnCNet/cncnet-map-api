@@ -32,6 +32,7 @@ from kirovy.views import (
     map_upload_views,
     map_image_views,
     game_views,
+    sync_log_views,
 )
 from kirovy import typing as t, constants
 
@@ -93,12 +94,14 @@ def _get_url_patterns() -> list[_DjangoPath]:
 
     return (
         [
+            path("django-admin/", admin.site.urls),
             path("admin/", include(admin_patterns)),
             path("test/jwt", test.TestJwt.as_view()),
             path("ui-permissions/", permission_views.ListPermissionForAuthUser.as_view()),
             path("maps/", include(map_patterns)),
             # path("users/<uuid:cnc_user_id>/", ...),  # will show which files a user has uploaded.
             path("games/", include(game_patterns)),
+            path("sync-logs/", include(sync_log_patterns)),
         ]
         + backwards_compatible_urls
         + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)  # static assets
@@ -136,6 +139,14 @@ admin_patterns = [path("ban/", admin_views.BanView.as_view())]
 game_patterns = [
     path("", game_views.GamesListView.as_view()),
     path("<uuid:pk>/", game_views.GameDetailView.as_view()),
+]
+
+# /sync-logs/
+sync_log_patterns = [
+    path("", sync_log_views.SyncLogUploadView.as_view()),
+    path("session/<str:game_hash>/", sync_log_views.SyncLogSessionView.as_view()),
+    path("compare/<str:game_hash>/", sync_log_views.SyncLogCompareView.as_view()),
+    path("compare/<str:game_hash>/view/", sync_log_views.SyncLogComparePageView.as_view()),
 ]
 
 urlpatterns = _get_url_patterns()
