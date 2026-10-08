@@ -193,6 +193,12 @@ CNC_MAP_IMAGE_DIRECTORY = "map_images"
     Example: ``/data/cncnet_silo/yr/map_images/
 """
 
+MAP_TRENDING_WINDOW_DAYS = get_env_var("MAP_TRENDING_WINDOW_DAYS", 7, value_type=int)
+"""attr: How many days of downloads count towards a map's "trending" score in the map browser.
+
+See :class:`kirovy.models.cnc_map.CncMapDownloadStat`.
+"""
+
 
 ### --------------- SERVING FILES ---------------
 ### This section of settings has to do with serving files

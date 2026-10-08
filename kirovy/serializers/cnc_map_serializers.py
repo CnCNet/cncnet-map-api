@@ -1,6 +1,8 @@
 from kirovy.exceptions.view_exceptions import KirovyValidationError
+from kirovy.request import KirovyRequest
 from kirovy.serializers import KirovySerializer, CncNetUserOwnedModelSerializer
 from rest_framework import serializers
+from rest_framework.exceptions import PermissionDenied
 from kirovy import typing as t
 from kirovy.models import cnc_map, CncGame, MapCategory, CncFileExtension, CncUser
 
@@ -203,10 +205,15 @@ class CncMapBaseSerializer(CncNetUserOwnedModelSerializer):
     )
     category_ids = serializers.PrimaryKeyRelatedField(
         source="categories",
+        queryset=MapCategory.objects.all(),
         pk_field=serializers.UUIDField(),
         many=True,
-        read_only=True,  # Set it manually.
+        required=False,
     )
+    """attr: The categories (game modes) for the map.
+
+    Set from the map file's game modes on upload. Map authors and staff can change them with ``PATCH``.
+    """
     is_published = serializers.BooleanField(
         default=False,
     )
@@ -214,8 +221,10 @@ class CncMapBaseSerializer(CncNetUserOwnedModelSerializer):
     # This field is only set via client uploads.
     is_temporary = serializers.BooleanField(read_only=True)
 
-    # These fields are only available for admins to set.
-    is_reviewed = serializers.BooleanField(read_only=True)
+    is_reviewed = serializers.BooleanField(required=False)
+    """attr: Staff-curated flag. Only staff can set this, see :attr:`CncMapBaseSerializer.STAFF_ONLY_FIELDS`."""
+
+    # Banning goes through ``/admin/ban/`` so that moderator notes are kept.
     is_banned = serializers.BooleanField(read_only=True)
 
     # Legacy maps will be added via the legacy serializer.
@@ -246,11 +255,40 @@ class CncMapBaseSerializer(CncNetUserOwnedModelSerializer):
     game_slug = serializers.SerializerMethodField()
     created_date = serializers.DateTimeField("%Y-%m-%d", source="created", read_only=True)
 
+    download_count = serializers.IntegerField(read_only=True)
+    """attr: All-time download count. Maintained by :meth:`kirovy.models.cnc_map.CncMap.record_download`."""
+
+    cnc_user_name = serializers.CharField(source="cnc_user.username", read_only=True, allow_null=True)
+    """attr: The CnCNet username of the map author, so the map browser can show and filter by author."""
+
+    STAFF_ONLY_FIELDS: t.ClassVar[set[str]] = {"is_reviewed"}
+    """attr: Writable fields that only staff (moderators, admins, gods) may set."""
+
     class Meta:
         model = cnc_map.CncMap
         # We return the ID instead of the whole object.
         exclude = ["cnc_game", "categories", "parent", "cnc_map_files"]
         fields = "__all__"
+        editable_fields: set[str] = {
+            "map_name",
+            "description",
+            "is_published",
+            "incomplete_upload",
+            "categories",
+            "is_reviewed",
+        }
+        """attr: The fields that can be changed via ``PATCH`` after a map has been created.
+
+        These are the model attribute names, e.g. ``categories`` rather than ``category_ids``.
+        """
+
+    def validate(self, attrs: t.DictStrAny) -> t.DictStrAny:
+        attrs = super().validate(attrs)
+        request: KirovyRequest | None = self.context.get("request")
+        is_staff = bool(request and request.user.is_authenticated and request.user.is_staff)
+        if not is_staff and (attempted := self.STAFF_ONLY_FIELDS.intersection(attrs.keys())):
+            raise PermissionDenied(f"Only staff can set: {', '.join(sorted(attempted))}")
+        return attrs
 
     def get_latest_map_file_hash(self, obj: cnc_map.CncMap) -> t.Optional[str]:
         if latest := obj.cncmapfile_set.order_by("-version").first():
@@ -261,6 +299,27 @@ class CncMapBaseSerializer(CncNetUserOwnedModelSerializer):
         return obj.cnc_game.slug
 
     def create(self, validated_data: t.DictStrAny) -> cnc_map.CncMap:
+        categories = validated_data.pop("categories", None)
         cnc_map_instance = cnc_map.CncMap(**validated_data)
         cnc_map_instance.save()
+        if categories is not None:
+            cnc_map_instance.categories.set(categories)
         return cnc_map_instance
+
+    def update(self, instance: cnc_map.CncMap, validated_data: t.DictStrAny) -> cnc_map.CncMap:
+        """Update a map. Only :attr:`CncMapBaseSerializer.Meta.editable_fields` can get here.
+
+        Saves with ``update_fields`` so that we never overwrite counters, like ``download_count``,
+        with the stale values on ``instance``.
+        """
+        categories = validated_data.pop("categories", None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+
+        update_fields = [*validated_data.keys(), "modified"]
+        instance.save(update_fields=update_fields)
+
+        if categories is not None:
+            instance.categories.set(categories)
+
+        return instance

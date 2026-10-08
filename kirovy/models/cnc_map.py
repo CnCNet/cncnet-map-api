@@ -1,9 +1,10 @@
+import datetime
 import pathlib
 from uuid import UUID
 
 from django.conf import settings
-from django.db import models
-from django.utils import text as text_utils
+from django.db import models, transaction, IntegrityError
+from django.utils import text as text_utils, timezone
 
 from kirovy.models import file_base
 from kirovy.models import cnc_game as game_models, cnc_user
@@ -115,6 +116,35 @@ class CncMap(GameScopedUserOwnedModel, Moderabile):
     This should never be set for maps uploaded via the web UI.
     """
 
+    download_count = models.PositiveIntegerField(
+        default=0,
+        db_index=True,
+        help_text="Total number of times any file for this map has been downloaded. Used for 'popular' sorting.",
+    )
+    """:attr:
+        All-time download counter. Only ever modified via :meth:`~kirovy.models.cnc_map.CncMap.record_download`,
+        which uses ``F()`` expressions so that concurrent downloads don't clobber each other.
+
+        Per-day counts, used for "trending" sorting, live in :class:`~kirovy.models.cnc_map.CncMapDownloadStat`.
+    """
+
+    def record_download(self, download_date: datetime.date | None = None) -> None:
+        """Count a download of this map.
+
+        Increments the all-time :attr:`~kirovy.models.cnc_map.CncMap.download_count` and the per-day
+        :class:`~kirovy.models.cnc_map.CncMapDownloadStat` row for ``download_date``.
+
+        Both counters are updated with ``F()`` expressions so that concurrent downloads are all counted.
+        ``self.download_count`` is **not** refreshed; call ``refresh_from_db`` if you need the new value.
+
+        :param download_date:
+            The day to count the download for. Defaults to today in UTC.
+        """
+        download_date = download_date or timezone.now().date()
+        with transaction.atomic():
+            CncMap.objects.filter(id=self.id).update(download_count=models.F("download_count") + 1)
+            CncMapDownloadStat.increment(self.id, download_date)
+
     def next_version_number(self) -> int:
         """Generate the next version to use for a map file.
 
@@ -152,6 +182,44 @@ class CncMap(GameScopedUserOwnedModel, Moderabile):
     def check_is_bannable(self) -> None:
         if self.is_legacy:
             raise exceptions.BanException("legacy-maps-cannot-be-banned")
+
+
+class CncMapDownloadStat(CncNetBaseModel):
+    """Per-day download counts for a map.
+
+    We store one row per map per day, rather than one row per download, so that the table stays small
+    and we don't need to store anything about the person downloading the map.
+
+    Used to sort maps by "trending", i.e. the most downloads within the last
+    :attr:`~kirovy.settings._base.MAP_TRENDING_WINDOW_DAYS` days.
+    """
+
+    cnc_map = models.ForeignKey(CncMap, on_delete=models.CASCADE, null=False, related_name="download_stats")
+    date = models.DateField(null=False)
+    download_count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["cnc_map", "date"], name="unique_map_download_date"),
+        ]
+
+    @classmethod
+    def increment(cls, cnc_map_id: UUID, download_date: datetime.date) -> None:
+        """Add one download to the row for ``cnc_map_id`` on ``download_date``, creating the row if needed.
+
+        Safe to call concurrently. If two requests race to create the row for the day, the loser of the race
+        falls back to incrementing the row the winner created.
+        """
+        row_filter = cls.objects.filter(cnc_map_id=cnc_map_id, date=download_date)
+        if row_filter.update(download_count=models.F("download_count") + 1):
+            return
+
+        try:
+            with transaction.atomic():
+                cls.objects.create(cnc_map_id=cnc_map_id, date=download_date, download_count=1)
+        except IntegrityError:
+            # Another request created the row between our update and our create.
+            row_filter.update(download_count=models.F("download_count") + 1)
 
 
 class CncMapFileManager(models.Manager["CncMapFile"]):
