@@ -106,6 +106,27 @@ class Moderabile(models.Model):
             update_fields=["moderated_by", "is_banned", "ban_reason", "ban_date", "ban_expires", "moderator_notes"]
         )
 
+    def record_moderator_action(self, moderated_by: "CncUser", action: str, note: str) -> None:
+        """Record a moderation action that isn't a ban, e.g. a moderator editing someone else's map.
+
+        Sets :attr:`~kirovy.models.moderabile.Moderabile.moderated_by` and appends a line to the moderator notes.
+
+        :param moderated_by:
+            The moderator who performed the action.
+        :param action:
+            Short name for the action, e.g. "Edited".
+        :param note:
+            Details about the action.
+        :return:
+            Nothing. The instance will be updated.
+        """
+        self.moderated_by = moderated_by
+        moderator_note = self._moderator_note_line(
+            action, datetime.datetime.now(datetime.timezone.utc), note, moderated_by
+        )
+        self.moderator_notes = (self.moderator_notes or "") + moderator_note
+        self.save(update_fields=["moderated_by", "moderator_notes"])
+
     @staticmethod
     def _moderator_note_line(
         action: str, action_date: datetime.datetime, action_reason: str, moderated_by: "CncUser"
